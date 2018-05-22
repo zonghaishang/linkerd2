@@ -8,7 +8,25 @@ use trust_dns_resolver;
 use trust_dns_resolver::config::{ResolverConfig, ResolverOpts};
 use trust_dns_resolver::error::{ResolveError, ResolveErrorKind};
 use trust_dns_resolver::ResolverFuture;
-use trust_dns_resolver::lookup_ip::LookupIp;
+use trust_dns_resolver::lookup_ip::{LookupIp, LookupIpIter};
+
+pub trait Resolve {
+    type Resolution: Resolution;
+    type ListFuture: Future<
+        Item=Response<Self::Resolution>,
+        Error=ResolveError
+    > + Send;
+
+    fn resolve_all_ips(&self, delay: Duration, host: &Name)
+        -> Self::ListFuture;
+}
+
+pub trait Resolution {
+    type Iter: Iterator<Item = IpAddr>;
+
+    fn valid_until(&self) -> Instant;
+    fn iter(&self) -> Box<Iterator<Item=IpAddr>>;
+}
 
 #[derive(Clone, Debug)]
 pub struct Resolver {
@@ -26,13 +44,13 @@ pub enum Error {
     ResolutionFailed(ResolveError),
 }
 
-pub enum Response {
-    Exists(LookupIp),
+pub enum Response<R: Resolution>{
+    Exists(R),
     DoesNotExist,
 }
 
 // `Box<Future>` implements `Future` so it doesn't need to be implemented manually.
-pub type IpAddrListFuture = Box<Future<Item=Response, Error=ResolveError> + Send>;
+pub type IpAddrListFuture<R> = Box<Future<Item=Response<R>, Error=ResolveError> + Send>;
 
 /// A DNS name.
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
@@ -84,7 +102,27 @@ impl Resolver {
         }
     }
 
-    pub fn resolve_all_ips(&self, delay: Duration, host: &Name) -> IpAddrListFuture {
+    // `ResolverFuture` can only be used for one lookup, so we have to clone all
+    // the state during each resolution.
+    fn lookup_ip(self, &Name(ref name): &Name)
+        -> impl Future<Item = LookupIp, Error = ResolveError>
+    {
+        let name = name.clone(); // TODO: ref-count names.
+        let resolver = ResolverFuture::new(
+            self.config,
+            self.opts
+        );
+        resolver.and_then(move |r| r.lookup_ip(name.as_str()))
+    }
+}
+
+impl Resolve for Resolver {
+    type Resolution = LookupIp;
+    type ListFuture = IpAddrListFuture<Self::Resolution>;
+
+    fn resolve_all_ips(&self, delay: Duration, host: &Name)
+        -> Self::ListFuture
+    {
         let name = host.clone();
         let name_clone = name.clone();
         trace!("resolve_all_ips {}", &name);
@@ -97,7 +135,10 @@ impl Resolver {
             .then(move |result| {
                 trace!("resolve_all_ips {}: completed with {:?}", name_clone, &result);
                 match result {
-                    Ok(ips) => Ok(Response::Exists(ips)),
+                    Ok(ips) => Ok(Response::Exists {
+                            valid_until: ips.valid_until(),
+                            ips: ips.iter()
+                        }),
                     Err(e) => {
                         if let &ResolveErrorKind::NoRecordsFound(_) = e.kind() {
                             Ok(Response::DoesNotExist)
@@ -108,19 +149,6 @@ impl Resolver {
                 }
             });
         Box::new(f)
-    }
-
-    // `ResolverFuture` can only be used for one lookup, so we have to clone all
-    // the state during each resolution.
-    fn lookup_ip(self, &Name(ref name): &Name)
-        -> impl Future<Item = LookupIp, Error = ResolveError>
-    {
-        let name = name.clone(); // TODO: ref-count names.
-        let resolver = ResolverFuture::new(
-            self.config,
-            self.opts
-        );
-        resolver.and_then(move |r| r.lookup_ip(name.as_str()))
     }
 }
 
@@ -148,6 +176,18 @@ impl Future for IpAddrFuture {
             },
             IpAddrFuture::Fixed(addr) => Ok(Async::Ready(addr)),
         }
+    }
+}
+
+impl Resolution for LookupIp {
+    type Iter = LookupIpIter;
+
+    fn iter(&self) -> Self::Iter {
+        self.iter()
+    }
+
+    fn valid_until(&self) -> Instant {
+        self.valid_until()
     }
 }
 

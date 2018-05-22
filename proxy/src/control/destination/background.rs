@@ -31,7 +31,7 @@ use control::{
     remote_stream::{Receiver, Remote},
     AddOrigin, Backoff, LogErrors
 };
-use dns::{self, IpAddrListFuture};
+use dns;
 use task::LazyExecutor;
 use telemetry::metrics::DstLabels;
 use transport::{DnsNameAndPort, HostAndPort, LookupAddressAndConnect};
@@ -46,8 +46,12 @@ type UpdateRx<T> = Receiver<PbUpdate, T>;
 /// service is healthy, it reads requests from `request_rx`, determines how to resolve the
 /// provided authority to a set of addresses, and ensures that resolution updates are
 /// propagated to all requesters.
-struct Background<T: HttpService<ResponseBody = RecvBody>> {
-    dns_resolver: dns::Resolver,
+struct Background<T, R = dns::Resolver>
+where
+    T: HttpService<ResponseBody = RecvBody>,
+    R: dns::Resolve,
+{
+    dns_resolver: R,
     default_destination_namespace: String,
     destinations: HashMap<DnsNameAndPort, DestinationSet<T>>,
     /// A queue of authorities that need to be reconnected.
@@ -60,10 +64,14 @@ struct Background<T: HttpService<ResponseBody = RecvBody>> {
 }
 
 /// Holds the state of a single resolution.
-struct DestinationSet<T: HttpService<ResponseBody = RecvBody>> {
+struct DestinationSet<T, R = dns::Resolver>
+where
+    T: HttpService<ResponseBody = RecvBody>,
+    R: dns::Resolve,
+{
     addrs: Exists<Cache<SocketAddr, Metadata>>,
     query: Option<DestinationServiceQuery<T>>,
-    dns_query: Option<IpAddrListFuture>,
+    dns_query: Option<R::ListFuture>,
     responders: Vec<Responder>,
 }
 
@@ -422,7 +430,7 @@ where
                     self.dns_query = Some(query);
                     return;
                 },
-                Ok(Async::Ready(dns::Response::Exists(ips))) => {
+                Ok(Async::Ready(dns::Response::Exists { ips, ..})) => {
                     trace!(
                         "positive result of DNS query for {:?}: {:?}",
                         authority,
@@ -430,7 +438,7 @@ where
                     );
                     self.add(
                         authority,
-                        ips.iter().map(|ip| {
+                        ips.map(|ip| {
                             (
                                 SocketAddr::from((ip, authority.port)),
                                 Metadata::no_metadata(),
