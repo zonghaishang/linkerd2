@@ -21,6 +21,9 @@ pub extern crate tokio_io;
 extern crate tower_h2;
 extern crate tower_grpc;
 extern crate tower_service;
+extern crate trust_dns_resolver;
+extern crate trust_dns_server;
+extern crate trust_dns_proto;
 extern crate log;
 pub extern crate env_logger;
 
@@ -114,6 +117,7 @@ macro_rules! assert_eventually {
 
 pub mod client;
 pub mod controller;
+pub mod dns;
 pub mod proxy;
 pub mod server;
 pub mod tcp;
