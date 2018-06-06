@@ -11,10 +11,10 @@ export default {
     filename: 'index_bundle.js'
   },
   plugins: [
-    new HtmlWebpackPlugin({
-      title: 'Conduit Dashboard',
-      template: 'index.html',
-    }),
+    // new HtmlWebpackPlugin({
+    //   title: 'Conduit Dashboard',
+    //   template: 'index.html',
+    // }),
   ],
   devtool: 'cheap-module-source-map',
   externals: {
