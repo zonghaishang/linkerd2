@@ -1,14 +1,21 @@
-/* global require, module, __dirname */
+/* global __dirname */
 
-const path = require('path');
+import path from 'path';
+import HtmlWebpackPlugin from 'html-webpack-plugin';
 
-module.exports = {
+export default {
   entry: './js/index.js',
   output: {
     path: path.resolve(__dirname, 'dist'),
     publicPath: 'dist/',
     filename: 'index_bundle.js'
   },
+  plugins: [
+    new HtmlWebpackPlugin({
+      title: 'Conduit Dashboard',
+      template: 'index.html',
+    }),
+  ],
   devtool: 'cheap-module-source-map',
   externals: {
     cheerio: 'window',

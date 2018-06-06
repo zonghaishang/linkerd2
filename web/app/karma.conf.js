@@ -1,5 +1,5 @@
 // use the same babel compilation etc. as what's defined in the webpack config
-var webpackConfig = require('./webpack.config.js');
+var webpackConfig = require('./webpack.config.babel.js');
 
 // Karma configuration
 module.exports = function(config) {
