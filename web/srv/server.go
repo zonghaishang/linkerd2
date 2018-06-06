@@ -59,11 +59,12 @@ func NewServer(addr, templateDir, staticDir, uuid, controllerNamespace, webpackD
 		reload:          reload,
 	}
 
-	server.router = &httprouter.Router{
-		RedirectTrailingSlash:  true,
-		RedirectFixedPath:      true,
-		HandleMethodNotAllowed: false, // disable 405s
-	}
+	server.router = httprouter.New()
+	// server.router = &httprouter.Router{
+	// 	RedirectTrailingSlash:  true,
+	// 	RedirectFixedPath:      true,
+	// 	HandleMethodNotAllowed: false, // disable 405s
+	// }
 
 	wrappedServer := util.WithTelemetry(server)
 	handler := &handler{
@@ -89,9 +90,8 @@ func NewServer(addr, templateDir, staticDir, uuid, controllerNamespace, webpackD
 	server.router.GET("/deployments", handler.handleIndex)
 	server.router.GET("/replicationcontrollers", handler.handleIndex)
 	server.router.GET("/pods", handler.handleIndex)
-	server.router.ServeFiles(
-		"/dist/*filepath", // add catch-all parameter to match all files in dir
-		filesonly.FileSystem(server.staticDir))
+
+	server.router.NotFound = http.HandlerFunc(http.FileServer(http.Dir("dist")))
 
 	// webapp api routes
 	server.router.GET("/api/version", handler.handleApiVersion)
