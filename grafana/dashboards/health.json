@@ -15,8 +15,7 @@
   "editable": true,
   "gnetId": null,
   "graphTooltip": 1,
-  "id": null,
-  "iteration": 1524697499292,
+  "iteration": 1528408737485,
   "links": [],
   "panels": [
     {
@@ -30,6 +29,13 @@
       "id": 19,
       "panels": [],
       "repeat": "deployment",
+      "scopedVars": {
+        "deployment": {
+          "selected": false,
+          "text": "controller",
+          "value": "controller"
+        }
+      },
       "title": "",
       "type": "row"
     },
@@ -44,6 +50,13 @@
       "id": 21,
       "links": [],
       "mode": "html",
+      "scopedVars": {
+        "deployment": {
+          "selected": false,
+          "text": "controller",
+          "value": "controller"
+        }
+      },
       "title": "",
       "transparent": true,
       "type": "text"
@@ -79,6 +92,13 @@
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
+      "scopedVars": {
+        "deployment": {
+          "selected": false,
+          "text": "controller",
+          "value": "controller"
+        }
+      },
       "seriesOverrides": [],
       "spaceLength": 10,
       "stack": false,
@@ -163,6 +183,13 @@
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
+      "scopedVars": {
+        "deployment": {
+          "selected": false,
+          "text": "controller",
+          "value": "controller"
+        }
+      },
       "seriesOverrides": [],
       "spaceLength": 10,
       "stack": true,
@@ -247,6 +274,13 @@
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
+      "scopedVars": {
+        "deployment": {
+          "selected": false,
+          "text": "controller",
+          "value": "controller"
+        }
+      },
       "seriesOverrides": [],
       "spaceLength": 10,
       "stack": false,
@@ -322,6 +356,1038 @@
         "x": 0,
         "y": 10.2
       },
+      "id": 341,
+      "panels": [],
+      "repeat": null,
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 19,
+      "scopedVars": {
+        "deployment": {
+          "selected": false,
+          "text": "grafana",
+          "value": "grafana"
+        }
+      },
+      "title": "",
+      "type": "row"
+    },
+    {
+      "content": "<div>\n  <img src=\"https://conduit.io/favicon.png\" style=\"baseline; height:40px;\"/>&nbsp;\n  <span style=\"font-size: 15px; border-image:none\">deploy/$deployment</span>\n</div>",
+      "gridPos": {
+        "h": 2.2,
+        "w": 24,
+        "x": 0,
+        "y": 11.2
+      },
+      "id": 342,
+      "links": [],
+      "mode": "html",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 21,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "deployment": {
+          "selected": false,
+          "text": "grafana",
+          "value": "grafana"
+        }
+      },
+      "title": "",
+      "transparent": true,
+      "type": "text"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 13.399999999999999
+      },
+      "id": 343,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 23,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "deployment": {
+          "selected": false,
+          "text": "grafana",
+          "value": "grafana"
+        }
+      },
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(irate(response_total{classification=\"success\", deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\"}[30s])) by (deployment, pod) / sum(irate(response_total{deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\"}[30s])) by (deployment, pod)",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "po/{{pod}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "SUCCESS RATE",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "percentunit",
+          "label": null,
+          "logBase": 1,
+          "max": "1",
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 13.399999999999999
+      },
+      "id": 344,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 24,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "deployment": {
+          "selected": false,
+          "text": "grafana",
+          "value": "grafana"
+        }
+      },
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(irate(request_total{deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\"}[30s])) by (deployment, pod)",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "po/{{pod}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "REQUEST RATE",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "rps",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 13.399999999999999
+      },
+      "id": 345,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 25,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "deployment": {
+          "selected": false,
+          "text": "grafana",
+          "value": "grafana"
+        }
+      },
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.5, sum(rate(response_latency_ms_bucket{deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\"}[30s])) by (le, deployment, pod))",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "p50 po/{{pod}}",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(response_latency_ms_bucket{deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\"}[30s])) by (le, deployment, pod))",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "p95 po/{{pod}}",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(response_latency_ms_bucket{deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\"}[30s])) by (le, deployment, pod))",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "p99 po/{{pod}}",
+          "refId": "C"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "LATENCY",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "ms",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 20.4
+      },
+      "id": 346,
+      "panels": [],
+      "repeat": null,
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 19,
+      "scopedVars": {
+        "deployment": {
+          "selected": false,
+          "text": "prometheus",
+          "value": "prometheus"
+        }
+      },
+      "title": "",
+      "type": "row"
+    },
+    {
+      "content": "<div>\n  <img src=\"https://conduit.io/favicon.png\" style=\"baseline; height:40px;\"/>&nbsp;\n  <span style=\"font-size: 15px; border-image:none\">deploy/$deployment</span>\n</div>",
+      "gridPos": {
+        "h": 2.2,
+        "w": 24,
+        "x": 0,
+        "y": 21.4
+      },
+      "id": 347,
+      "links": [],
+      "mode": "html",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 21,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "deployment": {
+          "selected": false,
+          "text": "prometheus",
+          "value": "prometheus"
+        }
+      },
+      "title": "",
+      "transparent": true,
+      "type": "text"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 23.599999999999998
+      },
+      "id": 348,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 23,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "deployment": {
+          "selected": false,
+          "text": "prometheus",
+          "value": "prometheus"
+        }
+      },
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(irate(response_total{classification=\"success\", deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\"}[30s])) by (deployment, pod) / sum(irate(response_total{deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\"}[30s])) by (deployment, pod)",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "po/{{pod}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "SUCCESS RATE",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "percentunit",
+          "label": null,
+          "logBase": 1,
+          "max": "1",
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 23.599999999999998
+      },
+      "id": 349,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 24,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "deployment": {
+          "selected": false,
+          "text": "prometheus",
+          "value": "prometheus"
+        }
+      },
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(irate(request_total{deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\"}[30s])) by (deployment, pod)",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "po/{{pod}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "REQUEST RATE",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "rps",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 23.599999999999998
+      },
+      "id": 350,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 25,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "deployment": {
+          "selected": false,
+          "text": "prometheus",
+          "value": "prometheus"
+        }
+      },
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.5, sum(rate(response_latency_ms_bucket{deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\"}[30s])) by (le, deployment, pod))",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "p50 po/{{pod}}",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(response_latency_ms_bucket{deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\"}[30s])) by (le, deployment, pod))",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "p95 po/{{pod}}",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(response_latency_ms_bucket{deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\"}[30s])) by (le, deployment, pod))",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "p99 po/{{pod}}",
+          "refId": "C"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "LATENCY",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "ms",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 30.599999999999998
+      },
+      "id": 351,
+      "panels": [],
+      "repeat": null,
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 19,
+      "scopedVars": {
+        "deployment": {
+          "selected": false,
+          "text": "web",
+          "value": "web"
+        }
+      },
+      "title": "",
+      "type": "row"
+    },
+    {
+      "content": "<div>\n  <img src=\"https://conduit.io/favicon.png\" style=\"baseline; height:40px;\"/>&nbsp;\n  <span style=\"font-size: 15px; border-image:none\">deploy/$deployment</span>\n</div>",
+      "gridPos": {
+        "h": 2.2,
+        "w": 24,
+        "x": 0,
+        "y": 31.599999999999998
+      },
+      "id": 352,
+      "links": [],
+      "mode": "html",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 21,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "deployment": {
+          "selected": false,
+          "text": "web",
+          "value": "web"
+        }
+      },
+      "title": "",
+      "transparent": true,
+      "type": "text"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 33.8
+      },
+      "id": 353,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 23,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "deployment": {
+          "selected": false,
+          "text": "web",
+          "value": "web"
+        }
+      },
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(irate(response_total{classification=\"success\", deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\"}[30s])) by (deployment, pod) / sum(irate(response_total{deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\"}[30s])) by (deployment, pod)",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "po/{{pod}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "SUCCESS RATE",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "percentunit",
+          "label": null,
+          "logBase": 1,
+          "max": "1",
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 33.8
+      },
+      "id": 354,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 24,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "deployment": {
+          "selected": false,
+          "text": "web",
+          "value": "web"
+        }
+      },
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(irate(request_total{deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\"}[30s])) by (deployment, pod)",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "po/{{pod}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "REQUEST RATE",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "rps",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 33.8
+      },
+      "id": 355,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 25,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "deployment": {
+          "selected": false,
+          "text": "web",
+          "value": "web"
+        }
+      },
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.5, sum(rate(response_latency_ms_bucket{deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\"}[30s])) by (le, deployment, pod))",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "p50 po/{{pod}}",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(response_latency_ms_bucket{deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\"}[30s])) by (le, deployment, pod))",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "p95 po/{{pod}}",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(response_latency_ms_bucket{deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\"}[30s])) by (le, deployment, pod))",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "p99 po/{{pod}}",
+          "refId": "C"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "LATENCY",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "ms",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 40.8
+      },
       "id": 339,
       "panels": [],
       "title": "",
@@ -333,7 +1399,7 @@
         "h": 2.2,
         "w": 24,
         "x": 0,
-        "y": 11.2
+        "y": 41.8
       },
       "id": 340,
       "links": [],
@@ -348,7 +1414,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 13.4
+        "y": 44
       },
       "id": 179,
       "panels": [
@@ -364,6 +1430,13 @@
           "links": [],
           "mode": "html",
           "repeatedByRow": true,
+          "scopedVars": {
+            "deployment": {
+              "selected": false,
+              "text": "controller",
+              "value": "controller"
+            }
+          },
           "title": "",
           "transparent": true,
           "type": "text"
@@ -399,6 +1472,13 @@
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
+          "scopedVars": {
+            "deployment": {
+              "selected": false,
+              "text": "controller",
+              "value": "controller"
+            }
+          },
           "seriesOverrides": [],
           "spaceLength": 10,
           "stack": false,
@@ -482,6 +1562,13 @@
           "pointradius": 5,
           "points": false,
           "renderer": "flot",
+          "scopedVars": {
+            "deployment": {
+              "selected": false,
+              "text": "controller",
+              "value": "controller"
+            }
+          },
           "seriesOverrides": [],
           "spaceLength": 10,
           "stack": true,
@@ -603,6 +1690,928 @@
         }
       ],
       "repeat": "deployment",
+      "scopedVars": {
+        "deployment": {
+          "selected": false,
+          "text": "controller",
+          "value": "controller"
+        }
+      },
+      "title": "$deployment",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 45
+      },
+      "id": 356,
+      "panels": [
+        {
+          "content": "<div>\n  <img src=\"https://conduit.io/favicon.png\" style=\"baseline; height:40px;\"/>&nbsp;\n  <span style=\"font-size: 15px; border-image:none\">deploy/$deployment</span>\n</div>",
+          "gridPos": {
+            "h": 2.2,
+            "w": 24,
+            "x": 0,
+            "y": 34.8
+          },
+          "id": 357,
+          "links": [],
+          "mode": "html",
+          "repeatIteration": 1528408737485,
+          "repeatPanelId": 282,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "deployment": {
+              "selected": false,
+              "text": "grafana",
+              "value": "grafana"
+            }
+          },
+          "title": "",
+          "transparent": true,
+          "type": "text"
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "fill": 1,
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 0,
+            "y": 37
+          },
+          "id": 358,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": false,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "links": [],
+          "nullPointMode": "null",
+          "percentage": false,
+          "pointradius": 5,
+          "points": false,
+          "renderer": "flot",
+          "repeatIteration": 1528408737485,
+          "repeatPanelId": 227,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "deployment": {
+              "selected": false,
+              "text": "grafana",
+              "value": "grafana"
+            }
+          },
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "tcp_close_total{deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\",classification=\"failure\"}",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "TCP CONNECTION FAILURES",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "fill": 1,
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 8,
+            "y": 37
+          },
+          "id": 359,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": false,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "links": [],
+          "nullPointMode": "null",
+          "percentage": false,
+          "pointradius": 5,
+          "points": false,
+          "renderer": "flot",
+          "repeatIteration": 1528408737485,
+          "repeatPanelId": 132,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "deployment": {
+              "selected": false,
+              "text": "grafana",
+              "value": "grafana"
+            }
+          },
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": true,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "tcp_open_connections{deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\"}",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "legendFormat": "{{peer}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "OPEN TCP CONNECTIONS",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "cards": {
+            "cardPadding": null,
+            "cardRound": null
+          },
+          "color": {
+            "cardColor": "#b4ff00",
+            "colorScale": "sqrt",
+            "colorScheme": "interpolateOranges",
+            "exponent": 0.5,
+            "mode": "spectrum"
+          },
+          "dataFormat": "timeseries",
+          "datasource": null,
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 16,
+            "y": 37
+          },
+          "heatmap": {},
+          "highlightCards": true,
+          "id": 360,
+          "legend": {
+            "show": false
+          },
+          "links": [],
+          "repeatIteration": 1528408737485,
+          "repeatPanelId": 229,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "deployment": {
+              "selected": false,
+              "text": "grafana",
+              "value": "grafana"
+            }
+          },
+          "targets": [
+            {
+              "expr": "tcp_connection_duration_ms_bucket{deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\"}",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "refId": "A"
+            }
+          ],
+          "title": "TCP CONNECTION DURATION",
+          "tooltip": {
+            "show": true,
+            "showHistogram": true
+          },
+          "type": "heatmap",
+          "xAxis": {
+            "show": true
+          },
+          "xBucketNumber": null,
+          "xBucketSize": null,
+          "yAxis": {
+            "decimals": null,
+            "format": "short",
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true,
+            "splitFactor": null
+          },
+          "yBucketBound": "auto",
+          "yBucketNumber": null,
+          "yBucketSize": null
+        }
+      ],
+      "repeat": null,
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 179,
+      "scopedVars": {
+        "deployment": {
+          "selected": false,
+          "text": "grafana",
+          "value": "grafana"
+        }
+      },
+      "title": "$deployment",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 46
+      },
+      "id": 361,
+      "panels": [
+        {
+          "content": "<div>\n  <img src=\"https://conduit.io/favicon.png\" style=\"baseline; height:40px;\"/>&nbsp;\n  <span style=\"font-size: 15px; border-image:none\">deploy/$deployment</span>\n</div>",
+          "gridPos": {
+            "h": 2.2,
+            "w": 24,
+            "x": 0,
+            "y": 34.8
+          },
+          "id": 362,
+          "links": [],
+          "mode": "html",
+          "repeatIteration": 1528408737485,
+          "repeatPanelId": 282,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "deployment": {
+              "selected": false,
+              "text": "prometheus",
+              "value": "prometheus"
+            }
+          },
+          "title": "",
+          "transparent": true,
+          "type": "text"
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "fill": 1,
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 0,
+            "y": 37
+          },
+          "id": 363,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": false,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "links": [],
+          "nullPointMode": "null",
+          "percentage": false,
+          "pointradius": 5,
+          "points": false,
+          "renderer": "flot",
+          "repeatIteration": 1528408737485,
+          "repeatPanelId": 227,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "deployment": {
+              "selected": false,
+              "text": "prometheus",
+              "value": "prometheus"
+            }
+          },
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "tcp_close_total{deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\",classification=\"failure\"}",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "TCP CONNECTION FAILURES",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "fill": 1,
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 8,
+            "y": 37
+          },
+          "id": 364,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": false,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "links": [],
+          "nullPointMode": "null",
+          "percentage": false,
+          "pointradius": 5,
+          "points": false,
+          "renderer": "flot",
+          "repeatIteration": 1528408737485,
+          "repeatPanelId": 132,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "deployment": {
+              "selected": false,
+              "text": "prometheus",
+              "value": "prometheus"
+            }
+          },
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": true,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "tcp_open_connections{deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\"}",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "legendFormat": "{{peer}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "OPEN TCP CONNECTIONS",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "cards": {
+            "cardPadding": null,
+            "cardRound": null
+          },
+          "color": {
+            "cardColor": "#b4ff00",
+            "colorScale": "sqrt",
+            "colorScheme": "interpolateOranges",
+            "exponent": 0.5,
+            "mode": "spectrum"
+          },
+          "dataFormat": "timeseries",
+          "datasource": null,
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 16,
+            "y": 37
+          },
+          "heatmap": {},
+          "highlightCards": true,
+          "id": 365,
+          "legend": {
+            "show": false
+          },
+          "links": [],
+          "repeatIteration": 1528408737485,
+          "repeatPanelId": 229,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "deployment": {
+              "selected": false,
+              "text": "prometheus",
+              "value": "prometheus"
+            }
+          },
+          "targets": [
+            {
+              "expr": "tcp_connection_duration_ms_bucket{deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\"}",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "refId": "A"
+            }
+          ],
+          "title": "TCP CONNECTION DURATION",
+          "tooltip": {
+            "show": true,
+            "showHistogram": true
+          },
+          "type": "heatmap",
+          "xAxis": {
+            "show": true
+          },
+          "xBucketNumber": null,
+          "xBucketSize": null,
+          "yAxis": {
+            "decimals": null,
+            "format": "short",
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true,
+            "splitFactor": null
+          },
+          "yBucketBound": "auto",
+          "yBucketNumber": null,
+          "yBucketSize": null
+        }
+      ],
+      "repeat": null,
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 179,
+      "scopedVars": {
+        "deployment": {
+          "selected": false,
+          "text": "prometheus",
+          "value": "prometheus"
+        }
+      },
+      "title": "$deployment",
+      "type": "row"
+    },
+    {
+      "collapsed": true,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 47
+      },
+      "id": 366,
+      "panels": [
+        {
+          "content": "<div>\n  <img src=\"https://conduit.io/favicon.png\" style=\"baseline; height:40px;\"/>&nbsp;\n  <span style=\"font-size: 15px; border-image:none\">deploy/$deployment</span>\n</div>",
+          "gridPos": {
+            "h": 2.2,
+            "w": 24,
+            "x": 0,
+            "y": 34.8
+          },
+          "id": 367,
+          "links": [],
+          "mode": "html",
+          "repeatIteration": 1528408737485,
+          "repeatPanelId": 282,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "deployment": {
+              "selected": false,
+              "text": "web",
+              "value": "web"
+            }
+          },
+          "title": "",
+          "transparent": true,
+          "type": "text"
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "fill": 1,
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 0,
+            "y": 37
+          },
+          "id": 368,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": false,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "links": [],
+          "nullPointMode": "null",
+          "percentage": false,
+          "pointradius": 5,
+          "points": false,
+          "renderer": "flot",
+          "repeatIteration": 1528408737485,
+          "repeatPanelId": 227,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "deployment": {
+              "selected": false,
+              "text": "web",
+              "value": "web"
+            }
+          },
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "tcp_close_total{deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\",classification=\"failure\"}",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "TCP CONNECTION FAILURES",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "fill": 1,
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 8,
+            "y": 37
+          },
+          "id": 369,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": false,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "links": [],
+          "nullPointMode": "null",
+          "percentage": false,
+          "pointradius": 5,
+          "points": false,
+          "renderer": "flot",
+          "repeatIteration": 1528408737485,
+          "repeatPanelId": 132,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "deployment": {
+              "selected": false,
+              "text": "web",
+              "value": "web"
+            }
+          },
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": true,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "tcp_open_connections{deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\"}",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "legendFormat": "{{peer}}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "OPEN TCP CONNECTIONS",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "cards": {
+            "cardPadding": null,
+            "cardRound": null
+          },
+          "color": {
+            "cardColor": "#b4ff00",
+            "colorScale": "sqrt",
+            "colorScheme": "interpolateOranges",
+            "exponent": 0.5,
+            "mode": "spectrum"
+          },
+          "dataFormat": "timeseries",
+          "datasource": null,
+          "gridPos": {
+            "h": 7,
+            "w": 8,
+            "x": 16,
+            "y": 37
+          },
+          "heatmap": {},
+          "highlightCards": true,
+          "id": 370,
+          "legend": {
+            "show": false
+          },
+          "links": [],
+          "repeatIteration": 1528408737485,
+          "repeatPanelId": 229,
+          "repeatedByRow": true,
+          "scopedVars": {
+            "deployment": {
+              "selected": false,
+              "text": "web",
+              "value": "web"
+            }
+          },
+          "targets": [
+            {
+              "expr": "tcp_connection_duration_ms_bucket{deployment=\"$deployment\", namespace=\"$namespace\", direction=\"inbound\"}",
+              "format": "time_series",
+              "intervalFactor": 1,
+              "refId": "A"
+            }
+          ],
+          "title": "TCP CONNECTION DURATION",
+          "tooltip": {
+            "show": true,
+            "showHistogram": true
+          },
+          "type": "heatmap",
+          "xAxis": {
+            "show": true
+          },
+          "xBucketNumber": null,
+          "xBucketSize": null,
+          "yAxis": {
+            "decimals": null,
+            "format": "short",
+            "logBase": 1,
+            "max": null,
+            "min": null,
+            "show": true,
+            "splitFactor": null
+          },
+          "yBucketBound": "auto",
+          "yBucketNumber": null,
+          "yBucketSize": null
+        }
+      ],
+      "repeat": null,
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 179,
+      "scopedVars": {
+        "deployment": {
+          "selected": false,
+          "text": "web",
+          "value": "web"
+        }
+      },
       "title": "$deployment",
       "type": "row"
     },
@@ -612,7 +2621,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 14.4
+        "y": 48
       },
       "id": 90,
       "panels": [],
@@ -625,7 +2634,7 @@
         "h": 2.2,
         "w": 24,
         "x": 0,
-        "y": 15.4
+        "y": 49
       },
       "id": 27,
       "links": [],
@@ -645,7 +2654,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 17.6
+        "y": 51.2
       },
       "id": 2,
       "legend": {
@@ -729,7 +2738,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 17.6
+        "y": 51.2
       },
       "id": 5,
       "legend": {
@@ -820,7 +2829,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 17.6
+        "y": 51.2
       },
       "id": 7,
       "legend": {
@@ -904,7 +2913,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 24.6
+        "y": 58.2
       },
       "id": 9,
       "legend": {
@@ -988,7 +2997,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 24.6
+        "y": 58.2
       },
       "id": 12,
       "legend": {
@@ -1081,11 +3090,18 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 31.6
+        "y": 65.2
       },
       "id": 29,
       "panels": [],
       "repeat": "component",
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "destination",
+          "value": "destination"
+        }
+      },
       "title": "",
       "type": "row"
     },
@@ -1095,11 +3111,18 @@
         "h": 2.2,
         "w": 24,
         "x": 0,
-        "y": 32.6
+        "y": 66.2
       },
       "id": 30,
       "links": [],
       "mode": "html",
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "destination",
+          "value": "destination"
+        }
+      },
       "title": "",
       "transparent": true,
       "type": "text"
@@ -1115,7 +3138,7 @@
         "h": 7,
         "w": 8,
         "x": 0,
-        "y": 34.8
+        "y": 68.4
       },
       "id": 6,
       "legend": {
@@ -1135,6 +3158,13 @@
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "destination",
+          "value": "destination"
+        }
+      },
       "seriesOverrides": [],
       "spaceLength": 10,
       "stack": false,
@@ -1220,7 +3250,7 @@
         "h": 7,
         "w": 8,
         "x": 8,
-        "y": 34.8
+        "y": 68.4
       },
       "id": 8,
       "legend": {
@@ -1240,6 +3270,13 @@
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "destination",
+          "value": "destination"
+        }
+      },
       "seriesOverrides": [],
       "spaceLength": 10,
       "stack": false,
@@ -1318,7 +3355,7 @@
         "h": 7,
         "w": 8,
         "x": 16,
-        "y": 34.8
+        "y": 68.4
       },
       "id": 14,
       "legend": {
@@ -1338,6 +3375,1873 @@
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "destination",
+          "value": "destination"
+        }
+      },
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "irate(grpc_server_msg_sent_total{job=\"conduit-controller\", component=\"$component\"}[30s])",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "sent/{{component}}/{{grpc_method}}",
+          "refId": "A"
+        },
+        {
+          "expr": "irate(grpc_server_msg_received_total{job=\"conduit-controller\", component=\"$component\"}[30s])",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "received/{{component}}/{{grpc_method}}",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "gRPC Message Volume",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "rps",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 75.4
+      },
+      "id": 371,
+      "panels": [],
+      "repeat": null,
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 29,
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "prometheus",
+          "value": "prometheus"
+        }
+      },
+      "title": "",
+      "type": "row"
+    },
+    {
+      "content": "<div>\n  <img src=\"https://conduit.io/favicon.png\" style=\"baseline; height:40px;\"/>&nbsp;\n  <span style=\"font-size: 15px; border-image:none\">$component</span>\n</div>",
+      "gridPos": {
+        "h": 2.2,
+        "w": 24,
+        "x": 0,
+        "y": 76.4
+      },
+      "id": 372,
+      "links": [],
+      "mode": "html",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 30,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "prometheus",
+          "value": "prometheus"
+        }
+      },
+      "title": "",
+      "transparent": true,
+      "type": "text"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 78.60000000000001
+      },
+      "id": 373,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 6,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "prometheus",
+          "value": "prometheus"
+        }
+      },
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "go_memstats_alloc_bytes{job=\"conduit-controller\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "alloc/{{component}}",
+          "refId": "A"
+        },
+        {
+          "expr": "irate(go_memstats_alloc_bytes_total{job=\"conduit-controller\", component=\"$component\"}[30s])",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "alloc rate/{{component}}",
+          "refId": "B"
+        },
+        {
+          "expr": "go_memstats_stack_inuse_bytes{job=\"conduit-controller\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "stack/{{component}}",
+          "refId": "C"
+        },
+        {
+          "expr": "go_memstats_heap_inuse_bytes{job=\"conduit-controller\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "heap/{{component}}",
+          "refId": "D"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Go Memstats",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "decbytes",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 78.60000000000001
+      },
+      "id": 374,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 8,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "prometheus",
+          "value": "prometheus"
+        }
+      },
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "go_gc_duration_seconds{job=\"conduit-controller\", quantile=\"0.5\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "P50 {{component}}",
+          "refId": "A"
+        },
+        {
+          "expr": "go_gc_duration_seconds{job=\"conduit-controller\", quantile=\"0.75\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "P75 {{component}}",
+          "refId": "B"
+        },
+        {
+          "expr": "go_gc_duration_seconds{job=\"conduit-controller\", quantile=\"1\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "Max {{component}}",
+          "refId": "C"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "GC Duration",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "s",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 78.60000000000001
+      },
+      "id": 375,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 14,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "prometheus",
+          "value": "prometheus"
+        }
+      },
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "irate(grpc_server_msg_sent_total{job=\"conduit-controller\", component=\"$component\"}[30s])",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "sent/{{component}}/{{grpc_method}}",
+          "refId": "A"
+        },
+        {
+          "expr": "irate(grpc_server_msg_received_total{job=\"conduit-controller\", component=\"$component\"}[30s])",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "received/{{component}}/{{grpc_method}}",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "gRPC Message Volume",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "rps",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 85.60000000000001
+      },
+      "id": 376,
+      "panels": [],
+      "repeat": null,
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 29,
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "proxy-api",
+          "value": "proxy-api"
+        }
+      },
+      "title": "",
+      "type": "row"
+    },
+    {
+      "content": "<div>\n  <img src=\"https://conduit.io/favicon.png\" style=\"baseline; height:40px;\"/>&nbsp;\n  <span style=\"font-size: 15px; border-image:none\">$component</span>\n</div>",
+      "gridPos": {
+        "h": 2.2,
+        "w": 24,
+        "x": 0,
+        "y": 86.60000000000001
+      },
+      "id": 377,
+      "links": [],
+      "mode": "html",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 30,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "proxy-api",
+          "value": "proxy-api"
+        }
+      },
+      "title": "",
+      "transparent": true,
+      "type": "text"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 88.80000000000001
+      },
+      "id": 378,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 6,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "proxy-api",
+          "value": "proxy-api"
+        }
+      },
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "go_memstats_alloc_bytes{job=\"conduit-controller\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "alloc/{{component}}",
+          "refId": "A"
+        },
+        {
+          "expr": "irate(go_memstats_alloc_bytes_total{job=\"conduit-controller\", component=\"$component\"}[30s])",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "alloc rate/{{component}}",
+          "refId": "B"
+        },
+        {
+          "expr": "go_memstats_stack_inuse_bytes{job=\"conduit-controller\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "stack/{{component}}",
+          "refId": "C"
+        },
+        {
+          "expr": "go_memstats_heap_inuse_bytes{job=\"conduit-controller\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "heap/{{component}}",
+          "refId": "D"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Go Memstats",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "decbytes",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 88.80000000000001
+      },
+      "id": 379,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 8,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "proxy-api",
+          "value": "proxy-api"
+        }
+      },
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "go_gc_duration_seconds{job=\"conduit-controller\", quantile=\"0.5\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "P50 {{component}}",
+          "refId": "A"
+        },
+        {
+          "expr": "go_gc_duration_seconds{job=\"conduit-controller\", quantile=\"0.75\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "P75 {{component}}",
+          "refId": "B"
+        },
+        {
+          "expr": "go_gc_duration_seconds{job=\"conduit-controller\", quantile=\"1\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "Max {{component}}",
+          "refId": "C"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "GC Duration",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "s",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 88.80000000000001
+      },
+      "id": 380,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 14,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "proxy-api",
+          "value": "proxy-api"
+        }
+      },
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "irate(grpc_server_msg_sent_total{job=\"conduit-controller\", component=\"$component\"}[30s])",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "sent/{{component}}/{{grpc_method}}",
+          "refId": "A"
+        },
+        {
+          "expr": "irate(grpc_server_msg_received_total{job=\"conduit-controller\", component=\"$component\"}[30s])",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "received/{{component}}/{{grpc_method}}",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "gRPC Message Volume",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "rps",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 95.80000000000001
+      },
+      "id": 381,
+      "panels": [],
+      "repeat": null,
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 29,
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "public-api",
+          "value": "public-api"
+        }
+      },
+      "title": "",
+      "type": "row"
+    },
+    {
+      "content": "<div>\n  <img src=\"https://conduit.io/favicon.png\" style=\"baseline; height:40px;\"/>&nbsp;\n  <span style=\"font-size: 15px; border-image:none\">$component</span>\n</div>",
+      "gridPos": {
+        "h": 2.2,
+        "w": 24,
+        "x": 0,
+        "y": 96.80000000000001
+      },
+      "id": 382,
+      "links": [],
+      "mode": "html",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 30,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "public-api",
+          "value": "public-api"
+        }
+      },
+      "title": "",
+      "transparent": true,
+      "type": "text"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 99.00000000000001
+      },
+      "id": 383,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 6,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "public-api",
+          "value": "public-api"
+        }
+      },
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "go_memstats_alloc_bytes{job=\"conduit-controller\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "alloc/{{component}}",
+          "refId": "A"
+        },
+        {
+          "expr": "irate(go_memstats_alloc_bytes_total{job=\"conduit-controller\", component=\"$component\"}[30s])",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "alloc rate/{{component}}",
+          "refId": "B"
+        },
+        {
+          "expr": "go_memstats_stack_inuse_bytes{job=\"conduit-controller\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "stack/{{component}}",
+          "refId": "C"
+        },
+        {
+          "expr": "go_memstats_heap_inuse_bytes{job=\"conduit-controller\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "heap/{{component}}",
+          "refId": "D"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Go Memstats",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "decbytes",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 99.00000000000001
+      },
+      "id": 384,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 8,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "public-api",
+          "value": "public-api"
+        }
+      },
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "go_gc_duration_seconds{job=\"conduit-controller\", quantile=\"0.5\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "P50 {{component}}",
+          "refId": "A"
+        },
+        {
+          "expr": "go_gc_duration_seconds{job=\"conduit-controller\", quantile=\"0.75\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "P75 {{component}}",
+          "refId": "B"
+        },
+        {
+          "expr": "go_gc_duration_seconds{job=\"conduit-controller\", quantile=\"1\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "Max {{component}}",
+          "refId": "C"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "GC Duration",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "s",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 99.00000000000001
+      },
+      "id": 385,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 14,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "public-api",
+          "value": "public-api"
+        }
+      },
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "irate(grpc_server_msg_sent_total{job=\"conduit-controller\", component=\"$component\"}[30s])",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "sent/{{component}}/{{grpc_method}}",
+          "refId": "A"
+        },
+        {
+          "expr": "irate(grpc_server_msg_received_total{job=\"conduit-controller\", component=\"$component\"}[30s])",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "received/{{component}}/{{grpc_method}}",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "gRPC Message Volume",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "rps",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 106.00000000000001
+      },
+      "id": 386,
+      "panels": [],
+      "repeat": null,
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 29,
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "tap",
+          "value": "tap"
+        }
+      },
+      "title": "",
+      "type": "row"
+    },
+    {
+      "content": "<div>\n  <img src=\"https://conduit.io/favicon.png\" style=\"baseline; height:40px;\"/>&nbsp;\n  <span style=\"font-size: 15px; border-image:none\">$component</span>\n</div>",
+      "gridPos": {
+        "h": 2.2,
+        "w": 24,
+        "x": 0,
+        "y": 107.00000000000001
+      },
+      "id": 387,
+      "links": [],
+      "mode": "html",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 30,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "tap",
+          "value": "tap"
+        }
+      },
+      "title": "",
+      "transparent": true,
+      "type": "text"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 109.20000000000002
+      },
+      "id": 388,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 6,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "tap",
+          "value": "tap"
+        }
+      },
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "go_memstats_alloc_bytes{job=\"conduit-controller\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "alloc/{{component}}",
+          "refId": "A"
+        },
+        {
+          "expr": "irate(go_memstats_alloc_bytes_total{job=\"conduit-controller\", component=\"$component\"}[30s])",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "alloc rate/{{component}}",
+          "refId": "B"
+        },
+        {
+          "expr": "go_memstats_stack_inuse_bytes{job=\"conduit-controller\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "stack/{{component}}",
+          "refId": "C"
+        },
+        {
+          "expr": "go_memstats_heap_inuse_bytes{job=\"conduit-controller\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "heap/{{component}}",
+          "refId": "D"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Go Memstats",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "decbytes",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 109.20000000000002
+      },
+      "id": 389,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 8,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "tap",
+          "value": "tap"
+        }
+      },
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "go_gc_duration_seconds{job=\"conduit-controller\", quantile=\"0.5\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "P50 {{component}}",
+          "refId": "A"
+        },
+        {
+          "expr": "go_gc_duration_seconds{job=\"conduit-controller\", quantile=\"0.75\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "P75 {{component}}",
+          "refId": "B"
+        },
+        {
+          "expr": "go_gc_duration_seconds{job=\"conduit-controller\", quantile=\"1\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "Max {{component}}",
+          "refId": "C"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "GC Duration",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "s",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 109.20000000000002
+      },
+      "id": 390,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 14,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "tap",
+          "value": "tap"
+        }
+      },
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "irate(grpc_server_msg_sent_total{job=\"conduit-controller\", component=\"$component\"}[30s])",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "sent/{{component}}/{{grpc_method}}",
+          "refId": "A"
+        },
+        {
+          "expr": "irate(grpc_server_msg_received_total{job=\"conduit-controller\", component=\"$component\"}[30s])",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "received/{{component}}/{{grpc_method}}",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "gRPC Message Volume",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "rps",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 116.20000000000002
+      },
+      "id": 391,
+      "panels": [],
+      "repeat": null,
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 29,
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "web",
+          "value": "web"
+        }
+      },
+      "title": "",
+      "type": "row"
+    },
+    {
+      "content": "<div>\n  <img src=\"https://conduit.io/favicon.png\" style=\"baseline; height:40px;\"/>&nbsp;\n  <span style=\"font-size: 15px; border-image:none\">$component</span>\n</div>",
+      "gridPos": {
+        "h": 2.2,
+        "w": 24,
+        "x": 0,
+        "y": 117.20000000000002
+      },
+      "id": 392,
+      "links": [],
+      "mode": "html",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 30,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "web",
+          "value": "web"
+        }
+      },
+      "title": "",
+      "transparent": true,
+      "type": "text"
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 0,
+        "y": 119.40000000000002
+      },
+      "id": 393,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 6,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "web",
+          "value": "web"
+        }
+      },
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "go_memstats_alloc_bytes{job=\"conduit-controller\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "alloc/{{component}}",
+          "refId": "A"
+        },
+        {
+          "expr": "irate(go_memstats_alloc_bytes_total{job=\"conduit-controller\", component=\"$component\"}[30s])",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "alloc rate/{{component}}",
+          "refId": "B"
+        },
+        {
+          "expr": "go_memstats_stack_inuse_bytes{job=\"conduit-controller\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "stack/{{component}}",
+          "refId": "C"
+        },
+        {
+          "expr": "go_memstats_heap_inuse_bytes{job=\"conduit-controller\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "heap/{{component}}",
+          "refId": "D"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "Go Memstats",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "decbytes",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 8,
+        "y": 119.40000000000002
+      },
+      "id": 394,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 8,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "web",
+          "value": "web"
+        }
+      },
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "go_gc_duration_seconds{job=\"conduit-controller\", quantile=\"0.5\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "P50 {{component}}",
+          "refId": "A"
+        },
+        {
+          "expr": "go_gc_duration_seconds{job=\"conduit-controller\", quantile=\"0.75\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "P75 {{component}}",
+          "refId": "B"
+        },
+        {
+          "expr": "go_gc_duration_seconds{job=\"conduit-controller\", quantile=\"1\", component=\"$component\"}",
+          "format": "time_series",
+          "intervalFactor": 1,
+          "legendFormat": "Max {{component}}",
+          "refId": "C"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeShift": null,
+      "title": "GC Duration",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "s",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fill": 1,
+      "gridPos": {
+        "h": 7,
+        "w": 8,
+        "x": 16,
+        "y": 119.40000000000002
+      },
+      "id": 395,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "percentage": false,
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "repeatIteration": 1528408737485,
+      "repeatPanelId": 14,
+      "repeatedByRow": true,
+      "scopedVars": {
+        "component": {
+          "selected": false,
+          "text": "web",
+          "value": "web"
+        }
+      },
       "seriesOverrides": [],
       "spaceLength": 10,
       "stack": false,
@@ -1409,7 +5313,10 @@
     "list": [
       {
         "allValue": null,
-        "current": {},
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
         "datasource": "prometheus",
         "hide": 2,
         "includeAll": true,
@@ -1429,7 +5336,10 @@
       },
       {
         "allValue": null,
-        "current": {},
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
         "datasource": "prometheus",
         "hide": 2,
         "includeAll": true,
@@ -1441,6 +5351,35 @@
         "refresh": 2,
         "regex": "",
         "sort": 1,
+        "tagValuesQuery": "",
+        "tags": [],
+        "tagsQuery": "",
+        "type": "query",
+        "useTags": false
+      },
+      {
+        "allValue": null,
+        "current": {
+          "text": "conduit",
+          "value": "conduit"
+        },
+        "datasource": "prometheus",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Controller Namespace",
+        "multi": false,
+        "name": "namespace",
+        "options": [
+          {
+            "selected": true,
+            "text": "conduit",
+            "value": "conduit"
+          }
+        ],
+        "query": "label_values(request_total{conduit_io_control_plane_ns!=\"\"},  conduit_io_control_plane_ns)",
+        "refresh": 0,
+        "regex": "",
+        "sort": 0,
         "tagValuesQuery": "",
         "tags": [],
         "tagsQuery": "",
@@ -1481,5 +5420,5 @@
   "timezone": "",
   "title": "Conduit Health",
   "uid": "Og9nanzmk",
-  "version": 2
+  "version": 3
 }
