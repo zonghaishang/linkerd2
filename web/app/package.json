@@ -30,6 +30,7 @@
     "sinon": "^4.1.2",
     "sinon-chai": "^2.14.0",
     "sinon-stub-promise": "^4.0.0",
+    "vizceral-react": "^4.5.5",
     "webpack": "^3.5.6",
     "webpack-dev-server": "^2.7.1",
     "whatwg-fetch": "^2.0.3"

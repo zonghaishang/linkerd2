@@ -2,6 +2,7 @@ import _ from 'lodash';
 import ConduitSpinner from "./ConduitSpinner.jsx";
 import ErrorBanner from './ErrorBanner.jsx';
 import MetricsTable from './MetricsTable.jsx';
+import NetworkGraph from './NetworkGraph.jsx';
 import PageHeader from './PageHeader.jsx';
 import { processMultiResourceRollup } from './util/MetricUtils.js';
 import PropTypes from 'prop-types';
@@ -47,7 +48,7 @@ class Namespaces extends React.Component {
 
     return {
       ns: ns,
-      pollingInterval: 2000,
+      pollingInterval: 5000,
       metrics: {},
       pendingRequests: false,
       loaded: false,
@@ -129,6 +130,9 @@ class Namespaces extends React.Component {
           <div>
             <PageHeader header={`Namespace: ${this.state.ns}`} />
             { noMetrics ? <div>No resources detected.</div> : null}
+            <div className="network-graph-container">
+              <NetworkGraph namespace={this.state.ns} deployments={this.state.metrics.deployments} />
+            </div>
             {this.renderResourceSection("Deployment", this.state.metrics.deployments)}
             {this.renderResourceSection("Replication Controller", this.state.metrics.replicationcontrollers)}
             {this.renderResourceSection("Pod", this.state.metrics.pods)}
