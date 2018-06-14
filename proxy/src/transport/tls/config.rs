@@ -348,11 +348,13 @@ mod inotify {
     use super::*;
 
     use std::io;
+    use indexmap::IndexSet;
     use inotify::{
         Inotify,
         Event,
         EventMask,
         EventStream,
+        WatchDescriptor,
         WatchMask,
     };
     use futures::{Async, Poll, Stream};
@@ -361,6 +363,7 @@ mod inotify {
         inotify: Inotify,
         stream: EventStream,
         settings: CommonSettings,
+        watches_open: IndexSet<WatchDescriptor>,
     }
 
     pub(super) struct FallbackStream {
@@ -377,6 +380,7 @@ mod inotify {
                 inotify,
                 stream,
                 settings: settings.clone(),
+                watches_open: 0,
             };
 
             watch_stream.add_paths()?;
@@ -404,10 +408,19 @@ mod inotify {
                             .unwrap_or_else(|| path.as_ref())
                             .to_path_buf()
                     });
-                self.inotify.add_watch(&watch_path, mask)?;
-                trace!("watch {:?} (for {:?})", watch_path, path);
+                let wd = self.inotify.add_watch(&watch_path, mask)?;
+                self.watches_open.insert(wd);
+                trace!(
+                    "watch {:?} (for {:?}); watches_open={:?}",
+                    watch_path, path, self.watches_open(),
+                );
             }
             Ok(())
+        }
+
+        // TODO: wire up to prometheus process metrics.
+        pub fn watches_open(&self) -> usize {
+            self.watches_open.len()
         }
     }
 
@@ -417,10 +430,15 @@ mod inotify {
         fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
             loop {
                 match try_ready!(self.stream.poll()) {
-                    Some(Event { mask, name, .. }) => {
+                    Some(Event { mask, name, wd, .. }) => {
                         if mask.contains(EventMask::IGNORED) {
                             // This event fires if we removed a watch. Poll the
                             // stream again.
+                            self.watches_open.remove(wd);
+                            trace!(
+                                "watch removed; path={:?}, watches_open={:?}",
+                                name, self.watches_open()
+                            );
                             continue;
                         }
                         trace!("event={:?}; path={:?}", mask, name);
