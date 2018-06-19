@@ -140,6 +140,8 @@ impl BoundPort {
                     // do it here.
                     set_nodelay_or_warn(&socket);
                     let tls_status = if let Some((_identity, config_watch, sensor)) = &tls {
+                        let local_addr = socket.local_addr()
+                            .expect("couldn't get local addr!");
                         // TODO: use `identity` to differentiate between TLS
                         // that the proxy should terminate vs. TLS that should
                         // be passed through.
@@ -148,7 +150,8 @@ impl BoundPort {
                                 .map(move |tls| {
                                     (Connection::tls(tls), remote_addr)
                                 });
-                            return Either::A(sensor.handshake(f));
+                            let f = sensor.accept_handshake(f, &local_addr, &remote_addr);
+                            return Either::A(f);
                         } else {
                             // No valid TLS configuration.
                             TlsStatus::NoConfig

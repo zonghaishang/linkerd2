@@ -6,7 +6,8 @@ use super::labels::{
     RequestLabels,
     ResponseLabels,
     TransportLabels,
-    TransportCloseLabels
+    TransportCloseLabels,
+    HandshakeFailLabels,
 };
 
 /// Tracks Prometheus metrics
@@ -80,6 +81,13 @@ impl Record {
 
                     metrics.transport_close(TransportCloseLabels::new(ctx, close))
                         .close(close.duration);
+                })
+            },
+
+            Event::TlsHandshakeFail(ref ctx, ref error) => {
+                self.update(|metrics| {
+                    metrics.tls_handshake_fail(HandshakeFailLabels::new(ctx, error))
+                        .incr();
                 })
             },
         };

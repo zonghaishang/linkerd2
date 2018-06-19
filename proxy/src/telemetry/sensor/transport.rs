@@ -2,6 +2,7 @@ use bytes::Buf;
 use futures::{Async, Future, Poll};
 use std::{
     io,
+    net::SocketAddr,
     sync::Arc,
     time::Instant,
 };
@@ -54,7 +55,7 @@ pub struct Tls {
 pub struct Handshake<F: Future<Error = io::Error>> {
     inner: F,
     handle: super::Handle,
-    ctx: Arc<ctx::Proxy>,
+    ctx: Arc<ctx::transport::Ctx>,
 }
 
 // === impl Transport ===
@@ -265,14 +266,28 @@ impl Tls {
         }
     }
 
-    pub fn handshake<F>(&self, inner: F) -> Handshake<F>
+    pub fn accept_handshake<F>(
+        &self,
+        inner: F,
+        local: &SocketAddr,
+        remote: &SocketAddr,
+    ) -> Handshake<F>
     where
         F : Future<Error = io::Error>,
     {
+        let ctx = ctx::transport::Server::new(
+            &self.ctx,
+            &local,
+            &remote,
+            &None,
+            // This context will *only* be used if handshaking fails, so it's
+            // okay to pre-set this.
+            ctx::transport::TlsStatus::HandshakeError,
+        );
         Handshake {
             inner,
             handle: self.handle.clone(),
-            ctx: Arc::clone(&self.ctx),
+            ctx: Arc::new(ctx.into()),
         }
     }
 }
@@ -287,12 +302,17 @@ impl<F: Future<Error = io::Error>> Future for Handshake<F> {
         match self.inner.poll() {
             ok @ Ok(_) => ok,
             Err(e) => {
-                if let Some(ref tls_error) = e
+                if let Some(tls_error) = e
                     .get_ref()
                     .and_then(|e| e.downcast_ref::<rustls::TLSError>())
                 {
-                    warn!("error handshaking: {}", tls_error);
-                    // TODO: send error event
+                    let ctx = self.ctx.clone();
+                    self.handle.send(||
+                        event::Event::TlsHandshakeFail(
+                            ctx,
+                            tls_error.clone(),
+                        )
+                    );
                 }
                 Err(e)
             }

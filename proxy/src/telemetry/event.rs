@@ -2,6 +2,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use h2;
+use rustls;
 
 use ctx;
 
@@ -17,6 +18,8 @@ pub enum Event {
     StreamResponseOpen(Arc<ctx::http::Response>, StreamResponseOpen),
     StreamResponseFail(Arc<ctx::http::Response>, StreamResponseFail),
     StreamResponseEnd(Arc<ctx::http::Response>, StreamResponseEnd),
+
+    TlsHandshakeFail(Arc<ctx::transport::Ctx>, rustls::TLSError),
 }
 
 #[derive(Clone, Debug)]
@@ -89,7 +92,9 @@ impl Event {
 
     pub fn is_transport(&self) -> bool {
         match *self {
-            Event::TransportOpen(_) | Event::TransportClose(_, _) => true,
+            Event::TransportOpen(_) |
+            Event::TransportClose(_, _) |
+            Event::TlsHandshakeFail(_, _) => true,
             _ => false,
         }
     }
@@ -103,6 +108,7 @@ impl Event {
             Event::StreamResponseOpen(ref rsp, _) |
             Event::StreamResponseFail(ref rsp, _) |
             Event::StreamResponseEnd(ref rsp, _) => &rsp.request.server.proxy,
+            Event::TlsHandshakeFail(ref ctx, _) => ctx.proxy(),
         }
     }
 }

@@ -67,7 +67,8 @@ use self::labels::{
     RequestLabels,
     ResponseLabels,
     TransportLabels,
-    TransportCloseLabels
+    TransportCloseLabels,
+    HandshakeFailLabels,
 };
 pub use self::labels::DstLabels;
 pub use self::record::Record;
@@ -109,8 +110,13 @@ struct Root {
     transports: transport::OpenScopes,
     transport_closes: transport::CloseScopes,
 
+    tls_handshake_fails: TlsHandshakeScopes,
+
     start_time: Gauge,
 }
+
+
+type TlsHandshakeScopes = Scopes<HandshakeFailLabels, Counter>;
 
 /// Holds an `S`-typed scope for each `L`-typed label set.
 ///
@@ -212,6 +218,11 @@ impl Root {
             .stamped()
     }
 
+    fn tls_handshake_fail(&mut self, labels: HandshakeFailLabels) -> &mut Counter {
+        self.tls_handshake_fails.scopes.entry(labels)
+            .or_insert_with(|| Counter::default())
+    }
+
     fn retain_since(&mut self, epoch: Instant) {
         self.requests.retain_since(epoch);
         self.responses.retain_since(epoch);
@@ -226,9 +237,32 @@ impl fmt::Display for Root {
         self.responses.fmt(f)?;
         self.transports.fmt(f)?;
         self.transport_closes.fmt(f)?;
+        self.tls_handshake_fails.fmt(f)?;
 
         Self::process_start_time_seconds.fmt_help(f)?;
         Self::process_start_time_seconds.fmt_metric(f, self.start_time)?;
+
+        Ok(())
+    }
+}
+
+
+impl TlsHandshakeScopes {
+    metrics! {
+        tls_handshake_fail_total: Counter {
+            "Total number of times a TLS handshake failed."
+        }
+    }
+}
+
+impl fmt::Display for TlsHandshakeScopes {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.scopes.is_empty() {
+            return Ok(());
+        }
+
+        Self::tls_handshake_fail_total.fmt_help(f)?;
+        Self::tls_handshake_fail_total.fmt_scopes(f, &self, |s| &s)?;
 
         Ok(())
     }

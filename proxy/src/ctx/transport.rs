@@ -42,6 +42,8 @@ pub enum TlsStatus {
     /// TLS was enabled for this connection, but we have no valid
     /// config.
     NoConfig,
+    /// The TLS handshake failed.
+    HandshakeError,
     // TODO: When the proxy falls back to plaintext on handshake
     // failures, we'll want to add a variant for that here as well.
 }

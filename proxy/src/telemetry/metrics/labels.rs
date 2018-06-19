@@ -1,9 +1,11 @@
 use std::collections::HashMap;
+use std::error::Error;
 use std::fmt::{self, Write};
 use std::hash;
 use std::sync::Arc;
 
 use http;
+use rustls;
 
 use ctx;
 use telemetry::event;
@@ -84,6 +86,16 @@ pub struct DstLabels {
     formatted: Arc<str>,
     original: Arc<HashMap<String, String>>,
 }
+
+
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+pub struct HandshakeFailLabels {
+    /// Labels describing the TCP connection.
+    pub(super) transport: TransportLabels,
+
+    error: Arc<str>,
+}
+
 
 // ===== impl RequestLabels =====
 
@@ -381,6 +393,24 @@ impl fmt::Display for ctx::transport::TlsStatus {
             TlsStatus::Disabled => Ok(()),
             TlsStatus::NoConfig => f.pad(",tls=\"no_config\""),
             TlsStatus::Success  => f.pad(",tls=\"true\""),
+            TlsStatus::HandshakeError => f.pad(",tls=\"handshake_error\""),
         }
+    }
+}
+
+// ==== impl HandshakeFailLabels =====
+
+impl HandshakeFailLabels {
+    pub fn new(ctx: &ctx::transport::Ctx, error: &rustls::TLSError) -> Self {
+        HandshakeFailLabels {
+            transport: TransportLabels::new(ctx),
+            error: error.description().into()
+        }
+    }
+}
+
+impl fmt::Display for HandshakeFailLabels {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{},error=\"{}\"", self.transport, self.error)
     }
 }
