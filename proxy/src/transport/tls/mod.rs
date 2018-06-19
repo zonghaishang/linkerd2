@@ -1,5 +1,4 @@
 // These crates are only used within the `tls` module.
-extern crate rustls;
 extern crate tokio_rustls;
 extern crate untrusted;
 extern crate webpki;

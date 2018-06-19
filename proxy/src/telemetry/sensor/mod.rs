@@ -15,7 +15,7 @@ pub mod http;
 mod transport;
 
 pub use self::http::{Http, NewHttp};
-pub use self::transport::{Connect, Transport};
+pub use self::transport::{Connect, Transport, Tls, Handshake};
 
 /// Accepts events from sensors.
 #[derive(Clone, Debug)]
@@ -91,4 +91,9 @@ impl Sensors {
     {
         NewHttp::new(new_service, &self.0, client_ctx)
     }
+
+    pub fn tls(&self, ctx: &Arc<ctx::Proxy>) -> Tls {
+        Tls::new(&self.0, ctx)
+    }
+
 }

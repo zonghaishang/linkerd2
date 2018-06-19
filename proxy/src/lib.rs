@@ -31,6 +31,7 @@ extern crate quickcheck;
 extern crate rand;
 extern crate regex;
 extern crate ring;
+extern crate rustls;
 #[cfg(test)]
 extern crate tempdir;
 extern crate tokio;
@@ -409,6 +410,7 @@ where
     }));
 
     let listen_addr = bound_port.local_addr();
+    let tls_sensors = sensors.tls(&proxy_ctx);
     let server = Server::new(
         listen_addr,
         proxy_ctx.clone(),
@@ -423,7 +425,7 @@ where
 
     let accept = {
         let fut = bound_port.listen_and_fold(
-            tls_config,
+            tls_config.map(|(id, cfg)| (id, cfg, tls_sensors)),
             (),
             move |(), (connection, remote_addr)| {
                 let s = server.serve(connection, remote_addr);

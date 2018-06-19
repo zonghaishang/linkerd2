@@ -5,11 +5,11 @@ use bytes::Buf;
 use futures::Future;
 use tokio::prelude::*;
 use tokio::net::TcpStream;
+use rustls::ServerSession;
 
 use transport::{AddrInfo, Io};
 
 use super::{
-    rustls::ServerSession,
     tokio_rustls::{ServerConfigExt, TlsStream},
 
     ServerConfig,

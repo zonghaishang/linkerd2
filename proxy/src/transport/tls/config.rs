@@ -10,13 +10,13 @@ use super::{
     cert_resolver::CertResolver,
     Identity,
 
-    rustls,
     untrusted,
     webpki,
 };
 
 use futures::{future, stream, Future, Stream};
 use futures_watch::Watch;
+use rustls;
 
 /// Not-yet-validated settings that are used for both TLS clients and TLS
 /// servers.

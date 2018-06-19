@@ -1,10 +1,13 @@
 use bytes::Buf;
 use futures::{Async, Future, Poll};
-use std::io;
-use std::sync::Arc;
-use std::time::Instant;
+use std::{
+    io,
+    sync::Arc,
+    time::Instant,
+};
 use tokio_connect;
 use tokio::io::{AsyncRead, AsyncWrite};
+use rustls;
 
 use connection::Peek;
 use ctx;
@@ -38,6 +41,20 @@ pub struct Connecting<C: tokio_connect::Connect> {
     underlying: C::Future,
     handle: super::Handle,
     ctx: Arc<ctx::transport::Client>,
+}
+
+#[derive(Clone, Debug)]
+pub struct Tls {
+    handle: super::Handle,
+    ctx: Arc<ctx::Proxy>,
+}
+
+/// Adds telemetry to a TLS handshake.
+#[derive(Clone, Debug)]
+pub struct Handshake<F: Future<Error = io::Error>> {
+    inner: F,
+    handle: super::Handle,
+    ctx: Arc<ctx::Proxy>,
 }
 
 // === impl Transport ===
@@ -232,5 +249,54 @@ impl<C: tokio_connect::Connect> Future for Connecting<C> {
         let ctx = Arc::new(Arc::clone(&self.ctx).into());
         let trans = Transport::open(io, Instant::now(), &self.handle, ctx);
         Ok(trans.into())
+    }
+}
+
+// === impl Tls ===
+
+impl Tls {
+    pub(super) fn new(
+        handle: &super::Handle,
+        ctx: &Arc<ctx::Proxy>,
+    ) -> Self {
+        Tls {
+            handle: handle.clone(),
+            ctx: Arc::clone(ctx)
+        }
+    }
+
+    pub fn handshake<F>(&self, inner: F) -> Handshake<F>
+    where
+        F : Future<Error = io::Error>,
+    {
+        Handshake {
+            inner,
+            handle: self.handle.clone(),
+            ctx: Arc::clone(&self.ctx),
+        }
+    }
+}
+
+// === impl Handshake ===
+
+impl<F: Future<Error = io::Error>> Future for Handshake<F> {
+    type Item = F::Item;
+    type Error = io::Error;
+
+    fn poll(&mut self) -> Poll<Self::Item, Self::Error> {
+        match self.inner.poll() {
+            ok @ Ok(_) => ok,
+            Err(e) => {
+                if let Some(ref tls_error) = e
+                    .get_ref()
+                    .and_then(|e| e.downcast_ref::<rustls::TLSError>())
+                {
+                    warn!("error handshaking: {}", tls_error);
+                    // TODO: send error event
+                }
+                Err(e)
+            }
+        }
+
     }
 }

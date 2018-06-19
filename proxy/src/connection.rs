@@ -13,6 +13,7 @@ use tokio::{
 use ctx::transport::TlsStatus;
 use config::Addr;
 use transport::{GetOriginalDst, Io, tls};
+use telemetry::sensor;
 
 pub type PlaintextSocket = TcpStream;
 
@@ -109,7 +110,7 @@ impl BoundPort {
     // TLS when needed.
     pub fn listen_and_fold<T, F, Fut>(
         self,
-        tls: Option<(tls::Identity, tls::ServerConfigWatch)>,
+        tls: Option<(tls::Identity, tls::ServerConfigWatch, sensor::Tls)>,
         initial: T,
         f: F)
         -> impl Future<Item = (), Error = io::Error> + Send + 'static
@@ -138,7 +139,7 @@ impl BoundPort {
                     // libraries don't have the necessary API for that, so just
                     // do it here.
                     set_nodelay_or_warn(&socket);
-                    let tls_status = if let Some((_identity, config_watch)) = &tls {
+                    let tls_status = if let Some((_identity, config_watch, sensor)) = &tls {
                         // TODO: use `identity` to differentiate between TLS
                         // that the proxy should terminate vs. TLS that should
                         // be passed through.
@@ -147,7 +148,7 @@ impl BoundPort {
                                 .map(move |tls| {
                                     (Connection::tls(tls), remote_addr)
                                 });
-                            return Either::A(f);
+                            return Either::A(sensor.handshake(f));
                         } else {
                             // No valid TLS configuration.
                             TlsStatus::NoConfig
