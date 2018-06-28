@@ -124,6 +124,9 @@ func render(config installConfig, w io.Writer, options *installOptions) error {
 	}
 	injectOptions := newInjectOptions()
 	injectOptions.proxyConfigOptions = options.proxyConfigOptions
+	if config.EnableTLS {
+		injectOptions.tls = optionalTLS
+	}
 	return InjectYAML(buf, w, injectOptions)
 }
 

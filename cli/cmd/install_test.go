@@ -18,6 +18,9 @@ func TestRender(t *testing.T) {
 	}
 	defaultConfig.UUID = "deaab91a-f4ab-448a-b7d1-c832a2fa0a60"
 
+	tlsConfig := *defaultConfig
+	tlsConfig.EnableTLS = true
+
 	// A configuration that shows that all config setting strings are honored
 	// by `render()`.
 	metaConfig := installConfig{
@@ -46,6 +49,7 @@ func TestRender(t *testing.T) {
 		goldenFileName        string
 	}{
 		{*defaultConfig, defaultControlPlaneNamespace, "testdata/install_default.golden"},
+		{tlsConfig, defaultControlPlaneNamespace, "testdata/install_tls.golden"},
 		{metaConfig, metaConfig.Namespace, "testdata/install_output.golden"},
 	}
 

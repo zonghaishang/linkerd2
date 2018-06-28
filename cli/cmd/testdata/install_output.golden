@@ -241,7 +241,7 @@ spec:
         - name: CONDUIT_PROXY_BIND_TIMEOUT
           value: 10s
         - name: CONDUIT_PROXY_CONTROL_URL
-          value: tcp://localhost:8086
+          value: tcp://localhost.:8086
         - name: CONDUIT_PROXY_CONTROL_LISTENER
           value: tcp://0.0.0.0:4190
         - name: CONDUIT_PROXY_METRICS_LISTENER
@@ -254,6 +254,16 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: CONDUIT_PROXY_TLS_TRUST_ANCHORS
+          value: /var/conduit-io/trust-anchors/trust-anchors.pem
+        - name: CONDUIT_PROXY_TLS_CERT
+          value: /var/conduit-io/identity/certificate.crt
+        - name: CONDUIT_PROXY_TLS_PRIVATE_KEY
+          value: /var/conduit-io/identity/private-key.p8
+        - name: CONDUIT_PROXY_TLS_POD_IDENTITY
+          value: controller.deployment.$CONDUIT_PROXY_POD_NAMESPACE.conduit-managed.Namespace.svc.cluster.local
+        - name: CONDUIT_PROXY_CONTROLLER_NAMESPACE
+          value: Namespace
         image: gcr.io/runconduit/proxy:undefined
         imagePullPolicy: IfNotPresent
         name: conduit-proxy
@@ -266,6 +276,13 @@ spec:
         securityContext:
           runAsUser: 2102
         terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        - mountPath: /var/conduit-io/trust-anchors
+          name: conduit-trust-anchors
+          readOnly: true
+        - mountPath: /var/conduit-io/identity
+          name: conduit-secrets
+          readOnly: true
       initContainers:
       - args:
         - --incoming-proxy-port
@@ -287,6 +304,15 @@ spec:
           privileged: false
         terminationMessagePolicy: FallbackToLogsOnError
       serviceAccount: conduit-controller
+      volumes:
+      - configMap:
+          name: conduit-ca-bundle
+          optional: true
+        name: conduit-trust-anchors
+      - name: conduit-secrets
+        secret:
+          optional: true
+          secretName: controller-deployment-tls-conduit-io
 status: {}
 ---
 kind: Service
@@ -382,6 +408,18 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: CONDUIT_PROXY_TLS_TRUST_ANCHORS
+          value: /var/conduit-io/trust-anchors/trust-anchors.pem
+        - name: CONDUIT_PROXY_TLS_CERT
+          value: /var/conduit-io/identity/certificate.crt
+        - name: CONDUIT_PROXY_TLS_PRIVATE_KEY
+          value: /var/conduit-io/identity/private-key.p8
+        - name: CONDUIT_PROXY_TLS_POD_IDENTITY
+          value: web.deployment.$CONDUIT_PROXY_POD_NAMESPACE.conduit-managed.Namespace.svc.cluster.local
+        - name: CONDUIT_PROXY_CONTROLLER_NAMESPACE
+          value: Namespace
+        - name: CONDUIT_PROXY_TLS_CONTROLLER_IDENTITY
+          value: controller.deployment.Namespace.conduit-managed.Namespace.svc.cluster.local
         image: gcr.io/runconduit/proxy:undefined
         imagePullPolicy: IfNotPresent
         name: conduit-proxy
@@ -394,6 +432,13 @@ spec:
         securityContext:
           runAsUser: 2102
         terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        - mountPath: /var/conduit-io/trust-anchors
+          name: conduit-trust-anchors
+          readOnly: true
+        - mountPath: /var/conduit-io/identity
+          name: conduit-secrets
+          readOnly: true
       initContainers:
       - args:
         - --incoming-proxy-port
@@ -414,6 +459,15 @@ spec:
             - NET_ADMIN
           privileged: false
         terminationMessagePolicy: FallbackToLogsOnError
+      volumes:
+      - configMap:
+          name: conduit-ca-bundle
+          optional: true
+        name: conduit-trust-anchors
+      - name: conduit-secrets
+        secret:
+          optional: true
+          secretName: web-deployment-tls-conduit-io
 status: {}
 ---
 kind: Service
@@ -506,6 +560,18 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: CONDUIT_PROXY_TLS_TRUST_ANCHORS
+          value: /var/conduit-io/trust-anchors/trust-anchors.pem
+        - name: CONDUIT_PROXY_TLS_CERT
+          value: /var/conduit-io/identity/certificate.crt
+        - name: CONDUIT_PROXY_TLS_PRIVATE_KEY
+          value: /var/conduit-io/identity/private-key.p8
+        - name: CONDUIT_PROXY_TLS_POD_IDENTITY
+          value: prometheus.deployment.$CONDUIT_PROXY_POD_NAMESPACE.conduit-managed.Namespace.svc.cluster.local
+        - name: CONDUIT_PROXY_CONTROLLER_NAMESPACE
+          value: Namespace
+        - name: CONDUIT_PROXY_TLS_CONTROLLER_IDENTITY
+          value: controller.deployment.Namespace.conduit-managed.Namespace.svc.cluster.local
         image: gcr.io/runconduit/proxy:undefined
         imagePullPolicy: IfNotPresent
         name: conduit-proxy
@@ -518,6 +584,13 @@ spec:
         securityContext:
           runAsUser: 2102
         terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        - mountPath: /var/conduit-io/trust-anchors
+          name: conduit-trust-anchors
+          readOnly: true
+        - mountPath: /var/conduit-io/identity
+          name: conduit-secrets
+          readOnly: true
       initContainers:
       - args:
         - --incoming-proxy-port
@@ -543,6 +616,14 @@ spec:
       - configMap:
           name: prometheus-config
         name: prometheus-config
+      - configMap:
+          name: conduit-ca-bundle
+          optional: true
+        name: conduit-trust-anchors
+      - name: conduit-secrets
+        secret:
+          optional: true
+          secretName: prometheus-deployment-tls-conduit-io
 status: {}
 ---
 kind: ConfigMap
@@ -745,6 +826,18 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: CONDUIT_PROXY_TLS_TRUST_ANCHORS
+          value: /var/conduit-io/trust-anchors/trust-anchors.pem
+        - name: CONDUIT_PROXY_TLS_CERT
+          value: /var/conduit-io/identity/certificate.crt
+        - name: CONDUIT_PROXY_TLS_PRIVATE_KEY
+          value: /var/conduit-io/identity/private-key.p8
+        - name: CONDUIT_PROXY_TLS_POD_IDENTITY
+          value: grafana.deployment.$CONDUIT_PROXY_POD_NAMESPACE.conduit-managed.Namespace.svc.cluster.local
+        - name: CONDUIT_PROXY_CONTROLLER_NAMESPACE
+          value: Namespace
+        - name: CONDUIT_PROXY_TLS_CONTROLLER_IDENTITY
+          value: controller.deployment.Namespace.conduit-managed.Namespace.svc.cluster.local
         image: gcr.io/runconduit/proxy:undefined
         imagePullPolicy: IfNotPresent
         name: conduit-proxy
@@ -757,6 +850,13 @@ spec:
         securityContext:
           runAsUser: 2102
         terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        - mountPath: /var/conduit-io/trust-anchors
+          name: conduit-trust-anchors
+          readOnly: true
+        - mountPath: /var/conduit-io/identity
+          name: conduit-secrets
+          readOnly: true
       initContainers:
       - args:
         - --incoming-proxy-port
@@ -788,6 +888,14 @@ spec:
             path: provisioning/dashboards/dashboards.yaml
           name: grafana-config
         name: grafana-config
+      - configMap:
+          name: conduit-ca-bundle
+          optional: true
+        name: conduit-trust-anchors
+      - name: conduit-secrets
+        secret:
+          optional: true
+          secretName: grafana-deployment-tls-conduit-io
 status: {}
 ---
 kind: ConfigMap
@@ -955,6 +1063,18 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: CONDUIT_PROXY_TLS_TRUST_ANCHORS
+          value: /var/conduit-io/trust-anchors/trust-anchors.pem
+        - name: CONDUIT_PROXY_TLS_CERT
+          value: /var/conduit-io/identity/certificate.crt
+        - name: CONDUIT_PROXY_TLS_PRIVATE_KEY
+          value: /var/conduit-io/identity/private-key.p8
+        - name: CONDUIT_PROXY_TLS_POD_IDENTITY
+          value: ca-bundle-distributor.deployment.$CONDUIT_PROXY_POD_NAMESPACE.conduit-managed.Namespace.svc.cluster.local
+        - name: CONDUIT_PROXY_CONTROLLER_NAMESPACE
+          value: Namespace
+        - name: CONDUIT_PROXY_TLS_CONTROLLER_IDENTITY
+          value: controller.deployment.Namespace.conduit-managed.Namespace.svc.cluster.local
         image: gcr.io/runconduit/proxy:undefined
         imagePullPolicy: IfNotPresent
         name: conduit-proxy
@@ -967,6 +1087,13 @@ spec:
         securityContext:
           runAsUser: 2102
         terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        - mountPath: /var/conduit-io/trust-anchors
+          name: conduit-trust-anchors
+          readOnly: true
+        - mountPath: /var/conduit-io/identity
+          name: conduit-secrets
+          readOnly: true
       initContainers:
       - args:
         - --incoming-proxy-port
@@ -988,5 +1115,14 @@ spec:
           privileged: false
         terminationMessagePolicy: FallbackToLogsOnError
       serviceAccount: conduit-ca
+      volumes:
+      - configMap:
+          name: conduit-ca-bundle
+          optional: true
+        name: conduit-trust-anchors
+      - name: conduit-secrets
+        secret:
+          optional: true
+          secretName: ca-bundle-distributor-deployment-tls-conduit-io
 status: {}
 ---

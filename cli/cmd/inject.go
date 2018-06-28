@@ -24,7 +24,7 @@ import (
 
 const (
 	// LocalhostDNSNameOverride allows override of the controlPlaneDNS
-	LocalhostDNSNameOverride = "localhost"
+	LocalhostDNSNameOverride = "localhost."
 	// ControlPlanePodName default control plane pod name.
 	ControlPlanePodName = "controller"
 	// The name of the variable used to pass the pod's namespace.
@@ -258,7 +258,16 @@ func injectPodSpec(t *v1.PodSpec, identity k8s.TLSIdentity, controlPlaneDNSNameO
 				Value: identity.ToDNSName(),
 			},
 			{Name: "CONDUIT_PROXY_CONTROLLER_NAMESPACE", Value: controlPlaneNamespace},
-			{Name: "CONDUIT_PROXY_TLS_CONTROLLER_IDENTITY", Value: identity.ToControllerIdentity().ToDNSName()},
+		}
+
+		// If connecting via loopback then don't do TLS since the proxy doesn't
+		// proxy loopback traffic and loopback traffic doesn't need TLS anyway.
+		if controlPlaneDNSNameOverride != LocalhostDNSNameOverride {
+			controller_identity := v1.EnvVar{
+				Name:  "CONDUIT_PROXY_TLS_CONTROLLER_IDENTITY",
+				Value: identity.ToControllerIdentity().ToDNSName(),
+			}
+			tlsEnvVars = append(tlsEnvVars, controller_identity)
 		}
 
 		sidecar.Env = append(sidecar.Env, tlsEnvVars...)
