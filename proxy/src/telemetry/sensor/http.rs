@@ -36,14 +36,12 @@ pub struct TimestampRequestOpen<S> {
 pub struct NewHttp<N, A, B> {
     new_service: N,
     handle: super::Handle,
-    client_ctx: Arc<ctx::transport::Client>,
     _p: PhantomData<(A, B)>,
 }
 
 pub struct Init<F, A, B> {
     future: F,
     handle: super::Handle,
-    client_ctx: Arc<ctx::transport::Client>,
     _p: PhantomData<(A, B)>,
 }
 
@@ -52,7 +50,6 @@ pub struct Init<F, A, B> {
 pub struct Http<S, A, B> {
     service: S,
     handle: super::Handle,
-    client_ctx: Arc<ctx::transport::Client>,
     _p: PhantomData<(A, B)>,
 }
 
@@ -121,6 +118,7 @@ where
         Error = client::Error,
     >
         + 'static,
+    N::Service: ctx::transport::MightHaveClientCtx,
 {
     pub(super) fn new(
         new_service: N,
@@ -146,6 +144,7 @@ where
         Error = client::Error,
     >
         + 'static,
+    N::Service: ctx::transport::MightHaveClientCtx,
 {
     type Request = http::Request<A>;
     type Response = http::Response<ResponseBody<B>>;
@@ -185,7 +184,6 @@ where
         Ok(Async::Ready(Http {
             service,
             handle: self.handle.clone(),
-            client_ctx: self.client_ctx.clone(),
             _p: PhantomData,
         }))
     }
@@ -202,7 +200,7 @@ where
         Response = http::Response<B>,
         Error = client::Error,
     >
-        + 'static,
+        + 'static + ctx::transport::MightHaveClientCtx,
 {
     type Request = http::Request<A>;
     type Response = http::Response<ResponseBody<B>>;
@@ -216,11 +214,12 @@ where
     fn call(&mut self, mut req: Self::Request) -> Self::Future {
         let metadata = (
             req.extensions_mut().remove::<Arc<ctx::transport::Server>>(),
-            req.extensions_mut().remove::<RequestOpen>()
+            req.extensions_mut().remove::<RequestOpen>(),
+            self.service.client_ctx(),
         );
         let (inner, body_inner) = match metadata {
-            (Some(ctx), Some(RequestOpen(request_open_at))) => {
-                let ctx = ctx::http::Request::new(&req, &ctx, &self.client_ctx);
+            (Some(ctx), Some(RequestOpen(request_open_at)), Some(client_ctx)) => {
+                let ctx = ctx::http::Request::new(&req, &ctx, client_ctx);
 
                 self.handle
                     .send(|| Event::StreamRequestOpen(Arc::clone(&ctx)));
@@ -253,10 +252,11 @@ where
                     };
                 (respond_inner, body_inner)
             },
-            (ctx, request_open_at) => {
+            (ctx, request_open_at, client_ctx) => {
                 warn!(
-                    "missing metadata for a request to {:?}; ctx={:?}; request_open_at={:?};",
-                    req.uri(), ctx, request_open_at
+                    "missing metadata for a request to {:?}; ctx={:?};\
+                     client_ctx={:?}; request_open_at={:?};",
+                    req.uri(), ctx, client_ctx, request_open_at
                 );
                 (None, None)
             },

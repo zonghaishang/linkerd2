@@ -12,12 +12,15 @@ use telemetry::event;
 
 /// Wraps a transport with telemetry.
 #[derive(Debug)]
-pub struct Transport<T>(T, Option<Inner>);
+pub struct Transport<T> {
+    io: T,
+    inner: Option<Inner>,
+    ctx: Arc<ctx::transport::Ctx>
+}
 
 #[derive(Debug)]
 struct Inner {
     handle: super::Handle,
-    ctx: Arc<ctx::transport::Ctx>,
     opened_at: Instant,
 
     rx_bytes: u64,
@@ -54,16 +57,16 @@ impl<T: AsyncRead + AsyncWrite> Transport<T> {
 
         handle.send(|| event::Event::TransportOpen(Arc::clone(&ctx)));
 
-        Transport(
+        Transport {
             io,
-            Some(Inner {
-                ctx,
+            ctx,
+            inner: Some(Inner {
                 handle,
                 opened_at,
                 rx_bytes: 0,
                 tx_bytes: 0,
             }),
-        )
+        }
     }
 
     /// Wraps an operation on the underlying transport with error telemetry.
@@ -74,18 +77,18 @@ impl<T: AsyncRead + AsyncWrite> Transport<T> {
     where
         F: FnOnce(&mut T) -> io::Result<U>,
     {
-        match op(&mut self.0) {
+        match op(&mut self.io) {
             Ok(v) => Ok(v),
             Err(e) => {
                 if e.kind() != io::ErrorKind::WouldBlock {
                     if let Some(Inner {
                         mut handle,
-                        ctx,
                         opened_at,
                         rx_bytes,
                         tx_bytes,
-                    }) = self.1.take()
+                    }) = self.inner.take()
                     {
+                        let ctx = self.ctx.clone();
                         handle.send(move || {
                             let duration = opened_at.elapsed();
                             let ev = event::TransportClose {
@@ -109,12 +112,12 @@ impl<T> Drop for Transport<T> {
     fn drop(&mut self) {
         if let Some(Inner {
             mut handle,
-            ctx,
             opened_at,
             rx_bytes,
             tx_bytes,
-        }) = self.1.take()
+        }) = self.inner.take()
         {
+            let ctx = self.ctx.clone();
             handle.send(move || {
                 let duration = opened_at.elapsed();
                 let ev = event::TransportClose {
@@ -133,7 +136,7 @@ impl<T: AsyncRead + AsyncWrite> io::Read for Transport<T> {
     fn read(&mut self, mut buf: &mut [u8]) -> io::Result<usize> {
         let bytes = self.sense_err(move |io| io.read(buf))?;
 
-        if let Some(inner) = self.1.as_mut() {
+        if let Some(inner) = self.inner.as_mut() {
             inner.rx_bytes += bytes as u64;
         }
 
@@ -149,7 +152,7 @@ impl<T: AsyncRead + AsyncWrite> io::Write for Transport<T> {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         let bytes = self.sense_err(move |io| io.write(buf))?;
 
-        if let Some(inner) = self.1.as_mut() {
+        if let Some(inner) = self.inner.as_mut() {
             inner.tx_bytes += bytes as u64;
         }
 
@@ -159,7 +162,7 @@ impl<T: AsyncRead + AsyncWrite> io::Write for Transport<T> {
 
 impl<T: AsyncRead + AsyncWrite> AsyncRead for Transport<T> {
     unsafe fn prepare_uninitialized_buffer(&self, buf: &mut [u8]) -> bool {
-        self.0.prepare_uninitialized_buffer(buf)
+        self.io.prepare_uninitialized_buffer(buf)
     }
 }
 
@@ -171,7 +174,7 @@ impl<T: AsyncRead + AsyncWrite> AsyncWrite for Transport<T> {
     fn write_buf<B: Buf>(&mut self, buf: &mut B) -> Poll<usize, io::Error> {
         let bytes = try_ready!(self.sense_err(|io| io.write_buf(buf)));
 
-        if let Some(inner) = self.1.as_mut() {
+        if let Some(inner) = self.inner.as_mut() {
             inner.tx_bytes += bytes as u64;
         }
 
@@ -185,7 +188,16 @@ impl<T: AsyncRead + AsyncWrite + Peek> Peek for Transport<T> {
     }
 
     fn peeked(&self) -> &[u8] {
-        self.0.peeked()
+        self.io.peeked()
+    }
+}
+
+impl<T> ctx::transport::MightHaveClientCtx for Transport<T> {
+    fn transport_ctx(&self) -> Option<&Arc<ctx::transport::Client>> {
+        match self.ctx {
+            ctx::transport::Ctx::Client(ref ctx) => Some(ctx),
+            _ => None,
+        }
     }
 }
 

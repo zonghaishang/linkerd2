@@ -38,6 +38,10 @@ pub struct Client {
 /// and, if it was not, the reason why.
 pub type TlsStatus = Conditional<(), tls::ReasonForNoTls>;
 
+pub trait MightHaveClientCtx {
+    fn client_ctx(&self) -> Option<&Arc<Client>>;
+}
+
 impl TlsStatus {
     pub fn from<C>(c: &Conditional<C, tls::ReasonForNoTls>) -> Self
     where C: Clone + std::fmt::Debug

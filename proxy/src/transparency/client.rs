@@ -9,10 +9,13 @@ use tower_service::{Service, NewService};
 use tower_h2;
 
 use bind;
+use ctx;
 use task::BoxExecutor;
 use telemetry::sensor::http::RequestBody;
 use super::glue::{BodyPayload, HttpBody, HyperConnect};
 use super::upgrade::{HttpConnect, Http11Upgrade};
+
+use std::sync::Arc;
 
 type HyperClient<C, B> =
     hyper::Client<HyperConnect<C>, BodyPayload<RequestBody<B>>>;
@@ -69,6 +72,7 @@ where
     E: Executor + Clone,
     E: future::Executor<Box<Future<Item = (), Error = ()> + Send + 'static>> + Send + Sync + 'static,
 {
+    client_ctx: Option<Arc<ctx::transport::Client>>,
     inner: ClientServiceInner<C, E, B>,
 }
 
@@ -91,7 +95,7 @@ impl<C, E, B> Client<C, E, B>
 where
     C: Connect + Clone + Send + Sync + 'static,
     C::Future: Send + 'static,
-    C::Connected: Send,
+    C::Connected: ctx::transport::MightHaveClientCtx + Send,
     E: Executor + Clone,
     E: future::Executor<Box<Future<Item = (), Error = ()> + Send + 'static>> + Send + Sync + 'static,
     B: tower_h2::Body + Send + 'static,
@@ -130,7 +134,7 @@ impl<C, E, B> NewService for Client<C, E, B>
 where
     C: Connect + Clone + Send + Sync + 'static,
     C::Future: Send + 'static,
-    C::Connected: Send,
+    C::Connected: ctx::transport::MightHaveClientCtx + Send,
     E: Executor + Clone,
     E: future::Executor<Box<Future<Item = (), Error = ()> + Send + 'static>> + Send + Sync + 'static,
     B: tower_h2::Body + Send + 'static,
@@ -161,7 +165,7 @@ where
 impl<C, E, B> Future for ClientNewServiceFuture<C, E, B>
 where
     C: Connect + Send + 'static,
-    C::Connected: Send,
+    C::Connected: ctx::transport::MightHaveClientCtx + Send,
     C::Future: Send + 'static,
     B: tower_h2::Body + Send + 'static,
     E: Executor + Clone,
