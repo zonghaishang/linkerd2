@@ -68,3 +68,20 @@ See the ["Adding Your Service"] section of the documentation for more informatio
 ["Adding Your Service"]: /adding-your-service#server-speaks-first-protocols
 
 ____
+
+## Request Routing
+
+Linkerd 2's proxy routes HTTP/1 and HTTP/2 requests based on their target
+[*authority*]. For HTTP/2 requests, this is defined as the value of the
+[`:authority` pseudo-header field]. For HTTP/1 requests, however, determining
+the request's canonical authority is somewhat more complex:
+- If an [absolute-form] URI is received, it must replace
+   the host header (in accordance with [Section 5.4 of RFC7230])
+- If the request URI is not in absolute form, it is rewritten to contain
+  the authority given in the `Host:` header, or, failing that, from the
+  request's original destination according to `SO_ORIGINAL_DST`.
+
+[*authority*]: https://tools.ietf.org/html/rfc3986#section-3.2
+[`:authority` pseudo-header field]: https://tools.ietf.org/html/rfc7540#section-8.1.2.3
+[absolute-form]: https://tools.ietf.org/html/rfc7230#section-5.3.2
+[Section 5.4 of RFC7320]: https://tools.ietf.org/html/rfc7230#section-5.4
