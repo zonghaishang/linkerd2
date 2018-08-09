@@ -348,6 +348,19 @@ func RenderTapEvent(event *pb.TapEvent) string {
 	dst := formatPeer(event.GetDestination(), dstLabels)
 	src := formatPeer(event.GetSource(), srcLabels)
 
+	dstOwner := ""
+	if deploy := dstLabels["deployment"]; deploy != "" {
+		dstOwner = fmt.Sprintf("dst_deploy=%s", deploy)
+	} else if rs := dstLabels["replicaset"]; rs != "" {
+		dstOwner = fmt.Sprintf("dst_replicaset=%s", rs)
+	} else if rc := dstLabels["replicationcontroller"]; rc != "" {
+		dstOwner = fmt.Sprintf("dst_replicationcontroller=%s", rc)
+	} else if ss := dstLabels["statefulset"]; ss != "" {
+		dstOwner = fmt.Sprintf("dst_statefulset=%s", ss)
+	} else if job := dstLabels["job"]; job != "" {
+		dstOwner = fmt.Sprintf("dst_job=%s", job)
+	}
+
 	proxy := "???"
 	tls := ""
 	switch event.GetProxyDirection() {
@@ -370,53 +383,58 @@ func RenderTapEvent(event *pb.TapEvent) string {
 
 	switch ev := event.GetHttp().GetEvent().(type) {
 	case *pb.TapEvent_Http_RequestInit_:
-		return fmt.Sprintf("req id=%d:%d %s :method=%s :authority=%s :path=%s",
+		return fmt.Sprintf("req id=%d:%d %s :method=%s :authority=%s :path=%s %s",
 			ev.RequestInit.GetId().GetBase(),
 			ev.RequestInit.GetId().GetStream(),
 			flow,
 			ev.RequestInit.GetMethod().GetRegistered().String(),
 			ev.RequestInit.GetAuthority(),
 			ev.RequestInit.GetPath(),
+			dstOwner,
 		)
 
 	case *pb.TapEvent_Http_ResponseInit_:
-		return fmt.Sprintf("rsp id=%d:%d %s :status=%d latency=%dµs",
+		return fmt.Sprintf("rsp id=%d:%d %s :status=%d latency=%dµs %s",
 			ev.ResponseInit.GetId().GetBase(),
 			ev.ResponseInit.GetId().GetStream(),
 			flow,
 			ev.ResponseInit.GetHttpStatus(),
 			ev.ResponseInit.GetSinceRequestInit().GetNanos()/1000,
+			dstOwner,
 		)
 
 	case *pb.TapEvent_Http_ResponseEnd_:
 		switch eos := ev.ResponseEnd.GetEos().GetEnd().(type) {
 		case *pb.Eos_GrpcStatusCode:
-			return fmt.Sprintf("end id=%d:%d %s grpc-status=%s duration=%dµs response-length=%dB",
+			return fmt.Sprintf("end id=%d:%d %s grpc-status=%s duration=%dµs response-length=%dB %s",
 				ev.ResponseEnd.GetId().GetBase(),
 				ev.ResponseEnd.GetId().GetStream(),
 				flow,
 				codes.Code(eos.GrpcStatusCode),
 				ev.ResponseEnd.GetSinceResponseInit().GetNanos()/1000,
 				ev.ResponseEnd.GetResponseBytes(),
+				dstOwner,
 			)
 
 		case *pb.Eos_ResetErrorCode:
-			return fmt.Sprintf("end id=%d:%d %s reset-error=%+v duration=%dµs response-length=%dB",
+			return fmt.Sprintf("end id=%d:%d %s reset-error=%+v duration=%dµs response-length=%dB %s",
 				ev.ResponseEnd.GetId().GetBase(),
 				ev.ResponseEnd.GetId().GetStream(),
 				flow,
 				eos.ResetErrorCode,
 				ev.ResponseEnd.GetSinceResponseInit().GetNanos()/1000,
 				ev.ResponseEnd.GetResponseBytes(),
+				dstOwner,
 			)
 
 		default:
-			return fmt.Sprintf("end id=%d:%d %s duration=%dµs response-length=%dB",
+			return fmt.Sprintf("end id=%d:%d %s duration=%dµs response-length=%dB %s",
 				ev.ResponseEnd.GetId().GetBase(),
 				ev.ResponseEnd.GetId().GetStream(),
 				flow,
 				ev.ResponseEnd.GetSinceResponseInit().GetNanos()/1000,
 				ev.ResponseEnd.GetResponseBytes(),
+				dstOwner,
 			)
 		}
 
