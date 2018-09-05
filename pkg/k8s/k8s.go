@@ -19,6 +19,7 @@ const (
 	ReplicaSet            = "replicaset"
 	Service               = "service"
 	StatefulSet           = "statefulset"
+	ServiceProfile        = "serviceprofile"
 )
 
 // resources to query in StatSummary when Resource.Type is "all"

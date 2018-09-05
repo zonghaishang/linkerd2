@@ -24,12 +24,13 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
-	clientSet, err := k8s.NewClientSet(*kubeConfigPath)
+	clientSet, spClientSet, err := k8s.NewClientSet(*kubeConfigPath)
 	if err != nil {
 		log.Fatalf("failed to create Kubernetes client: %s", err)
 	}
 	k8sAPI := k8s.NewAPI(
 		clientSet,
+		spClientSet,
 		k8s.Deploy,
 		k8s.NS,
 		k8s.Pod,

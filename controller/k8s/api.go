@@ -19,6 +19,11 @@ import (
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
+
+	spv1alpha1 "github.com/linkerd/linkerd2/pkg/apis/serviceprofile/v1alpha1"
+	spclientset "github.com/linkerd/linkerd2/pkg/client/clientset/versioned"
+	sp "github.com/linkerd/linkerd2/pkg/client/informers/externalversions"
+	spinformers "github.com/linkerd/linkerd2/pkg/client/informers/externalversions/serviceprofile/v1alpha1"
 )
 
 type ApiResource int
@@ -32,6 +37,7 @@ const (
 	RC
 	RS
 	Svc
+	SP
 )
 
 // API provides shared informers for all Kubernetes objects
@@ -46,14 +52,17 @@ type API struct {
 	rc       coreinformers.ReplicationControllerInformer
 	rs       appinformers.ReplicaSetInformer
 	svc      coreinformers.ServiceInformer
+	sp       spinformers.ServiceProfileInformer
 
 	syncChecks      []cache.InformerSynced
 	sharedInformers informers.SharedInformerFactory
 }
 
 // NewAPI takes a Kubernetes client and returns an initialized API
-func NewAPI(k8sClient kubernetes.Interface, resources ...ApiResource) *API {
+func NewAPI(k8sClient kubernetes.Interface, spClient spclientset.Interface, resources ...ApiResource) *API {
+
 	sharedInformers := informers.NewSharedInformerFactory(k8sClient, 10*time.Minute)
+	spSharedInformers := sp.NewSharedInformerFactory(spClient, 10*time.Minute)
 
 	api := &API{
 		Client:          k8sClient,
@@ -87,6 +96,9 @@ func NewAPI(k8sClient kubernetes.Interface, resources ...ApiResource) *API {
 		case Svc:
 			api.svc = sharedInformers.Core().V1().Services()
 			api.syncChecks = append(api.syncChecks, api.svc.Informer().HasSynced)
+		case SP:
+			api.sp = spSharedInformers.Linkerd().V1alpha1().ServiceProfiles()
+			api.syncChecks = append(api.syncChecks, api.sp.Informer().HasSynced)
 		}
 	}
 
@@ -169,6 +181,13 @@ func (api *API) CM() coreinformers.ConfigMapInformer {
 	return api.cm
 }
 
+func (api *API) SP() spinformers.ServiceProfileInformer {
+	if api.endpoint == nil {
+		panic("SP informer not configured")
+	}
+	return api.sp
+}
+
 // GetObjects returns a list of Kubernetes objects, given a namespace, type, and name.
 // If namespace is an empty string, match objects in all namespaces.
 // If name is an empty string, match all objects of the given type.
@@ -184,6 +203,8 @@ func (api *API) GetObjects(namespace, restype, name string) ([]runtime.Object, e
 		return api.getRCs(namespace, name)
 	case k8s.Service:
 		return api.getServices(namespace, name)
+	case k8s.ServiceProfile:
+		return api.getServiceProfiles(namespace, name)
 	default:
 		// TODO: ReplicaSet
 		return nil, status.Errorf(codes.Unimplemented, "unimplemented resource type: %s", restype)
@@ -399,6 +420,32 @@ func (api *API) getServices(namespace, name string) ([]runtime.Object, error) {
 	objects := []runtime.Object{}
 	for _, svc := range services {
 		objects = append(objects, svc)
+	}
+
+	return objects, nil
+}
+
+func (api *API) getServiceProfiles(namespace, name string) ([]runtime.Object, error) {
+	var err error
+	var sps []*spv1alpha1.ServiceProfile
+
+	if namespace == "" {
+		sps, err = api.SP().Lister().List(labels.Everything())
+	} else if name == "" {
+		sps, err = api.SP().Lister().ServiceProfiles(namespace).List(labels.Everything())
+	} else {
+		var sp *spv1alpha1.ServiceProfile
+		sp, err = api.SP().Lister().ServiceProfiles(namespace).Get(name)
+		sps = []*spv1alpha1.ServiceProfile{sp}
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	objects := []runtime.Object{}
+	for _, sp := range sps {
+		objects = append(objects, sp)
 	}
 
 	return objects, nil
