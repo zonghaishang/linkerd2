@@ -134,10 +134,8 @@ func toResponseMatch(rspMatch *sp.ResponseMatch) (*pb.ResponseMatch, error) {
 		return &pb.ResponseMatch{
 			Match: &pb.ResponseMatch_Status{
 				Status: &pb.HttpStatusRange{
-					// TODO: Fix this to also read the min once the pb field isn't a oneof
-					Match: &pb.HttpStatusRange_Max{
-						Max: rspMatch.Status.Max,
-					},
+					Max: rspMatch.Status.Max,
+					Min: rspMatch.Status.Min,
 				},
 			},
 		}, nil

@@ -106,8 +106,6 @@ func (p *profileWatcher) subscribeToProfile(name profileId, listener profileUpda
 	p.profilesLock.Lock()
 	defer p.profilesLock.Unlock()
 
-	log.Infof("Subscribing to profile %s", name)
-
 	profileEntry, ok := p.profiles[name]
 	if !ok {
 		profile, err := p.getProfile(name)
@@ -189,7 +187,6 @@ func (p *profileWatcher) addService(obj interface{}) {
 			name:      service.Annotations[profileAnnotation],
 			namespace: service.Namespace,
 		}
-		log.Infof("Updating service from %s to %s", entry.profile, newId)
 		if newId != entry.profile {
 			for _, listener := range entry.listeners {
 				p.unsubscribeToProfile(entry.profile, listener)

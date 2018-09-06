@@ -91,11 +91,6 @@ func (s *server) GetProfile(dest *pb.GetDestination, stream pb.Destination_GetPr
 	return fmt.Errorf("cannot find resolver for host [%s] port [%d]", host, port)
 }
 
-// TODO: unimplemented
-func (s *server) GetProfile(dest *pb.GetDestination, stream pb.Destination_GetProfileServer) error {
-	return nil
-}
-
 func (s *server) streamResolutionUsingCorrectResolverFor(host string, port int, stream pb.Destination_GetServer) error {
 	listener := newEndpointListener(stream, s.k8sAPI.GetOwnerKindAndName, s.enableTLS)
 
