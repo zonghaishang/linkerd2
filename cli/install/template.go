@@ -237,8 +237,7 @@ metadata:
     {{.CreatedByAnnotation}}: {{.CliVersion}}
 spec:
   group: linkerd.io
-  versions:
-    - name: v1alpha1
+  version: v1alpha1
   scope: Namespaced
   names:
     plural: serviceprofiles

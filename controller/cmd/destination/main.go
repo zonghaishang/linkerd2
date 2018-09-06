@@ -35,6 +35,7 @@ func main() {
 		k8s.Pod,
 		k8s.RS,
 		k8s.Svc,
+		k8s.SP,
 	)
 
 	done := make(chan struct{})

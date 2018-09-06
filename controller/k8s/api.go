@@ -54,8 +54,9 @@ type API struct {
 	svc      coreinformers.ServiceInformer
 	sp       spinformers.ServiceProfileInformer
 
-	syncChecks      []cache.InformerSynced
-	sharedInformers informers.SharedInformerFactory
+	syncChecks        []cache.InformerSynced
+	sharedInformers   informers.SharedInformerFactory
+	spSharedInformers sp.SharedInformerFactory
 }
 
 // NewAPI takes a Kubernetes client and returns an initialized API
@@ -65,9 +66,10 @@ func NewAPI(k8sClient kubernetes.Interface, spClient spclientset.Interface, reso
 	spSharedInformers := sp.NewSharedInformerFactory(spClient, 10*time.Minute)
 
 	api := &API{
-		Client:          k8sClient,
-		syncChecks:      make([]cache.InformerSynced, 0),
-		sharedInformers: sharedInformers,
+		Client:            k8sClient,
+		syncChecks:        make([]cache.InformerSynced, 0),
+		sharedInformers:   sharedInformers,
+		spSharedInformers: spSharedInformers,
 	}
 
 	for _, resource := range resources {
@@ -110,6 +112,7 @@ func NewAPI(k8sClient kubernetes.Interface, spClient spclientset.Interface, reso
 // For testing, call this synchronously.
 func (api *API) Sync(readyCh chan<- struct{}) {
 	api.sharedInformers.Start(nil)
+	api.spSharedInformers.Start(nil)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
@@ -182,7 +185,7 @@ func (api *API) CM() coreinformers.ConfigMapInformer {
 }
 
 func (api *API) SP() spinformers.ServiceProfileInformer {
-	if api.endpoint == nil {
+	if api.sp == nil {
 		panic("SP informer not configured")
 	}
 	return api.sp

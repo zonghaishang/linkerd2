@@ -61,27 +61,9 @@ func NewServer(addr, k8sDNSZone string, enableTLS bool, k8sAPI *k8s.API, done ch
 
 func (s *server) Get(dest *pb.GetDestination, stream pb.Destination_GetServer) error {
 	log.Debugf("Get %v", dest)
-	if dest.Scheme != "k8s" {
-		err := fmt.Errorf("Unsupported scheme %v", dest.Scheme)
-		log.Error(err)
+	host, port, err := getHostAndPort(dest)
+	if err != nil {
 		return err
-	}
-	hostPort := strings.Split(dest.Path, ":")
-	if len(hostPort) > 2 {
-		err := fmt.Errorf("Invalid destination %s", dest.Path)
-		log.Error(err)
-		return err
-	}
-	host := hostPort[0]
-	port := 80
-	if len(hostPort) == 2 {
-		var err error
-		port, err = strconv.Atoi(hostPort[1])
-		if err != nil {
-			err = fmt.Errorf("Invalid port %s", hostPort[1])
-			log.Error(err)
-			return err
-		}
 	}
 
 	return s.streamResolutionUsingCorrectResolverFor(host, port, stream)
@@ -89,7 +71,24 @@ func (s *server) Get(dest *pb.GetDestination, stream pb.Destination_GetServer) e
 
 // TODO: unimplemented
 func (s *server) GetProfile(dest *pb.GetDestination, stream pb.Destination_GetProfileServer) error {
-	return nil
+	log.Debugf("GetProfile %v", dest)
+	host, port, err := getHostAndPort(dest)
+	if err != nil {
+		return err
+	}
+
+	listener := newProfileListener(stream)
+
+	for _, resolver := range s.resolvers {
+		resolverCanResolve, err := resolver.canResolve(host, port)
+		if err != nil {
+			return fmt.Errorf("resolver [%+v] found error resolving host [%s] port[%d]: %v", resolver, host, port, err)
+		}
+		if resolverCanResolve {
+			return resolver.streamProfiles(host, listener)
+		}
+	}
+	return fmt.Errorf("cannot find resolver for host [%s] port [%d]", host, port)
 }
 
 func (s *server) streamResolutionUsingCorrectResolverFor(host string, port int, stream pb.Destination_GetServer) error {
@@ -105,6 +104,32 @@ func (s *server) streamResolutionUsingCorrectResolverFor(host string, port int, 
 		}
 	}
 	return fmt.Errorf("cannot find resolver for host [%s] port [%d]", host, port)
+}
+
+func getHostAndPort(dest *pb.GetDestination) (string, int, error) {
+	if dest.Scheme != "k8s" {
+		err := fmt.Errorf("Unsupported scheme %v", dest.Scheme)
+		log.Error(err)
+		return "", 0, err
+	}
+	hostPort := strings.Split(dest.Path, ":")
+	if len(hostPort) > 2 {
+		err := fmt.Errorf("Invalid destination %s", dest.Path)
+		log.Error(err)
+		return "", 0, err
+	}
+	host := hostPort[0]
+	port := 80
+	if len(hostPort) == 2 {
+		var err error
+		port, err = strconv.Atoi(hostPort[1])
+		if err != nil {
+			err = fmt.Errorf("Invalid port %s", hostPort[1])
+			log.Error(err)
+			return "", 0, err
+		}
+	}
+	return host, port, nil
 }
 
 func buildResolversList(k8sDNSZone string, k8sAPI *k8s.API) ([]streamingDestinationResolver, error) {

@@ -42,5 +42,6 @@ func NewFakeAPI(configs ...string) (*API, error) {
 		RC,
 		RS,
 		Svc,
+		SP,
 	), nil
 }

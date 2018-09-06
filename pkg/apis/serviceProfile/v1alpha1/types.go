@@ -49,11 +49,10 @@ type ResponseClass struct {
 }
 
 type ResponseMatch struct {
-	All        []*ResponseMatch `json:"all"`
-	Not        *ResponseMatch   `json:"not"`
-	Any        []*ResponseMatch `json:"any"`
-	Status     *Range           `json:"status"`
-	GrpcStatus *Range           `json:"grpc_status"`
+	All    []*ResponseMatch `json:"all"`
+	Not    *ResponseMatch   `json:"not"`
+	Any    []*ResponseMatch `json:"any"`
+	Status *Range           `json:"status"`
 }
 
 type Range struct {

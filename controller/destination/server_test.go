@@ -66,7 +66,7 @@ func TestBuildResolversList(t *testing.T) {
 type mockStreamingDestinationResolver struct {
 	hostReceived             string
 	portReceived             int
-	listenerReceived         updateListener
+	listenerReceived         endpointUpdateListener
 	canResolveToReturn       bool
 	errToReturnForCanResolve error
 	errToReturnForResolution error
@@ -76,11 +76,15 @@ func (m *mockStreamingDestinationResolver) canResolve(host string, port int) (bo
 	return m.canResolveToReturn, m.errToReturnForCanResolve
 }
 
-func (m *mockStreamingDestinationResolver) streamResolution(host string, port int, listener updateListener) error {
+func (m *mockStreamingDestinationResolver) streamResolution(host string, port int, listener endpointUpdateListener) error {
 	m.hostReceived = host
 	m.portReceived = port
 	m.listenerReceived = listener
 	return m.errToReturnForResolution
+}
+
+func (m *mockStreamingDestinationResolver) streamProfiles(host string, listener profileUpdateListener) error {
+	return nil
 }
 
 func (m *mockStreamingDestinationResolver) stop() {}

@@ -139,11 +139,6 @@ func (in *ResponseMatch) DeepCopyInto(out *ResponseMatch) {
 		*out = new(Range)
 		**out = **in
 	}
-	if in.GrpcStatus != nil {
-		in, out := &in.GrpcStatus, &out.GrpcStatus
-		*out = new(Range)
-		**out = **in
-	}
 	return
 }
 
