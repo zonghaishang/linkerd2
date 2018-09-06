@@ -208,7 +208,7 @@
   version = "v1.1"
 
 [[projects]]
-  digest = "1:9406bc4afca3e805d0b2768f558dfdcd79f6bbc782cd262792f462e2c0ab0086"
+  digest = "1:f029e20034db28ab1c26f3dc565b11d66d0281c779daa434928322350a0604c0"
   name = "github.com/linkerd/linkerd2-proxy-api"
   packages = [
     "go/destination",
@@ -217,7 +217,8 @@
     "go/tap",
   ]
   pruneopts = ""
-  revision = "0196017993a73f0ee28a9f52f30d2b6f5702198e"
+  revision = "9fde83574d39e055932885803e677c60642c0bdf"
+  version = "v0.1.2"
 
 [[projects]]
   digest = "1:81e673df85e765593a863f67cba4544cf40e8919590f04d67664940786c2b61a"
@@ -915,11 +916,16 @@
     "k8s.io/apimachinery/pkg/labels",
     "k8s.io/apimachinery/pkg/runtime",
     "k8s.io/apimachinery/pkg/runtime/schema",
+    "k8s.io/apimachinery/pkg/runtime/serializer",
+    "k8s.io/apimachinery/pkg/types",
     "k8s.io/apimachinery/pkg/util/intstr",
     "k8s.io/apimachinery/pkg/util/runtime",
     "k8s.io/apimachinery/pkg/util/wait",
     "k8s.io/apimachinery/pkg/util/yaml",
     "k8s.io/apimachinery/pkg/version",
+    "k8s.io/apimachinery/pkg/watch",
+    "k8s.io/client-go/discovery",
+    "k8s.io/client-go/discovery/fake",
     "k8s.io/client-go/informers",
     "k8s.io/client-go/informers/apps/v1beta2",
     "k8s.io/client-go/informers/core/v1",
@@ -930,8 +936,10 @@
     "k8s.io/client-go/plugin/pkg/client/auth",
     "k8s.io/client-go/plugin/pkg/client/auth/gcp",
     "k8s.io/client-go/rest",
+    "k8s.io/client-go/testing",
     "k8s.io/client-go/tools/cache",
     "k8s.io/client-go/tools/clientcmd",
+    "k8s.io/client-go/util/flowcontrol",
     "k8s.io/client-go/util/workqueue",
     "k8s.io/code-generator/cmd/client-gen",
     "k8s.io/code-generator/cmd/deepcopy-gen",
