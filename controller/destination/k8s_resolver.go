@@ -80,6 +80,7 @@ func (k *k8sResolver) streamProfiles(host string, listener profileUpdateListener
 
 	err = k.profileWatcher.subscribeToSvc(*id, listener)
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 

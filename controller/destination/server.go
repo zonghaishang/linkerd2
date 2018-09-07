@@ -69,7 +69,6 @@ func (s *server) Get(dest *pb.GetDestination, stream pb.Destination_GetServer) e
 	return s.streamResolutionUsingCorrectResolverFor(host, port, stream)
 }
 
-// TODO: unimplemented
 func (s *server) GetProfile(dest *pb.GetDestination, stream pb.Destination_GetProfileServer) error {
 	log.Debugf("GetProfile %v", dest)
 	host, port, err := getHostAndPort(dest)
@@ -82,7 +81,7 @@ func (s *server) GetProfile(dest *pb.GetDestination, stream pb.Destination_GetPr
 	for _, resolver := range s.resolvers {
 		resolverCanResolve, err := resolver.canResolve(host, port)
 		if err != nil {
-			return fmt.Errorf("resolver [%+v] found error resolving host [%s] port[%d]: %v", resolver, host, port, err)
+			return fmt.Errorf("resolver [%+v] found error resolving host [%s] port [%d]: %v", resolver, host, port, err)
 		}
 		if resolverCanResolve {
 			return resolver.streamProfiles(host, listener)
@@ -97,7 +96,7 @@ func (s *server) streamResolutionUsingCorrectResolverFor(host string, port int, 
 	for _, resolver := range s.resolvers {
 		resolverCanResolve, err := resolver.canResolve(host, port)
 		if err != nil {
-			return fmt.Errorf("resolver [%+v] found error resolving host [%s] port[%d]: %v", resolver, host, port, err)
+			return fmt.Errorf("resolver [%+v] found error resolving host [%s] port [%d]: %v", resolver, host, port, err)
 		}
 		if resolverCanResolve {
 			return resolver.streamResolution(host, port, listener)
@@ -108,7 +107,7 @@ func (s *server) streamResolutionUsingCorrectResolverFor(host string, port int, 
 
 func getHostAndPort(dest *pb.GetDestination) (string, int, error) {
 	if dest.Scheme != "k8s" {
-		err := fmt.Errorf("Unsupported scheme %v", dest.Scheme)
+		err := fmt.Errorf("Unsupported scheme %s", dest.Scheme)
 		log.Error(err)
 		return "", 0, err
 	}

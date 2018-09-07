@@ -2,9 +2,9 @@ package destination
 
 import (
 	"errors"
+	"net/http"
 	"strings"
 
-	"github.com/linkerd/linkerd2-proxy-api/go/http_types"
 	log "github.com/sirupsen/logrus"
 
 	pb "github.com/linkerd/linkerd2-proxy-api/go/destination"
@@ -312,29 +312,29 @@ func validateResponseMatch(rspMatch *sp.ResponseMatch) error {
 
 func toHTTPMethod(method string) *pbHttp.HttpMethod {
 	method = strings.ToUpper(method)
-	var registeredMethod http_types.HttpMethod_Registered = -1
-	if method == "CONNECT" {
+	var registeredMethod pbHttp.HttpMethod_Registered = -1
+	if method == http.MethodConnect {
 		registeredMethod = pbHttp.HttpMethod_CONNECT
 	}
-	if method == "DELETE" {
+	if method == http.MethodDelete {
 		registeredMethod = pbHttp.HttpMethod_DELETE
 	}
-	if method == "GET" {
+	if method == http.MethodGet {
 		registeredMethod = pbHttp.HttpMethod_GET
 	}
-	if method == "HEAD" {
+	if method == http.MethodHead {
 		registeredMethod = pbHttp.HttpMethod_HEAD
 	}
-	if method == "OPTIONS" {
+	if method == http.MethodOptions {
 		registeredMethod = pbHttp.HttpMethod_OPTIONS
 	}
-	if method == "PATCH" {
+	if method == http.MethodPatch {
 		registeredMethod = pbHttp.HttpMethod_PATCH
 	}
-	if method == "POST" {
+	if method == http.MethodPost {
 		registeredMethod = pbHttp.HttpMethod_POST
 	}
-	if method == "PUT" {
+	if method == http.MethodPut {
 		registeredMethod = pbHttp.HttpMethod_PUT
 	}
 	if registeredMethod == -1 {

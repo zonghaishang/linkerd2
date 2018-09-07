@@ -179,8 +179,8 @@ func (p *profileWatcher) addService(obj interface{}) {
 		name:      service.Name,
 	}
 
-	p.servicesLock.RLock()
-	defer p.servicesLock.RUnlock()
+	p.servicesLock.Lock()
+	defer p.servicesLock.Unlock()
 	entry, ok := p.services[id]
 	if ok {
 		newId := profileId{
@@ -263,11 +263,13 @@ type serviceEntry struct {
 }
 
 func newServiceEntry(service *v1.Service) *serviceEntry {
+	id := profileId{}
+	if service != nil {
+		id.name = service.Annotations[profileAnnotation]
+		id.namespace = service.Namespace
+	}
 	return &serviceEntry{
-		profile: profileId{
-			name:      service.Annotations[profileAnnotation],
-			namespace: service.Namespace,
-		},
+		profile:   id,
 		listeners: make([]profileUpdateListener, 0),
 		mutex:     sync.Mutex{},
 	}
