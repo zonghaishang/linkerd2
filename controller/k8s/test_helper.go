@@ -1,7 +1,7 @@
 package k8s
 
 import (
-	spfake "github.com/linkerd/linkerd2/pkg/client/clientset/versioned/fake"
+	spfake "github.com/linkerd/linkerd2/controller/gen/client/clientset/versioned/fake"
 	"github.com/linkerd/linkerd2/pkg/k8s"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"

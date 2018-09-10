@@ -16,5 +16,4 @@ REPO_ROOT=${HACK_DIR}/..
 
 # run the code-generator entrypoint script
 
-${REPO_ROOT}/vendor/k8s.io/code-generator/generate-groups.sh all "$ROOT_PACKAGE/pkg/client" "$ROOT_PACKAGE/pkg/apis" "$CUSTOM_RESOURCE_NAME:$CUSTOM_RESOURCE_VERSION"
-
+${REPO_ROOT}/vendor/k8s.io/code-generator/generate-groups.sh all "$ROOT_PACKAGE/controller/gen/client" "$ROOT_PACKAGE/controller/gen/apis" "$CUSTOM_RESOURCE_NAME:$CUSTOM_RESOURCE_VERSION"

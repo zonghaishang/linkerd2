@@ -6,6 +6,10 @@ import (
 	"strings"
 	"time"
 
+	spv1alpha1 "github.com/linkerd/linkerd2/controller/gen/apis/serviceprofile/v1alpha1"
+	spclientset "github.com/linkerd/linkerd2/controller/gen/client/clientset/versioned"
+	sp "github.com/linkerd/linkerd2/controller/gen/client/informers/externalversions"
+	spinformers "github.com/linkerd/linkerd2/controller/gen/client/informers/externalversions/serviceprofile/v1alpha1"
 	"github.com/linkerd/linkerd2/pkg/k8s"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
@@ -19,11 +23,6 @@ import (
 	coreinformers "k8s.io/client-go/informers/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
-
-	spv1alpha1 "github.com/linkerd/linkerd2/pkg/apis/serviceprofile/v1alpha1"
-	spclientset "github.com/linkerd/linkerd2/pkg/client/clientset/versioned"
-	sp "github.com/linkerd/linkerd2/pkg/client/informers/externalversions"
-	spinformers "github.com/linkerd/linkerd2/pkg/client/informers/externalversions/serviceprofile/v1alpha1"
 )
 
 type ApiResource int

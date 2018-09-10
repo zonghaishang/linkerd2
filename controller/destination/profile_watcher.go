@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"sync"
 
+	sp "github.com/linkerd/linkerd2/controller/gen/apis/serviceprofile/v1alpha1"
+	splisters "github.com/linkerd/linkerd2/controller/gen/client/listers/serviceprofile/v1alpha1"
 	"github.com/linkerd/linkerd2/controller/k8s"
-	sp "github.com/linkerd/linkerd2/pkg/apis/serviceprofile/v1alpha1"
-	splisters "github.com/linkerd/linkerd2/pkg/client/listers/serviceprofile/v1alpha1"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"

@@ -18,8 +18,8 @@ const (
 	ReplicationController = "replicationcontroller"
 	ReplicaSet            = "replicaset"
 	Service               = "service"
-	StatefulSet           = "statefulset"
 	ServiceProfile        = "serviceprofile"
+	StatefulSet           = "statefulset"
 )
 
 // resources to query in StatSummary when Resource.Type is "all"

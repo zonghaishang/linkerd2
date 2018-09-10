@@ -2,14 +2,11 @@ package destination
 
 import (
 	"errors"
-	"net/http"
-	"strings"
-
-	log "github.com/sirupsen/logrus"
 
 	pb "github.com/linkerd/linkerd2-proxy-api/go/destination"
-	pbHttp "github.com/linkerd/linkerd2-proxy-api/go/http_types"
-	sp "github.com/linkerd/linkerd2/pkg/apis/serviceprofile/v1alpha1"
+	sp "github.com/linkerd/linkerd2/controller/gen/apis/serviceprofile/v1alpha1"
+	"github.com/linkerd/linkerd2/controller/util"
+	log "github.com/sirupsen/logrus"
 )
 
 type profileUpdateListener interface {
@@ -200,7 +197,7 @@ func toRequestMatch(reqMatch *sp.RequestMatch) (*pb.RequestMatch, error) {
 	if reqMatch.Method != "" {
 		return &pb.RequestMatch{
 			Match: &pb.RequestMatch_Method{
-				Method: toHTTPMethod(reqMatch.Method),
+				Method: util.ParseMethod(reqMatch.Method),
 			},
 		}, nil
 	}
@@ -231,7 +228,7 @@ func toRequestMatch(reqMatch *sp.RequestMatch) (*pb.RequestMatch, error) {
 }
 
 func validateRequestMatch(reqMatch *sp.RequestMatch) error {
-	tooManyKindsErr := errors.New("A request match may not have more two fields set")
+	tooManyKindsErr := errors.New("A request match may not have more than two fields set")
 	matchKindSet := false
 	if reqMatch.All != nil {
 		if matchKindSet {
@@ -272,7 +269,7 @@ func validateRequestMatch(reqMatch *sp.RequestMatch) error {
 }
 
 func validateResponseMatch(rspMatch *sp.ResponseMatch) error {
-	tooManyKindsErr := errors.New("A response match may not have more two fields set")
+	tooManyKindsErr := errors.New("A response match may not have more than two fields set")
 	invalidRangeErr := errors.New("Range maximum cannot be smaller than minimum")
 	matchKindSet := false
 	if rspMatch.All != nil {
@@ -308,45 +305,4 @@ func validateResponseMatch(rspMatch *sp.ResponseMatch) error {
 	}
 
 	return nil
-}
-
-func toHTTPMethod(method string) *pbHttp.HttpMethod {
-	method = strings.ToUpper(method)
-	var registeredMethod pbHttp.HttpMethod_Registered = -1
-	if method == http.MethodConnect {
-		registeredMethod = pbHttp.HttpMethod_CONNECT
-	}
-	if method == http.MethodDelete {
-		registeredMethod = pbHttp.HttpMethod_DELETE
-	}
-	if method == http.MethodGet {
-		registeredMethod = pbHttp.HttpMethod_GET
-	}
-	if method == http.MethodHead {
-		registeredMethod = pbHttp.HttpMethod_HEAD
-	}
-	if method == http.MethodOptions {
-		registeredMethod = pbHttp.HttpMethod_OPTIONS
-	}
-	if method == http.MethodPatch {
-		registeredMethod = pbHttp.HttpMethod_PATCH
-	}
-	if method == http.MethodPost {
-		registeredMethod = pbHttp.HttpMethod_POST
-	}
-	if method == http.MethodPut {
-		registeredMethod = pbHttp.HttpMethod_PUT
-	}
-	if registeredMethod == -1 {
-		return &pbHttp.HttpMethod{
-			Type: &pbHttp.HttpMethod_Unregistered{
-				Unregistered: method,
-			},
-		}
-	}
-	return &pbHttp.HttpMethod{
-		Type: &pbHttp.HttpMethod_Registered_{
-			Registered: registeredMethod,
-		},
-	}
 }
