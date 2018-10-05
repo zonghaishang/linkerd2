@@ -243,9 +243,9 @@ spec:
           value: tcp://0.0.0.0:4190
         - name: LINKERD2_PROXY_METRICS_LISTENER
           value: tcp://0.0.0.0:4191
-        - name: LINKERD2_PROXY_PRIVATE_LISTENER
+        - name: LINKERD2_PROXY_OUTBOUND_LISTENER
           value: tcp://127.0.0.1:4140
-        - name: LINKERD2_PROXY_PUBLIC_LISTENER
+        - name: LINKERD2_PROXY_INBOUND_LISTENER
           value: tcp://0.0.0.0:4143
         - name: LINKERD2_PROXY_POD_NAMESPACE
           valueFrom:
@@ -401,9 +401,9 @@ spec:
           value: tcp://0.0.0.0:4190
         - name: LINKERD2_PROXY_METRICS_LISTENER
           value: tcp://0.0.0.0:4191
-        - name: LINKERD2_PROXY_PRIVATE_LISTENER
+        - name: LINKERD2_PROXY_OUTBOUND_LISTENER
           value: tcp://127.0.0.1:4140
-        - name: LINKERD2_PROXY_PUBLIC_LISTENER
+        - name: LINKERD2_PROXY_INBOUND_LISTENER
           value: tcp://0.0.0.0:4143
         - name: LINKERD2_PROXY_POD_NAMESPACE
           valueFrom:
@@ -535,9 +535,9 @@ spec:
           value: tcp://0.0.0.0:4190
         - name: LINKERD2_PROXY_METRICS_LISTENER
           value: tcp://0.0.0.0:4191
-        - name: LINKERD2_PROXY_PRIVATE_LISTENER
+        - name: LINKERD2_PROXY_OUTBOUND_LISTENER
           value: tcp://127.0.0.1:4140
-        - name: LINKERD2_PROXY_PUBLIC_LISTENER
+        - name: LINKERD2_PROXY_INBOUND_LISTENER
           value: tcp://0.0.0.0:4143
         - name: LINKERD2_PROXY_POD_NAMESPACE
           valueFrom:
@@ -757,9 +757,9 @@ spec:
           value: tcp://0.0.0.0:4190
         - name: LINKERD2_PROXY_METRICS_LISTENER
           value: tcp://0.0.0.0:4191
-        - name: LINKERD2_PROXY_PRIVATE_LISTENER
+        - name: LINKERD2_PROXY_OUTBOUND_LISTENER
           value: tcp://127.0.0.1:4140
-        - name: LINKERD2_PROXY_PUBLIC_LISTENER
+        - name: LINKERD2_PROXY_INBOUND_LISTENER
           value: tcp://0.0.0.0:4143
         - name: LINKERD2_PROXY_POD_NAMESPACE
           valueFrom:
@@ -982,9 +982,9 @@ spec:
           value: tcp://0.0.0.0:4190
         - name: LINKERD2_PROXY_METRICS_LISTENER
           value: tcp://0.0.0.0:4191
-        - name: LINKERD2_PROXY_PRIVATE_LISTENER
+        - name: LINKERD2_PROXY_OUTBOUND_LISTENER
           value: tcp://127.0.0.1:4140
-        - name: LINKERD2_PROXY_PUBLIC_LISTENER
+        - name: LINKERD2_PROXY_INBOUND_LISTENER
           value: tcp://0.0.0.0:4143
         - name: LINKERD2_PROXY_POD_NAMESPACE
           valueFrom:

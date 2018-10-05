@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"text/template"
 
@@ -89,7 +90,7 @@ func validateAndBuildConfig(options *installOptions) (*installConfig, error) {
 		Namespace:                   controlPlaneNamespace,
 		ControllerImage:             fmt.Sprintf("%s/controller:%s", options.dockerRegistry, options.linkerdVersion),
 		WebImage:                    fmt.Sprintf("%s/web:%s", options.dockerRegistry, options.linkerdVersion),
-		PrometheusImage:             "prom/prometheus:v2.3.1",
+		PrometheusImage:             "prom/prometheus:v2.4.0",
 		GrafanaImage:                fmt.Sprintf("%s/grafana:%s", options.dockerRegistry, options.linkerdVersion),
 		ControllerReplicas:          options.controllerReplicas,
 		WebReplicas:                 options.webReplicas,
@@ -133,7 +134,7 @@ func render(config installConfig, w io.Writer, options *installOptions) error {
 	// Special case for linkerd-proxy running in the Prometheus pod.
 	injectOptions.proxyOutboundCapacity[config.PrometheusImage] = prometheusProxyOutboundCapacity
 
-	return InjectYAML(buf, w, injectOptions)
+	return InjectYAML(buf, w, ioutil.Discard, injectOptions)
 }
 
 func validate(options *installOptions) error {

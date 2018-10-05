@@ -24,7 +24,7 @@ ENV NODE_ENV production
 RUN $ROOT/bin/web build
 
 ## compile go server
-FROM gcr.io/linkerd-io/go-deps:b614886e as golang
+FROM gcr.io/linkerd-io/go-deps:6a07271e as golang
 WORKDIR /go/src/github.com/linkerd/linkerd2
 COPY web web
 COPY controller controller
@@ -34,6 +34,7 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o web/web ./web
 
 ## package it all up
 FROM gcr.io/linkerd-io/base:2017-10-30.01
+COPY LICENSE /linkerd/LICENSE
 COPY --from=golang /go/src/github.com/linkerd/linkerd2/web .
 RUN mkdir -p ./dist
 COPY --from=webpack-bundle /go/src/github.com/linkerd/linkerd2/web/app/dist ./dist

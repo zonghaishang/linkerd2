@@ -1,6 +1,6 @@
 import _ from 'lodash';
+import { emptyTapQuery } from './util/TapUtils.jsx';
 import ErrorBanner from './ErrorBanner.jsx';
-import PageHeader from './PageHeader.jsx';
 import PropTypes from 'prop-types';
 import React from 'react';
 import TapQueryCliCmd from './TapQueryCliCmd.jsx';
@@ -21,22 +21,13 @@ class Top extends React.Component {
     super(props);
     this.api = this.props.api;
     this.loadFromServer = this.loadFromServer.bind(this);
+    this.updateTapClosingState = this.updateTapClosingState.bind(this);
 
     this.state = {
       error: null,
       resourcesByNs: {},
       authoritiesByNs: {},
-      query: {
-        resource: "",
-        namespace: "",
-        toResource: "",
-        toNamespace: "",
-        method: "",
-        path: "",
-        scheme: "",
-        authority: "",
-        maxRps: ""
-      },
+      query: emptyTapQuery(),
       pollingInterval: 10000,
       tapRequestInProgress: false,
       pendingRequests: false
@@ -141,7 +132,21 @@ class Top extends React.Component {
 
   handleTapStop = () => {
     this.setState({
-      tapRequestInProgress: false
+      tapRequestInProgress: false,
+      tapIsClosing: true
+    });
+  }
+
+  handleTapClear = () => {
+    this.setState({
+      error: null,
+      query: emptyTapQuery()
+    });
+  }
+
+  updateTapClosingState(isTapClosing) {
+    this.setState({
+      tapIsClosing: isTapClosing
     });
   }
 
@@ -150,14 +155,15 @@ class Top extends React.Component {
       <div>
         {!this.state.error ? null :
         <ErrorBanner message={this.state.error} onHideMessage={() => this.setState({ error: null })} />}
-        <PageHeader header="Top" />
         <TapQueryForm
           enableAdvancedForm={false}
           handleTapStart={this.handleTapStart}
           handleTapStop={this.handleTapStop}
+          handleTapClear={this.handleTapClear}
           resourcesByNs={this.state.resourcesByNs}
           authoritiesByNs={this.state.authoritiesByNs}
           tapRequestInProgress={this.state.tapRequestInProgress}
+          tapIsClosing={this.state.tapIsClosing}
           updateQuery={this.updateQuery}
           query={this.state.query} />
 
@@ -165,7 +171,8 @@ class Top extends React.Component {
         <TopModule
           pathPrefix={this.props.pathPrefix}
           query={this.state.query}
-          startTap={this.state.tapRequestInProgress} />
+          startTap={this.state.tapRequestInProgress}
+          updateTapClosingState={this.updateTapClosingState} />
       </div>
     );
   }

@@ -3,13 +3,13 @@ import AddResources from './AddResources.jsx';
 import ErrorBanner from './ErrorBanner.jsx';
 import MetricsTable from './MetricsTable.jsx';
 import Octopus from './Octopus.jsx';
-import PageHeader from './PageHeader.jsx';
-import { processSingleResourceRollup } from './util/MetricUtils.js';
+import { processNeighborData } from './util/TapUtils.jsx';
 import PropTypes from 'prop-types';
 import React from 'react';
 import { Spin } from 'antd';
 import TopModule from './TopModule.jsx';
 import { withContext } from './util/AppContext.jsx';
+import { emptyMetric, processSingleResourceRollup } from './util/MetricUtils.jsx';
 import { resourceTypeToCamelCase, singularResource } from './util/Utils.js';
 import 'whatwg-fetch';
 
@@ -41,6 +41,7 @@ export class ResourceDetailBase extends React.Component {
   constructor(props) {
     super(props);
     this.api = this.props.api;
+    this.unmeshedSources = {};
     this.handleApiError = this.handleApiError.bind(this);
     this.loadFromServer = this.loadFromServer.bind(this);
     this.state = this.getInitialState(props.match, props.pathPrefix);
@@ -60,6 +61,7 @@ export class ResourceDetailBase extends React.Component {
         upstream: {},
         downstream: {}
       },
+      unmeshedSources: {},
       resourceIsMeshed: true,
       pendingRequests: false,
       loaded: false,
@@ -75,6 +77,7 @@ export class ResourceDetailBase extends React.Component {
   componentWillReceiveProps(newProps) {
     // React won't unmount this component when switching resource pages so we need to clear state
     this.api.cancelCurrentRequests();
+    this.unmeshedSources = {};
     this.setState(this.getInitialState(newProps.match, newProps.pathPrefix));
   }
 
@@ -147,7 +150,8 @@ export class ResourceDetailBase extends React.Component {
           },
           loaded: true,
           pendingRequests: false,
-          error: null
+          error: null,
+          unmeshedSources: this.unmeshedSources // in place of debouncing, just update this when we update the rest of the state
         });
       })
       .catch(this.handleApiError);
@@ -163,6 +167,12 @@ export class ResourceDetailBase extends React.Component {
       pendingRequests: false,
       error: e
     });
+  }
+
+  updateNeighborsFromTapData = (source, sourceLabels) => {
+    // store this outside of state, as updating the state upon every websocket event received
+    // is very costly and causes the page to freeze up
+    this.unmeshedSources = processNeighborData(source, sourceLabels, this.unmeshedSources, this.state.resource.type);
   }
 
   banner = () => {
@@ -183,6 +193,19 @@ export class ResourceDetailBase extends React.Component {
       namespace: this.state.namespace
     };
 
+    let unmeshed = _.chain(this.state.unmeshedSources)
+      .filter(['type', this.state.resourceType])
+      .map(d => _.merge({}, emptyMetric, d, {
+        unmeshed: true,
+        pods: {
+          totalPods: _.size(d.pods),
+          meshedPods: 0
+        }
+      }))
+      .value();
+
+    let upstreams = _.concat(this.state.neighborMetrics.upstream, unmeshed);
+
     return (
       <div>
         {
@@ -198,6 +221,7 @@ export class ResourceDetailBase extends React.Component {
           <Octopus
             resource={this.state.resourceMetrics[0]}
             neighbors={this.state.neighborMetrics}
+            unmeshedSources={_.values(this.state.unmeshedSources)}
             api={this.api} />
         </div>
 
@@ -208,23 +232,24 @@ export class ResourceDetailBase extends React.Component {
               pathPrefix={this.props.pathPrefix}
               query={topQuery}
               startTap={true}
+              updateNeighbors={this.updateNeighborsFromTapData}
               maxRowsToDisplay={10} />
           </div>
         }
 
-        { _.isEmpty(this.state.neighborMetrics.upstream) ? null : (
+        { _.isEmpty(upstreams) ? null : (
           <div className="page-section">
-            <h2 className="subsection-header">Upstreams</h2>
+            <h2 className="subsection-header">Inbound</h2>
             <MetricsTable
               resource={this.state.resource.type}
-              metrics={this.state.neighborMetrics.upstream} />
+              metrics={upstreams} />
           </div>
           )
         }
 
         { _.isEmpty(this.state.neighborMetrics.downstream) ? null : (
           <div className="page-section">
-            <h2 className="subsection-header">Downstreams</h2>
+            <h2 className="subsection-header">Outbound</h2>
             <MetricsTable
               resource={this.state.resource.type}
               metrics={this.state.neighborMetrics.downstream} />
@@ -247,20 +272,11 @@ export class ResourceDetailBase extends React.Component {
   }
 
   render() {
-    let resourceBreadcrumb = (
-      <React.Fragment>
-        <this.api.PrefixedLink to={"/namespaces/" + this.state.namespace}>
-          {this.state.namespace}
-        </this.api.PrefixedLink> &gt; {`${this.state.resource.type}/${this.state.resource.name}`}
-      </React.Fragment>
-    );
 
     return (
       <div className="page-content">
         <div>
           {this.banner()}
-          {resourceBreadcrumb}
-          <PageHeader header={`${this.state.resource.type}/${this.state.resource.name}`} />
           {this.content()}
         </div>
       </div>

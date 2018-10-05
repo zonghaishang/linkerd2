@@ -32,6 +32,12 @@ const (
 	ControlPlanePodName = "controller"
 	// The name of the variable used to pass the pod's namespace.
 	PodNamespaceEnvVarName = "LINKERD2_PROXY_POD_NAMESPACE"
+
+	// for inject reports
+	hostNetworkDesc = "hostNetwork: pods do not use host networking"
+	sidecarDesc     = "sidecar: pods do not have a proxy or initContainer already injected"
+	unsupportedDesc = "supported: at least one resource injected"
+	udpDesc         = "udp: pod specs do not include UDP ports"
 )
 
 type injectOptions struct {
@@ -40,6 +46,19 @@ type injectOptions struct {
 	ignoreInboundPorts  []uint
 	ignoreOutboundPorts []uint
 	*proxyConfigOptions
+}
+
+type injectReport struct {
+	name                string
+	hostNetwork         bool
+	sidecar             bool
+	udp                 bool // true if any port in any container has `protocol: UDP`
+	unsupportedResource bool
+}
+
+// objMeta provides a generic struct to parse the names of Kubernetes objects
+type objMeta struct {
+	metaV1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 }
 
 func newInjectOptions() *injectOptions {
@@ -117,14 +136,19 @@ func read(path string) ([]io.Reader, error) {
 // Returns the integer representation of os.Exit code; 0 on success and 1 on failure.
 func runInjectCmd(inputs []io.Reader, errWriter, outWriter io.Writer, options *injectOptions) int {
 	postInjectBuf := &bytes.Buffer{}
+	reportBuf := &bytes.Buffer{}
 
 	for _, input := range inputs {
-		err := InjectYAML(input, postInjectBuf, options)
+		err := InjectYAML(input, postInjectBuf, reportBuf, options)
 		if err != nil {
 			fmt.Fprintf(errWriter, "Error injecting linkerd proxy: %v\n", err)
 			return 1
 		}
 		_, err = io.Copy(outWriter, postInjectBuf)
+
+		// print error report after yaml output, for better visibility
+		io.Copy(errWriter, reportBuf)
+
 		if err != nil {
 			fmt.Fprintf(errWriter, "Error printing YAML: %v\n", err)
 			return 1
@@ -156,11 +180,17 @@ func injectObjectMeta(t *metaV1.ObjectMeta, k8sLabels map[string]string, options
  * and init-container injected. If the pod is unsuitable for having them
  * injected, return false.
  */
-func injectPodSpec(t *v1.PodSpec, identity k8s.TLSIdentity, controlPlaneDNSNameOverride string, options *injectOptions) bool {
-	// Pods with `hostNetwork=true` share a network namespace with the host. The
-	// init-container would destroy the iptables configuration on the host, so
-	// skip the injection in this case.
-	if t.HostNetwork {
+func injectPodSpec(t *v1.PodSpec, identity k8s.TLSIdentity, controlPlaneDNSNameOverride string, options *injectOptions, report *injectReport) bool {
+	report.hostNetwork = t.HostNetwork
+	report.sidecar = checkSidecars(t)
+	report.udp = checkUDPPorts(t)
+
+	// Skip injection if:
+	// 1) Pods with `hostNetwork: true` share a network namespace with the host.
+	//    The init-container would destroy the iptables configuration on the host.
+	// OR
+	// 2) Known sidecars already present.
+	if report.hostNetwork || report.sidecar {
 		return false
 	}
 
@@ -250,8 +280,8 @@ func injectPodSpec(t *v1.PodSpec, identity k8s.TLSIdentity, controlPlaneDNSNameO
 			},
 			{Name: "LINKERD2_PROXY_CONTROL_LISTENER", Value: fmt.Sprintf("tcp://0.0.0.0:%d", options.proxyControlPort)},
 			{Name: "LINKERD2_PROXY_METRICS_LISTENER", Value: fmt.Sprintf("tcp://0.0.0.0:%d", options.proxyMetricsPort)},
-			{Name: "LINKERD2_PROXY_PRIVATE_LISTENER", Value: fmt.Sprintf("tcp://127.0.0.1:%d", options.outboundPort)},
-			{Name: "LINKERD2_PROXY_PUBLIC_LISTENER", Value: fmt.Sprintf("tcp://0.0.0.0:%d", options.inboundPort)},
+			{Name: "LINKERD2_PROXY_OUTBOUND_LISTENER", Value: fmt.Sprintf("tcp://127.0.0.1:%d", options.outboundPort)},
+			{Name: "LINKERD2_PROXY_INBOUND_LISTENER", Value: fmt.Sprintf("tcp://0.0.0.0:%d", options.inboundPort)},
 			{
 				Name:      PodNamespaceEnvVarName,
 				ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{FieldPath: "metadata.namespace"}},
@@ -332,8 +362,10 @@ func injectPodSpec(t *v1.PodSpec, identity k8s.TLSIdentity, controlPlaneDNSNameO
 }
 
 // InjectYAML takes an input stream of YAML, outputting injected YAML to out.
-func InjectYAML(in io.Reader, out io.Writer, options *injectOptions) error {
+func InjectYAML(in io.Reader, out io.Writer, report io.Writer, options *injectOptions) error {
 	reader := yamlDecoder.NewYAMLReader(bufio.NewReaderSize(in, 4096))
+
+	injectReports := []injectReport{}
 
 	// Iterate over all YAML objects in the input
 	for {
@@ -346,19 +378,24 @@ func InjectYAML(in io.Reader, out io.Writer, options *injectOptions) error {
 			return err
 		}
 
-		result, err := injectResource(bytes, options)
+		ir := injectReport{}
+		result, err := injectResource(bytes, options, &ir)
 		if err != nil {
 			return err
 		}
 
 		out.Write(result)
 		out.Write([]byte("---\n"))
+
+		injectReports = append(injectReports, ir)
 	}
+
+	generateReport(injectReports, report)
 
 	return nil
 }
 
-func injectList(b []byte, options *injectOptions) ([]byte, error) {
+func injectList(b []byte, options *injectOptions, report *injectReport) ([]byte, error) {
 	var sourceList v1.List
 	if err := yaml.Unmarshal(b, &sourceList); err != nil {
 		return nil, err
@@ -367,7 +404,7 @@ func injectList(b []byte, options *injectOptions) ([]byte, error) {
 	items := []runtime.RawExtension{}
 
 	for _, item := range sourceList.Items {
-		result, err := injectResource(item.Raw, options)
+		result, err := injectResource(item.Raw, options, report)
 		if err != nil {
 			return nil, err
 		}
@@ -387,8 +424,8 @@ func injectList(b []byte, options *injectOptions) ([]byte, error) {
 	return yaml.Marshal(sourceList)
 }
 
-func injectResource(bytes []byte, options *injectOptions) ([]byte, error) {
-	// The Kuberentes API is versioned and each version has an API modeled
+func injectResource(bytes []byte, options *injectOptions, report *injectReport) ([]byte, error) {
+	// The Kubernetes API is versioned and each version has an API modeled
 	// with its own distinct Go types. If we tell `yaml.Unmarshal()` which
 	// version we support then it will provide a representation of that
 	// object using the given type if possible. However, it only allows us
@@ -404,6 +441,13 @@ func injectResource(bytes []byte, options *injectOptions) ([]byte, error) {
 	if err := yaml.Unmarshal(bytes, &meta); err != nil {
 		return nil, err
 	}
+
+	// retrieve the `metadata/name` field for reporting later
+	var om objMeta
+	if err := yaml.Unmarshal(bytes, &om); err != nil {
+		return nil, err
+	}
+	report.name = fmt.Sprintf("%s/%s", strings.ToLower(meta.Kind), om.Name)
 
 	// obj and podTemplateSpec will reference zero or one the following
 	// objects, depending on the type.
@@ -510,7 +554,9 @@ func injectResource(bytes []byte, options *injectOptions) ([]byte, error) {
 		// Lists are a little different than the other types. There's no immediate
 		// pod template. Because of this, we do a recursive call for each element
 		// in the list (instead of just marshaling the injected pod template).
-		return injectList(bytes, options)
+
+		// TODO: generate an injectReport per list item
+		return injectList(bytes, options, report)
 
 	}
 
@@ -534,7 +580,7 @@ func injectResource(bytes []byte, options *injectOptions) ([]byte, error) {
 			ControllerNamespace: controlPlaneNamespace,
 		}
 
-		if injectPodSpec(podSpec, identity, DNSNameOverride, options) {
+		if injectPodSpec(podSpec, identity, DNSNameOverride, options, report) {
 			injectObjectMeta(objectMeta, k8sLabels, options)
 			var err error
 			output, err = yaml.Marshal(obj)
@@ -542,6 +588,8 @@ func injectResource(bytes []byte, options *injectOptions) ([]byte, error) {
 				return nil, err
 			}
 		}
+	} else {
+		report.unsupportedResource = true
 	}
 
 	return output, nil
@@ -588,4 +636,132 @@ func walk(path string) ([]io.Reader, error) {
 	}
 
 	return in, nil
+}
+
+func generateReport(injectReports []injectReport, output io.Writer) {
+
+	injected := []string{}
+	hostNetwork := []string{}
+	sidecar := []string{}
+	udp := []string{}
+
+	for _, r := range injectReports {
+		if !r.hostNetwork && !r.sidecar && !r.unsupportedResource {
+			injected = append(injected, r.name)
+		}
+
+		if r.hostNetwork {
+			hostNetwork = append(hostNetwork, r.name)
+		}
+
+		if r.sidecar {
+			sidecar = append(sidecar, r.name)
+		}
+
+		if r.udp {
+			udp = append(udp, r.name)
+		}
+	}
+
+	//
+	// Warnings
+	//
+
+	// leading newline to separate from yaml output on stdout
+	output.Write([]byte("\n"))
+
+	hostNetworkPrefix := fmt.Sprintf("%s%s", hostNetworkDesc, getFiller(hostNetworkDesc))
+	if len(hostNetwork) == 0 {
+		output.Write([]byte(fmt.Sprintf("%s%s\n", hostNetworkPrefix, okStatus)))
+	} else {
+		output.Write([]byte(fmt.Sprintf("%s%s -- \"hostNetwork: true\" detected in %s\n", hostNetworkPrefix, warnStatus, strings.Join(hostNetwork, ", "))))
+	}
+
+	sidecarPrefix := fmt.Sprintf("%s%s", sidecarDesc, getFiller(sidecarDesc))
+	if len(sidecar) == 0 {
+		output.Write([]byte(fmt.Sprintf("%s%s\n", sidecarPrefix, okStatus)))
+	} else {
+		output.Write([]byte(fmt.Sprintf("%s%s -- known sidecar detected in %s\n", sidecarPrefix, warnStatus, strings.Join(sidecar, ", "))))
+	}
+
+	unsupportedPrefix := fmt.Sprintf("%s%s", unsupportedDesc, getFiller(unsupportedDesc))
+	if len(injected) > 0 {
+		output.Write([]byte(fmt.Sprintf("%s%s\n", unsupportedPrefix, okStatus)))
+	} else {
+		output.Write([]byte(fmt.Sprintf("%s%s -- no supported objects found\n", unsupportedPrefix, warnStatus)))
+	}
+
+	udpPrefix := fmt.Sprintf("%s%s", udpDesc, getFiller(udpDesc))
+	if len(udp) == 0 {
+		output.Write([]byte(fmt.Sprintf("%s%s\n", udpPrefix, okStatus)))
+	} else {
+		verb := "uses"
+		if len(udp) > 1 {
+			verb = "use"
+		}
+		output.Write([]byte(fmt.Sprintf("%s%s -- %s %s \"protocol: UDP\"\n", udpPrefix, warnStatus, strings.Join(udp, ", "), verb)))
+	}
+
+	//
+	// Summary
+	//
+
+	summary := fmt.Sprintf("Summary: %d of %d YAML document(s) injected", len(injected), len(injectReports))
+	output.Write([]byte(fmt.Sprintf("\n%s\n", summary)))
+
+	for _, i := range injected {
+		output.Write([]byte(fmt.Sprintf("  %s\n", i)))
+	}
+
+	// trailing newline to separate from kubectl output if piping
+	output.Write([]byte("\n"))
+}
+
+func getFiller(text string) string {
+	filler := ""
+	for i := 0; i < lineWidth-len(text)-len(okStatus)-len("\n"); i++ {
+		filler = filler + "."
+	}
+
+	return filler
+}
+
+func checkUDPPorts(t *v1.PodSpec) bool {
+	// check for ports with `protocol: UDP`, which will not be routed by Linkerd
+	for _, container := range t.Containers {
+		for _, port := range container.Ports {
+			if port.Protocol == v1.ProtocolUDP {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func checkSidecars(t *v1.PodSpec) bool {
+	// check for known proxies and initContainers
+	for _, container := range t.Containers {
+		if strings.HasPrefix(container.Image, "gcr.io/linkerd-io/proxy:") ||
+			strings.HasPrefix(container.Image, "gcr.io/istio-release/proxyv2:") ||
+			strings.HasPrefix(container.Image, "gcr.io/heptio-images/contour:") ||
+			strings.HasPrefix(container.Image, "docker.io/envoyproxy/envoy-alpine:") ||
+			container.Name == "linkerd-proxy" ||
+			container.Name == "istio-proxy" ||
+			container.Name == "contour" ||
+			container.Name == "envoy" {
+			return true
+		}
+	}
+	for _, ic := range t.InitContainers {
+		if strings.HasPrefix(ic.Image, "gcr.io/linkerd-io/proxy-init:") ||
+			strings.HasPrefix(ic.Image, "gcr.io/istio-release/proxy_init:") ||
+			strings.HasPrefix(ic.Image, "gcr.io/heptio-images/contour:") ||
+			ic.Name == "linkerd-init" ||
+			ic.Name == "istio-init" ||
+			ic.Name == "envoy-initconfig" {
+			return true
+		}
+	}
+
+	return false
 }

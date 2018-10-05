@@ -22,17 +22,87 @@ func TestInjectYAML(t *testing.T) {
 	testCases := []struct {
 		inputFileName     string
 		goldenFileName    string
+		reportFileName    string
 		testInjectOptions *injectOptions
 	}{
-		{"inject_emojivoto_deployment.input.yml", "inject_emojivoto_deployment.golden.yml", defaultOptions},
-		{"inject_emojivoto_list.input.yml", "inject_emojivoto_list.golden.yml", defaultOptions},
-		{"inject_emojivoto_deployment_hostNetwork_false.input.yml", "inject_emojivoto_deployment_hostNetwork_false.golden.yml", defaultOptions},
-		{"inject_emojivoto_deployment_hostNetwork_true.input.yml", "inject_emojivoto_deployment_hostNetwork_true.golden.yml", defaultOptions},
-		{"inject_emojivoto_deployment_controller_name.input.yml", "inject_emojivoto_deployment_controller_name.golden.yml", defaultOptions},
-		{"inject_emojivoto_statefulset.input.yml", "inject_emojivoto_statefulset.golden.yml", defaultOptions},
-		{"inject_emojivoto_pod.input.yml", "inject_emojivoto_pod.golden.yml", defaultOptions},
-		{"inject_emojivoto_deployment.input.yml", "inject_emojivoto_deployment_tls.golden.yml", tlsOptions},
-		{"inject_emojivoto_pod.input.yml", "inject_emojivoto_pod_tls.golden.yml", tlsOptions},
+		{
+			inputFileName:     "inject_emojivoto_deployment.input.yml",
+			goldenFileName:    "inject_emojivoto_deployment.golden.yml",
+			reportFileName:    "inject_emojivoto_deployment.report",
+			testInjectOptions: defaultOptions,
+		},
+		{
+			inputFileName:     "inject_emojivoto_list.input.yml",
+			goldenFileName:    "inject_emojivoto_list.golden.yml",
+			reportFileName:    "inject_emojivoto_list.report",
+			testInjectOptions: defaultOptions,
+		},
+		{
+			inputFileName:     "inject_emojivoto_deployment_hostNetwork_false.input.yml",
+			goldenFileName:    "inject_emojivoto_deployment_hostNetwork_false.golden.yml",
+			reportFileName:    "inject_emojivoto_deployment_hostNetwork_false.report",
+			testInjectOptions: defaultOptions,
+		},
+		{
+			inputFileName:     "inject_emojivoto_deployment_hostNetwork_true.input.yml",
+			goldenFileName:    "inject_emojivoto_deployment_hostNetwork_true.golden.yml",
+			reportFileName:    "inject_emojivoto_deployment_hostNetwork_true.report",
+			testInjectOptions: defaultOptions,
+		},
+		{
+			inputFileName:     "inject_emojivoto_deployment_controller_name.input.yml",
+			goldenFileName:    "inject_emojivoto_deployment_controller_name.golden.yml",
+			reportFileName:    "inject_emojivoto_deployment_controller_name.report",
+			testInjectOptions: defaultOptions,
+		},
+		{
+			inputFileName:     "inject_emojivoto_statefulset.input.yml",
+			goldenFileName:    "inject_emojivoto_statefulset.golden.yml",
+			reportFileName:    "inject_emojivoto_statefulset.report",
+			testInjectOptions: defaultOptions,
+		},
+		{
+			inputFileName:     "inject_emojivoto_pod.input.yml",
+			goldenFileName:    "inject_emojivoto_pod.golden.yml",
+			reportFileName:    "inject_emojivoto_pod.report",
+			testInjectOptions: defaultOptions,
+		},
+		{
+			inputFileName:     "inject_emojivoto_deployment.input.yml",
+			goldenFileName:    "inject_emojivoto_deployment_tls.golden.yml",
+			reportFileName:    "inject_emojivoto_deployment.report",
+			testInjectOptions: tlsOptions,
+		},
+		{
+			inputFileName:     "inject_emojivoto_pod.input.yml",
+			goldenFileName:    "inject_emojivoto_pod_tls.golden.yml",
+			reportFileName:    "inject_emojivoto_pod.report",
+			testInjectOptions: tlsOptions,
+		},
+		{
+			inputFileName:     "inject_emojivoto_deployment_udp.input.yml",
+			goldenFileName:    "inject_emojivoto_deployment_udp.golden.yml",
+			reportFileName:    "inject_emojivoto_deployment_udp.report",
+			testInjectOptions: defaultOptions,
+		},
+		{
+			inputFileName:     "inject_emojivoto_already_injected.input.yml",
+			goldenFileName:    "inject_emojivoto_already_injected.input.yml",
+			reportFileName:    "inject_emojivoto_already_injected.report",
+			testInjectOptions: defaultOptions,
+		},
+		{
+			inputFileName:     "inject_emojivoto_istio.input.yml",
+			goldenFileName:    "inject_emojivoto_istio.input.yml",
+			reportFileName:    "inject_emojivoto_istio.report",
+			testInjectOptions: defaultOptions,
+		},
+		{
+			inputFileName:     "inject_contour.input.yml",
+			goldenFileName:    "inject_contour.input.yml",
+			reportFileName:    "inject_contour.report",
+			testInjectOptions: defaultOptions,
+		},
 	}
 
 	for i, tc := range testCases {
@@ -45,20 +115,24 @@ func TestInjectYAML(t *testing.T) {
 			read := bufio.NewReader(file)
 
 			output := new(bytes.Buffer)
+			report := new(bytes.Buffer)
 
-			err = InjectYAML(read, output, tc.testInjectOptions)
+			err = InjectYAML(read, output, report, tc.testInjectOptions)
 			if err != nil {
 				t.Errorf("Unexpected error injecting YAML: %v\n", err)
 			}
 
 			actualOutput := output.String()
-
-			goldenFileBytes, err := ioutil.ReadFile("testdata/" + tc.goldenFileName)
-			if err != nil {
-				t.Fatalf("Unexpected error: %v", err)
+			expectedOutput := readOptionalTestFile(t, tc.goldenFileName)
+			if expectedOutput != actualOutput {
+				t.Errorf("Result mismatch.\nExpected: %s\nActual: %s", expectedOutput, actualOutput)
 			}
-			expectedOutput := string(goldenFileBytes)
-			diffCompare(t, actualOutput, expectedOutput)
+
+			actualReport := report.String()
+			expectedReport := readOptionalTestFile(t, tc.reportFileName)
+			if expectedReport != actualReport {
+				t.Errorf("Result mismatch.\nExpected: %s\nActual: %s", expectedReport, actualReport)
+			}
 		})
 	}
 }
@@ -80,6 +154,7 @@ func TestRunInjectCmd(t *testing.T) {
 		{
 			inputFileName:        "inject_gettest_deployment.good.input.yml",
 			stdOutGoldenFileName: "inject_gettest_deployment.good.golden.yml",
+			stdErrGoldenFileName: "inject_gettest_deployment.good.golden.stderr",
 			exitCode:             0,
 		},
 	}
@@ -101,12 +176,15 @@ func TestRunInjectCmd(t *testing.T) {
 
 			actualStdOutResult := outBuffer.String()
 			expectedStdOutResult := readOptionalTestFile(t, tc.stdOutGoldenFileName)
-
-			diffCompare(t, actualStdOutResult, expectedStdOutResult)
+			if expectedStdOutResult != actualStdOutResult {
+				t.Errorf("Result mismatch.\nExpected: %s\nActual: %s", expectedStdOutResult, actualStdOutResult)
+			}
 
 			actualStdErrResult := errBuffer.String()
 			expectedStdErrResult := readOptionalTestFile(t, tc.stdErrGoldenFileName)
-			diffCompare(t, actualStdErrResult, expectedStdErrResult)
+			if expectedStdErrResult != actualStdErrResult {
+				t.Errorf("Result mismatch.\nExpected: %s\nActual: %s", expectedStdErrResult, actualStdErrResult)
+			}
 		})
 	}
 }
@@ -123,9 +201,20 @@ func TestInjectFilePath(t *testing.T) {
 			resource     string
 			resourceFile string
 			expectedFile string
+			stdErrFile   string
 		}{
-			{resource: "nginx", resourceFile: filepath.Join(resourceFolder, "nginx.yaml"), expectedFile: filepath.Join(expectedFolder, "injected_nginx.yaml")},
-			{resource: "redis", resourceFile: filepath.Join(resourceFolder, "db/redis.yaml"), expectedFile: filepath.Join(expectedFolder, "injected_redis.yaml")},
+			{
+				resource:     "nginx",
+				resourceFile: filepath.Join(resourceFolder, "nginx.yaml"),
+				expectedFile: filepath.Join(expectedFolder, "injected_nginx.yaml"),
+				stdErrFile:   filepath.Join(expectedFolder, "injected_nginx.stderr"),
+			},
+			{
+				resource:     "redis",
+				resourceFile: filepath.Join(resourceFolder, "db/redis.yaml"),
+				expectedFile: filepath.Join(expectedFolder, "injected_redis.yaml"),
+				stdErrFile:   filepath.Join(expectedFolder, "injected_redis.stderr"),
+			},
 		}
 
 		for i, testCase := range testCases {
@@ -135,14 +224,20 @@ func TestInjectFilePath(t *testing.T) {
 					t.Fatal("Unexpected error: ", err)
 				}
 
+				errBuf := &bytes.Buffer{}
 				actual := &bytes.Buffer{}
-				if exitCode := runInjectCmd(in, actual, actual, options); exitCode != 0 {
+				if exitCode := runInjectCmd(in, errBuf, actual, options); exitCode != 0 {
 					t.Fatal("Unexpected error. Exit code from runInjectCmd: ", exitCode)
 				}
 
 				expected := readOptionalTestFile(t, testCase.expectedFile)
 				if expected != actual.String() {
 					t.Errorf("Result mismatch.\nExpected: %s\nActual: %s", expected, actual.String())
+				}
+
+				stdErr := readOptionalTestFile(t, testCase.stdErrFile)
+				if stdErr != errBuf.String() {
+					t.Errorf("Result mismatch.\nExpected: %s\nActual: %s", stdErr, errBuf.String())
 				}
 			})
 		}
@@ -154,14 +249,20 @@ func TestInjectFilePath(t *testing.T) {
 			t.Fatal("Unexpected error: ", err)
 		}
 
+		errBuf := &bytes.Buffer{}
 		actual := &bytes.Buffer{}
-		if exitCode := runInjectCmd(in, actual, actual, options); exitCode != 0 {
+		if exitCode := runInjectCmd(in, errBuf, actual, options); exitCode != 0 {
 			t.Fatal("Unexpected error. Exit code from runInjectCmd: ", exitCode)
 		}
 
 		expected := readOptionalTestFile(t, filepath.Join(expectedFolder, "injected_nginx_redis.yaml"))
 		if expected != actual.String() {
 			t.Errorf("Result mismatch.\nExpected: %s\nActual: %s", expected, actual.String())
+		}
+
+		stdErr := readOptionalTestFile(t, filepath.Join(expectedFolder, "injected_nginx_redis.stderr"))
+		if stdErr != errBuf.String() {
+			t.Errorf("Result mismatch.\nExpected: %s\nActual: %s", stdErr, errBuf.String())
 		}
 	})
 }

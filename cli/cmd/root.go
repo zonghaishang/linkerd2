@@ -14,7 +14,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const defaultNamespace = "linkerd"
+const (
+	defaultNamespace = "linkerd"
+
+	lineWidth  = 80
+	okStatus   = "[ok]"
+	warnStatus = "[warn]"
+)
 
 var controlPlaneNamespace string
 var apiAddr string // An empty value means "use the Kubernetes configuration"
@@ -41,6 +47,11 @@ var RootCmd = &cobra.Command{
 			log.SetLevel(log.PanicLevel)
 		}
 
+		controlPlaneNamespaceFromEnv := os.Getenv("LINKERD_NAMESPACE")
+		if controlPlaneNamespace == defaultNamespace && controlPlaneNamespaceFromEnv != "" {
+			controlPlaneNamespace = controlPlaneNamespaceFromEnv
+		}
+
 		if !alphaNumDash.MatchString(controlPlaneNamespace) {
 			return fmt.Errorf("%s is not a valid namespace", controlPlaneNamespace)
 		}
@@ -50,7 +61,7 @@ var RootCmd = &cobra.Command{
 }
 
 func init() {
-	RootCmd.PersistentFlags().StringVarP(&controlPlaneNamespace, "linkerd-namespace", "l", defaultNamespace, "Namespace in which Linkerd is installed")
+	RootCmd.PersistentFlags().StringVarP(&controlPlaneNamespace, "linkerd-namespace", "l", defaultNamespace, "Namespace in which Linkerd is installed [$LINKERD_NAMESPACE]")
 	RootCmd.PersistentFlags().StringVar(&kubeconfigPath, "kubeconfig", "", "Path to the kubeconfig file to use for CLI requests")
 	RootCmd.PersistentFlags().StringVar(&apiAddr, "api-addr", "", "Override kubeconfig and communicate directly with the control plane at host:port (mostly for testing)")
 	RootCmd.PersistentFlags().BoolVar(&verbose, "verbose", false, "Turn on debug logging")
@@ -71,7 +82,7 @@ func init() {
 // checks to determine if the client can successfully connect to the API. If the
 // checks fail, then CLI will print an error and exit. If the shouldRetry param
 // is specified, then the CLI will print a message to stderr and retry.
-func validatedPublicAPIClient(shouldRetry bool) pb.ApiClient {
+func validatedPublicAPIClient(retryDeadline time.Time) pb.ApiClient {
 	checks := []healthcheck.Checks{
 		healthcheck.KubernetesAPIChecks,
 		healthcheck.LinkerdAPIChecks,
@@ -81,7 +92,7 @@ func validatedPublicAPIClient(shouldRetry bool) pb.ApiClient {
 		ControlPlaneNamespace: controlPlaneNamespace,
 		KubeConfig:            kubeconfigPath,
 		APIAddr:               apiAddr,
-		ShouldRetry:           shouldRetry,
+		RetryDeadline:         retryDeadline,
 	})
 
 	exitOnError := func(result *healthcheck.CheckResult) {
@@ -149,7 +160,7 @@ func newProxyConfigOptions() *proxyConfigOptions {
 		proxyControlPort:      4190,
 		proxyMetricsPort:      4191,
 		proxyOutboundCapacity: map[string]uint{},
-		tls: "",
+		tls:                   "",
 	}
 }
 

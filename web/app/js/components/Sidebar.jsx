@@ -1,18 +1,18 @@
 import _ from 'lodash';
-import {friendlyTitle} from './util/Utils.js';
-import {Link} from 'react-router-dom';
+import { friendlyTitle } from './util/Utils.js';
+import { Link } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import React from 'react';
 import ReactRouterPropTypes from 'react-router-prop-types';
 import Version from './Version.jsx';
-import {withContext} from './util/AppContext.jsx';
-import {Badge, Form, Icon, Layout, Menu, Select} from 'antd';
+import { withContext } from './util/AppContext.jsx';
+import { Badge, Form, Icon, Layout, Menu, Select } from 'antd';
 import {
   excludeResourcesFromRollup,
   getSuccessRateClassification,
   processMultiResourceRollup,
   processSingleResourceRollup
-} from './util/MetricUtils.js';
+} from './util/MetricUtils.jsx';
 import {linkerdLogoOnly, linkerdWordLogo} from './util/SvgWrappers.jsx';
 import './../../css/sidebar.css';
 import 'whatwg-fetch';
@@ -20,7 +20,8 @@ import 'whatwg-fetch';
 const classificationLabels = {
   good: "success",
   neutral: "warning",
-  bad: "error"
+  bad: "error",
+  default: "default"
 };
 
 class Sidebar extends React.Component {
@@ -84,15 +85,20 @@ class Sidebar extends React.Component {
   }
 
   fetchVersion() {
-    let versionUrl = `https://versioncheck.linkerd.io/version.json?version=${this.props.releaseVersion}&uuid=${this.props.uuid}`;
+    let versionUrl = `https://versioncheck.linkerd.io/version.json?version=${this.props.releaseVersion}&uuid=${this.props.uuid}&source=web`;
     fetch(versionUrl, { credentials: 'include' })
       .then(rsp => rsp.json())
-      .then(versionRsp =>
+      .then(versionRsp => {
+        let latestVersion;
+        let parts = this.props.releaseVersion.split("-", 2);
+        if (parts.length === 2) {
+          latestVersion = versionRsp[parts[0]];
+        }
         this.setState({
-          latestVersion: versionRsp.version,
-          isLatest: versionRsp.version === this.props.releaseVersion
-        })
-      ).catch(this.handleApiError);
+          latestVersion,
+          isLatest: latestVersion === this.props.releaseVersion
+        });
+      }).catch(this.handleApiError);
   }
 
   loadFromServer() {
@@ -173,7 +179,7 @@ class Sidebar extends React.Component {
         <div className="sidebar">
 
           <div className={`sidebar-menu-header ${this.state.collapsed ? "collapsed" : ""}`}>
-            <PrefixedLink to="/servicemesh">
+            <PrefixedLink to="/overview">
               {this.state.collapsed ? linkerdLogoOnly : linkerdWordLogo}
             </PrefixedLink>
           </div>
@@ -182,31 +188,32 @@ class Sidebar extends React.Component {
             className="sidebar-menu"
             theme="dark"
             selectedKeys={[normalizedPath]}>
-            <Menu.Item className="sidebar-menu-item" key="/servicemesh">
-              <PrefixedLink to="/servicemesh">
-                <Icon type="home" />
-                <span>Service mesh</span>
-              </PrefixedLink>
-            </Menu.Item>
 
-            <Menu.Item className="sidebar-menu-item" key="/namespaces">
-              <PrefixedLink to="/namespaces">
-                <Icon type="dashboard" />
-                <span>Namespaces</span>
+            <Menu.Item className="sidebar-menu-item" key="/overview">
+              <PrefixedLink to="/overview">
+                <Icon type="home" />
+                <span>Overview</span>
               </PrefixedLink>
             </Menu.Item>
 
             <Menu.Item className="sidebar-menu-item" key="/tap">
               <PrefixedLink to="/tap">
-                <Icon type="filter" />
+                <Icon><i className="fas fa-microscope" /></Icon>
                 <span>Tap</span>
               </PrefixedLink>
             </Menu.Item>
 
             <Menu.Item className="sidebar-menu-item" key="/top">
               <PrefixedLink to="/top">
-                <Icon type="caret-up" />
+                <Icon><i className="fas fa-stream" /></Icon>
                 <span>Top</span>
+              </PrefixedLink>
+            </Menu.Item>
+
+            <Menu.Item className="sidebar-menu-item" key="/servicemesh">
+              <PrefixedLink to="/servicemesh">
+                <Icon type="cloud" />
+                <span>Service mesh</span>
               </PrefixedLink>
             </Menu.Item>
 
@@ -216,6 +223,7 @@ class Sidebar extends React.Component {
               title={<span className="sidebar-title"><Icon type="bars" />{this.state.collapsed ? "" : "Resources"}</span>}>
               <Menu.Item><PrefixedLink to="/authorities">Authorities</PrefixedLink></Menu.Item>
               <Menu.Item><PrefixedLink to="/deployments">Deployments</PrefixedLink></Menu.Item>
+              <Menu.Item><PrefixedLink to="/namespaces">Namespaces</PrefixedLink></Menu.Item>
               <Menu.Item><PrefixedLink to="/pods">Pods</PrefixedLink></Menu.Item>
               <Menu.Item><PrefixedLink to="/replicationcontrollers">Replication Controllers</PrefixedLink></Menu.Item>
             </Menu.SubMenu>
@@ -234,7 +242,7 @@ class Sidebar extends React.Component {
                   <Form layout="inline">
                     <Form.Item>
                       <Select
-                        defaultValue="All Namespaces"
+                        defaultValue={this.state.namespaceFilter || "All Namespaces"}
                         dropdownMatchSelectWidth={true}
                         onChange={this.handleNamespaceSelector}>
                         {
@@ -263,20 +271,20 @@ class Sidebar extends React.Component {
                     {
                       _.map(_.sortBy(sidebarComponents[resourceName], r => `${r.namespace}/${r.name}`), r => {
                         // only display resources that have been meshed
-                          return (
-                            <Menu.Item
-                              className="sidebar-submenu-item"
-                              title={`${r.namespace}/${r.name}`}
-                              key={this.api.generateResourceURL(r)}>
-                              <div>
-                                <PrefixedLink
-                                  to={this.api.generateResourceURL(r)}>
-                                  {`${r.namespace}/${r.name}`}
-                                </PrefixedLink>
-                                <Badge status={getSuccessRateClassification(r.successRate, classificationLabels)} />
-                              </div>
-                            </Menu.Item>
-                          );
+                        return (
+                          <Menu.Item
+                            className="sidebar-submenu-item"
+                            title={`${r.namespace}/${r.name}`}
+                            key={this.api.generateResourceURL(r)}>
+                            <div>
+                              <PrefixedLink
+                                to={this.api.generateResourceURL(r)}>
+                                {`${r.namespace}/${r.name}`}
+                              </PrefixedLink>
+                              <Badge status={getSuccessRateClassification(r.successRate, classificationLabels)} />
+                            </div>
+                          </Menu.Item>
+                        );
                       })
                     }
                   </Menu.SubMenu>

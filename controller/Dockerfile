@@ -1,5 +1,5 @@
 ## compile controller services
-FROM gcr.io/linkerd-io/go-deps:b614886e as golang
+FROM gcr.io/linkerd-io/go-deps:6a07271e as golang
 WORKDIR /go/src/github.com/linkerd/linkerd2
 COPY controller/gen controller/gen
 COPY pkg pkg
@@ -12,6 +12,7 @@ RUN CGO_ENABLED=0 GOOS=linux go install ./controller/cmd/...
 ## package runtime
 FROM scratch
 ENV PATH=$PATH:/go/bin
+COPY LICENSE /linkerd/LICENSE
 COPY --from=golang /go/bin /go/bin
 
 ARG LINKERD_VERSION

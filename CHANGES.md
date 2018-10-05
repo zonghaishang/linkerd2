@@ -1,3 +1,80 @@
+## edge-18.10.1
+
+* Web UI
+  * **Improved** Tap and Top pages
+    * Added clear button to query form
+  * **Improved** Resource Detail pages
+    * Limit number of resources shown in the graph
+* Controller
+  * CLI health check now uses unified endpoint for data plane checks
+  * Include Licence files in all Docker images
+
+Special thanks to @alenkacz for contributing to this release!
+
+## edge-18.9.3
+
+* Web UI
+  * **Improved** Resource Detail page
+    * Better rendering of the dependency graph at the top of the page
+    * Unmeshed sources are now populated in the Inbound traffic table
+    * Sources and destinations are aligned in the popover
+  * **Improved** Tap and Top pages
+    * Additional validation and polish for the form controls
+    * The top table clears older results when a new top call is started
+    * The top table now aggregates by HTTP method as well
+* CLI
+  * **New** The namespace in which Linkerd is installed is configurable via the
+    `LINKERD_NAMESPACE` env var, in addition to the `--linkerd-namespace` flag
+  * **New** The wait time for the `check` and `dashboard` commands is
+    configurable via the `--wait` flag
+  * **Improved** The `top` command now aggregates by HTTP method as well
+
+Special thanks to @rochacon, @fahrradflucht and @alenkacz for contributing to
+this release!
+
+## stable-2.0.0
+
+## edge-18.9.2
+
+* **New** _edge_ and _stable_ release channels
+* Web UI
+  * **Improved** Tap & Top UIs with better layout and linking
+* CLI
+  * **Improved** `check --pre` command verifies the caller has sufficient
+    permissions to install Linkerd
+  * **Improved** `check` command verifies that Prometheus has data for proxied
+    pods
+* Proxy
+  * **Fix** `hyper` crate dependency corrects HTTP/1.0 Keep-Alive behavior
+
+## v18.9.1
+
+* Web UI
+  * **New** Default landing page provides namespace overview with expandable
+    sections
+  * **New** Breadcrumb navigation at the top of the dashboard
+  * **Improved** Tap and Top pages
+    * Table rendering performance improvements via throttling
+    * Tables now link to resource detail pages
+    * Tap an entire namespace when no resource is specified
+    * Tap websocket errors provide more descriptive text
+    * Consolidated source and destination columns
+  * Misc ui updates
+    * Metrics tables now include a small success rate chart
+    * Improved latency formatting for seconds latencies
+    * Renamed upstream/downstream to inbound/outbound
+    * Sidebar scrolls independently from main panel, scrollbars hidden when not
+      needed
+    * Removed social links from sidebar
+* CLI
+  * **New** `linkerd check` now validates Linkerd proxy versions and readiness
+  * **New** `linkerd inject` now provides an injection status report, and warns
+    when resources are not injectable
+  * **New** `linkerd top` now has a `--hide-sources` flag, to hide the source
+    column and collapse top results accordingly
+* Control Plane
+  * Updated Prometheus to v2.4.0, Grafana to 5.2.4
+
 ## v18.8.4
 
 * Web UI

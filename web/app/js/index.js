@@ -1,7 +1,9 @@
 import ApiHelpers from './components/util/ApiHelpers.jsx';
 import AppContext from './components/util/AppContext.jsx';
+import BreadcrumbHeader from './components/BreadcrumbHeader.jsx';
 import { Layout } from 'antd';
 import Namespace from './components/Namespace.jsx';
+import NamespaceLanding from './components/NamespaceLanding.jsx';
 import NoMatch from './components/NoMatch.jsx';
 import React from 'react';
 import ReactDOM from 'react-dom';
@@ -39,10 +41,12 @@ let applicationHtml = (
         <Layout>
           <Route component={Sidebar} />
           <Layout>
-            <Layout.Content style={{ margin: '0 0', padding: 0, background: '#fff' }}>
+            <Route component={BreadcrumbHeader}  />
+            <Layout.Content style={{ margin: '60px 0', padding: 0, background: '#fff' }}>
               <div className="main-content">
                 <Switch>
-                  <Redirect exact from={`${pathPrefix}/`} to={`${pathPrefix}/servicemesh`} />
+                  <Redirect exact from={`${pathPrefix}/`} to={`${pathPrefix}/overview`} />
+                  <Route path={`${pathPrefix}/overview`} component={NamespaceLanding} />
                   <Route path={`${pathPrefix}/servicemesh`} component={ServiceMesh} />
                   <Route exact path={`${pathPrefix}/namespaces/:namespace`} component={Namespace} />
                   <Route path={`${pathPrefix}/namespaces/:namespace/pods/:pod`} component={ResourceDetail} />

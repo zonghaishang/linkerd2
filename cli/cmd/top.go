@@ -29,6 +29,7 @@ type topOptions struct {
 	method      string
 	authority   string
 	path        string
+	hideSources bool
 }
 
 type topRequest struct {
@@ -50,6 +51,7 @@ func (id topRequestID) String() string {
 
 type tableRow struct {
 	by          string
+	method      string
 	source      string
 	destination string
 	count       int
@@ -63,12 +65,12 @@ type tableRow struct {
 const headerHeight = 3
 
 var (
-	columnNames  = []string{"Source", "Destination", "Path", "Count", "Best", "Worst", "Last", "Success Rate"}
-	columnWidths = []int{23, 23, 55, 6, 6, 6, 6, 3}
+	columnNames  = []string{"Source", "Destination", "Method", "Path", "Count", "Best", "Worst", "Last", "Success Rate"}
+	columnWidths = []int{23, 23, 10, 37, 6, 6, 6, 6, 3}
 )
 
-func newTopOptions() *tapOptions {
-	return &tapOptions{
+func newTopOptions() *topOptions {
+	return &topOptions{
 		namespace:   "default",
 		toResource:  "",
 		toNamespace: "",
@@ -77,6 +79,7 @@ func newTopOptions() *tapOptions {
 		method:      "",
 		authority:   "",
 		path:        "",
+		hideSources: false,
 	}
 }
 
@@ -129,7 +132,7 @@ func newCmdTop() *cobra.Command {
 				return err
 			}
 
-			return getTrafficByResourceFromAPI(os.Stdout, validatedPublicAPIClient(false), req)
+			return getTrafficByResourceFromAPI(os.Stdout, validatedPublicAPIClient(time.Time{}), req, options)
 		},
 	}
 
@@ -149,11 +152,12 @@ func newCmdTop() *cobra.Command {
 		"Display requests with this :authority")
 	cmd.PersistentFlags().StringVar(&options.path, "path", options.path,
 		"Display requests with paths that start with this prefix")
+	cmd.PersistentFlags().BoolVar(&options.hideSources, "hide-sources", options.hideSources, "Hide the source column")
 
 	return cmd
 }
 
-func getTrafficByResourceFromAPI(w io.Writer, client pb.ApiClient, req *pb.TapByResourceRequest) error {
+func getTrafficByResourceFromAPI(w io.Writer, client pb.ApiClient, req *pb.TapByResourceRequest, options *topOptions) error {
 	rsp, err := client.TapByResource(context.Background(), req)
 	if err != nil {
 		return err
@@ -171,7 +175,7 @@ func getTrafficByResourceFromAPI(w io.Writer, client pb.ApiClient, req *pb.TapBy
 	go recvEvents(rsp, requestCh, done)
 	go pollInput(done)
 
-	renderTable(requestCh, done)
+	renderTable(requestCh, done, !options.hideSources)
 
 	return nil
 }
@@ -235,7 +239,7 @@ func pollInput(done chan<- struct{}) {
 	}
 }
 
-func renderTable(requestCh <-chan topRequest, done <-chan struct{}) {
+func renderTable(requestCh <-chan topRequest, done <-chan struct{}, withSource bool) {
 	ticker := time.NewTicker(100 * time.Millisecond)
 	var table []tableRow
 
@@ -244,18 +248,19 @@ func renderTable(requestCh <-chan topRequest, done <-chan struct{}) {
 		case <-done:
 			return
 		case req := <-requestCh:
-			tableInsert(&table, req)
+			tableInsert(&table, req, withSource)
 		case <-ticker.C:
 			termbox.Clear(termbox.ColorDefault, termbox.ColorDefault)
-			renderHeaders()
-			renderTableBody(&table)
+			renderHeaders(withSource)
+			renderTableBody(&table, withSource)
 			termbox.Flush()
 		}
 	}
 }
 
-func tableInsert(table *[]tableRow, req topRequest) {
+func tableInsert(table *[]tableRow, req topRequest, withSource bool) {
 	by := req.reqInit.GetPath()
+	method := req.reqInit.GetMethod().GetRegistered().String()
 	source := stripPort(addr.PublicAddressToString(req.event.GetSource()))
 	if pod := req.event.SourceMeta.Labels["pod"]; pod != "" {
 		source = pod
@@ -283,7 +288,7 @@ func tableInsert(table *[]tableRow, req topRequest) {
 
 	found := false
 	for i, row := range *table {
-		if row.by == by && row.source == source && row.destination == destination {
+		if row.by == by && row.method == method && row.destination == destination && (row.source == source || !withSource) {
 			(*table)[i].count++
 			if latency.Nanoseconds() < row.best.Nanoseconds() {
 				(*table)[i].best = latency
@@ -311,6 +316,7 @@ func tableInsert(table *[]tableRow, req topRequest) {
 		}
 		row := tableRow{
 			by:          by,
+			method:      method,
 			source:      source,
 			destination: destination,
 			count:       1,
@@ -328,10 +334,13 @@ func stripPort(address string) string {
 	return strings.Split(address, ":")[0]
 }
 
-func renderHeaders() {
+func renderHeaders(withSource bool) {
 	tbprint(0, 0, "(press q to quit)")
 	x := 0
 	for i, header := range columnNames {
+		if i == 0 && !withSource {
+			continue
+		}
 		width := columnWidths[i]
 		padded := fmt.Sprintf("%-"+strconv.Itoa(width)+"s ", header)
 		tbprintBold(x, 2, padded)
@@ -339,26 +348,30 @@ func renderHeaders() {
 	}
 }
 
-func renderTableBody(table *[]tableRow) {
+func renderTableBody(table *[]tableRow, withSource bool) {
 	sort.SliceStable(*table, func(i, j int) bool {
 		return (*table)[i].count > (*table)[j].count
 	})
 	for i, row := range *table {
 		x := 0
-		tbprint(x, i+headerHeight, row.source)
-		x += columnWidths[0] + 1
+		if withSource {
+			tbprint(x, i+headerHeight, row.source)
+			x += columnWidths[0] + 1
+		}
 		tbprint(x, i+headerHeight, row.destination)
 		x += columnWidths[1] + 1
-		tbprint(x, i+headerHeight, row.by)
+		tbprint(x, i+headerHeight, row.method)
 		x += columnWidths[2] + 1
-		tbprint(x, i+headerHeight, strconv.Itoa(row.count))
+		tbprint(x, i+headerHeight, row.by)
 		x += columnWidths[3] + 1
-		tbprint(x, i+headerHeight, formatDuration(row.best))
+		tbprint(x, i+headerHeight, strconv.Itoa(row.count))
 		x += columnWidths[4] + 1
-		tbprint(x, i+headerHeight, formatDuration(row.worst))
+		tbprint(x, i+headerHeight, formatDuration(row.best))
 		x += columnWidths[5] + 1
-		tbprint(x, i+headerHeight, formatDuration(row.last))
+		tbprint(x, i+headerHeight, formatDuration(row.worst))
 		x += columnWidths[6] + 1
+		tbprint(x, i+headerHeight, formatDuration(row.last))
+		x += columnWidths[7] + 1
 		successRate := fmt.Sprintf("%.2f%%", 100.0*float32(row.successes)/float32(row.successes+row.failures))
 		tbprint(x, i+headerHeight, successRate)
 	}

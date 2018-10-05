@@ -1,4 +1,4 @@
-@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css');
+@import url('https://use.fontawesome.com/releases/v5.3.1/css/all.css');
 
 :root {
   --white: #fff;
@@ -11,10 +11,11 @@
   --warmgrey: #f6f6f6;
   --coldgrey: #c9c9c9;
   --neutralgrey: #828282;
+  --graphgrey: #E0E0E0;
   --silver: #BDBDBD;
-  --green: #27AE60;
-  --siennared: #EB5757;
-  --orange: #FF8C00;
+  --green: #26E99D;
+  --red: #FF4D2B;
+  --orange: #ffae4b;
   --latency-p99: var(--royalblue);
   --latency-p95: var(--curiousblue);
   --latency-p50: var(--pictonblue);
@@ -83,6 +84,10 @@ h2, h3, h4, h5, h6 {
   align-items: center;
   justify-content: center;
   height: 75vh;
+
+  &.short-spin-section {
+    height: 100px;
+  }
 }
 
 .page-section {
@@ -150,7 +155,7 @@ h2, h3, h4, h5, h6 {
   padding: var(--base-width);
   margin-bottom: calc(3 * var(--base-width));
   border-radius: 5px;
-  background: var(--siennared);
+  background: var(--red);
   color: white;
   font-size: 12px;
   font-weight: var(--font-weight-bold);
@@ -239,6 +244,30 @@ a.button.primary:active {
   & tr .numeric {
     text-align: right;
   }
+
+  & .metric-table-sr {
+    margin-right: 6px;
+  }
+
+  & .metric-table-sr-chart.ant-progress-circle {
+    /* override ant progress circle height */
+    & div.ant-progress-inner {
+      max-height: 16px;
+    }
+  }
+}
+
+/* ant Progress bar color orverrides */
+.success-rate-arc {
+  &.status-good .ant-progress-circle-path {
+    stroke: var(--green);
+  }
+  &.status-ok .ant-progress-circle-path {
+    stroke: var(--orange)
+  }
+  &.status-poor .ant-progress-circle-path {
+    stroke: var(--red);
+  }
 }
 
 /* Colored dot for indicating statuses */
@@ -252,14 +281,18 @@ div.status-dot {
     background-color: var(--green);
   }
   &.status-dot-poor {
-    background-color: var(--siennared);
+    background-color: var(--red);
   }
   &.status-dot-neutral {
     background-color: #E0E0E0;
   }
   &.status-dot-ok {
-    background-color: #ffd54f;
+    background-color: var(--orange);
   }
+}
+
+.anticon-check-circle.status-ok {
+  color: var(--green);
 }
 
 div.ant-layout-has-sider {

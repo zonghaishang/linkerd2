@@ -37,7 +37,7 @@ type (
 		Contents interface{}
 	}
 	appParams struct {
-		Data                *pb.VersionInfo
+		Data                pb.VersionInfo
 		UUID                string
 		ControllerNamespace string
 		Error               bool
@@ -83,6 +83,7 @@ func NewServer(addr, templateDir, staticDir, uuid, controllerNamespace, webpackD
 
 	// webapp routes
 	server.router.GET("/", handler.handleIndex)
+	server.router.GET("/overview", handler.handleIndex)
 	server.router.GET("/servicemesh", handler.handleIndex)
 	server.router.GET("/namespaces", handler.handleIndex)
 	server.router.GET("/namespaces/:namespace", handler.handleIndex)
