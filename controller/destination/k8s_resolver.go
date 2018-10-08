@@ -16,16 +16,18 @@ var containsAlphaRegexp = regexp.MustCompile("[a-zA-Z]")
 
 // implements the streamingDestinationResolver interface
 type k8sResolver struct {
-	k8sDNSZoneLabels []string
-	endpointsWatcher *endpointsWatcher
-	profileWatcher   *profileWatcher
+	k8sDNSZoneLabels    []string
+	controllerNamespace string
+	endpointsWatcher    *endpointsWatcher
+	profileWatcher      *profileWatcher
 }
 
-func newK8sResolver(k8sDNSZoneLabels []string, k8sAPI *k8s.API) *k8sResolver {
+func newK8sResolver(k8sDNSZoneLabels []string, controllerNamespace string, k8sAPI *k8s.API) *k8sResolver {
 	return &k8sResolver{
-		k8sDNSZoneLabels: k8sDNSZoneLabels,
-		endpointsWatcher: newEndpointsWatcher(k8sAPI),
-		profileWatcher:   newProfileWatcher(k8sAPI),
+		k8sDNSZoneLabels:    k8sDNSZoneLabels,
+		controllerNamespace: controllerNamespace,
+		endpointsWatcher:    newEndpointsWatcher(k8sAPI),
+		profileWatcher:      newProfileWatcher(k8sAPI),
 	}
 }
 
@@ -66,19 +68,24 @@ func (k *k8sResolver) streamResolution(host string, port int, listener endpointU
 }
 
 func (k *k8sResolver) streamProfiles(host string, listener profileUpdateListener) error {
-	id, err := k.localKubernetesServiceIdFromDNSName(host)
+	svcId, err := k.localKubernetesServiceIdFromDNSName(host)
 	if err != nil {
 		log.Error(err)
 		return err
 	}
 
-	if id == nil {
+	if svcId == nil {
 		err = fmt.Errorf("cannot resolve service that isn't a local Kubernetes service: %s", host)
 		log.Error(err)
 		return err
 	}
 
-	err = k.profileWatcher.subscribeToSvc(*id, listener)
+	id := profileId{
+		namespace: k.controllerNamespace,
+		name:      fmt.Sprintf("%s.%s", svcId.name, svcId.namespace),
+	}
+
+	err = k.profileWatcher.subscribeToProfile(id, listener)
 	if err != nil {
 		log.Error(err)
 		return err
@@ -86,7 +93,7 @@ func (k *k8sResolver) streamProfiles(host string, listener profileUpdateListener
 
 	select {
 	case <-listener.ClientClose():
-		return k.profileWatcher.unsubscribeToSvc(*id, listener)
+		return k.profileWatcher.unsubscribeToProfile(id, listener)
 	case <-listener.ServerClose():
 		return nil
 	}

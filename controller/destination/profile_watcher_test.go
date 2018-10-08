@@ -16,25 +16,13 @@ func TestProfileWatcher(t *testing.T) {
 		expectedProfiles []*sp.ServiceProfileSpec
 	}{
 		{
-			name: "service with profile",
+			name: "service profile",
 			k8sConfigs: []string{`
-apiVersion: v1
-kind: Service
-metadata:
-  name: name1
-  namespace: ns
-  annotations:
-    linkerd.io/service-profile: foobar
-spec:
-  type: LoadBalancer
-  ports:
-  - port: 8989`,
-				`
 apiVersion: linkerd.io/v1alpha1
 kind: ServiceProfile
 metadata:
-  name: foobar
-  namespace: ns
+  name: ns.foobar
+  namespace: linkerd
 spec:
   routes:
   - condition:
@@ -45,7 +33,7 @@ spec:
           min: 500
         isSuccess: false`,
 			},
-			service: serviceId{namespace: "ns", name: "name1"},
+			service: serviceId{namespace: "ns", name: "foobar"},
 			expectedProfiles: []*sp.ServiceProfileSpec{
 				&sp.ServiceProfileSpec{
 					Routes: []*sp.RouteSpec{
@@ -68,39 +56,9 @@ spec:
 			},
 		},
 		{
-			name: "service without profile",
-			k8sConfigs: []string{`
-apiVersion: v1
-kind: Service
-metadata:
-  name: name1
-  namespace: ns
-spec:
-  type: LoadBalancer
-  ports:
-  - port: 8989`,
-			},
-			service: serviceId{namespace: "ns", name: "name1"},
-			expectedProfiles: []*sp.ServiceProfileSpec{
-				nil,
-			},
-		},
-		{
-			name: "service with unknown profile",
-			k8sConfigs: []string{`
-apiVersion: v1
-kind: Service
-metadata:
-  name: name1
-  namespace: ns
-  annotations:
-    linkerd.io/service-profile: blah
-spec:
-  type: LoadBalancer
-  ports:
-  - port: 8989`,
-			},
-			service: serviceId{namespace: "ns", name: "name1"},
+			name:       "service without profile",
+			k8sConfigs: []string{},
+			service:    serviceId{namespace: "ns", name: "foobar"},
 			expectedProfiles: []*sp.ServiceProfileSpec{
 				nil,
 			},
@@ -112,7 +70,7 @@ spec:
 				t.Fatalf("NewFakeAPI returned an error: %s", err)
 			}
 
-			watcher := newProfileWatcher(k8sAPI)
+			watcher := newProfileWatcher(k8sAPI, "linkerd")
 
 			k8sAPI.Sync(nil)
 

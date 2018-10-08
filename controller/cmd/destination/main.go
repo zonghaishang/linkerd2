@@ -18,6 +18,7 @@ func main() {
 	metricsAddr := flag.String("metrics-addr", ":9999", "address to serve scrapable metrics on")
 	kubeConfigPath := flag.String("kubeconfig", "", "path to kube config")
 	k8sDNSZone := flag.String("kubernetes-dns-zone", "", "The DNS suffix for the local Kubernetes zone.")
+	controllerNamespace := flag.String("controller-namespace", "linkerd", "namespace in which Linkerd is installed")
 	enableTLS := flag.Bool("enable-tls", false, "Enable TLS connections among pods in the service mesh")
 	flags.ConfigureAndParse()
 
@@ -41,7 +42,7 @@ func main() {
 	done := make(chan struct{})
 	ready := make(chan struct{})
 
-	server, lis, err := destination.NewServer(*addr, *k8sDNSZone, *enableTLS, k8sAPI, done)
+	server, lis, err := destination.NewServer(*addr, *k8sDNSZone, *controllerNamespace, *enableTLS, k8sAPI, done)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -29,8 +29,8 @@ type server struct {
 //
 // Addresses for the given destination are fetched from the Kubernetes Endpoints
 // API.
-func NewServer(addr, k8sDNSZone string, enableTLS bool, k8sAPI *k8s.API, done chan struct{}) (*grpc.Server, net.Listener, error) {
-	resolvers, err := buildResolversList(k8sDNSZone, k8sAPI)
+func NewServer(addr, k8sDNSZone string, controllerNamespace string, enableTLS bool, k8sAPI *k8s.API, done chan struct{}) (*grpc.Server, net.Listener, error) {
+	resolvers, err := buildResolversList(k8sDNSZone, controllerNamespace, k8sAPI)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -131,7 +131,7 @@ func getHostAndPort(dest *pb.GetDestination) (string, int, error) {
 	return host, port, nil
 }
 
-func buildResolversList(k8sDNSZone string, k8sAPI *k8s.API) ([]streamingDestinationResolver, error) {
+func buildResolversList(k8sDNSZone string, controllerNamespace string, k8sAPI *k8s.API) ([]streamingDestinationResolver, error) {
 	var k8sDNSZoneLabels []string
 	if k8sDNSZone == "" {
 		k8sDNSZoneLabels = []string{}
@@ -143,7 +143,7 @@ func buildResolversList(k8sDNSZone string, k8sAPI *k8s.API) ([]streamingDestinat
 		}
 	}
 
-	k8sResolver := newK8sResolver(k8sDNSZoneLabels, k8sAPI)
+	k8sResolver := newK8sResolver(k8sDNSZoneLabels, controllerNamespace, k8sAPI)
 
 	log.Infof("Adding k8s name resolver")
 

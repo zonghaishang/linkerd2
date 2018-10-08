@@ -72,6 +72,7 @@ func toRoute(route *sp.RouteSpec) (*pb.Route, error) {
 	return &pb.Route{
 		Condition:       cond,
 		ResponseClasses: rcs,
+		// TODO: set route->name metric label.
 	}, nil
 }
 

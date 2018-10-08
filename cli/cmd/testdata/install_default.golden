@@ -165,6 +165,7 @@ spec:
       - args:
         - destination
         - -enable-tls=false
+        - -controller-namespace=linkerd        
         - -log-level=info
         image: gcr.io/linkerd-io/controller:undefined
         imagePullPolicy: IfNotPresent

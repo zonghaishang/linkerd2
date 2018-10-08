@@ -170,6 +170,7 @@ spec:
         args:
         - "destination"
         - "-enable-tls={{.EnableTLS}}"
+        - "-controller-namespace={{.Namespace}}"
         - "-log-level={{.ControllerLogLevel}}"
         livenessProbe:
           httpGet:
