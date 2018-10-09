@@ -12,7 +12,7 @@ func TestProfileWatcher(t *testing.T) {
 	for _, tt := range []struct {
 		name             string
 		k8sConfigs       []string
-		service          serviceId
+		service          profileId
 		expectedProfiles []*sp.ServiceProfileSpec
 	}{
 		{
@@ -21,7 +21,7 @@ func TestProfileWatcher(t *testing.T) {
 apiVersion: linkerd.io/v1alpha1
 kind: ServiceProfile
 metadata:
-  name: ns.foobar
+  name: foobar.ns
   namespace: linkerd
 spec:
   routes:
@@ -33,7 +33,7 @@ spec:
           min: 500
         isSuccess: false`,
 			},
-			service: serviceId{namespace: "ns", name: "foobar"},
+			service: profileId{namespace: "linkerd", name: "foobar.ns"},
 			expectedProfiles: []*sp.ServiceProfileSpec{
 				&sp.ServiceProfileSpec{
 					Routes: []*sp.RouteSpec{
@@ -58,7 +58,7 @@ spec:
 		{
 			name:       "service without profile",
 			k8sConfigs: []string{},
-			service:    serviceId{namespace: "ns", name: "foobar"},
+			service:    profileId{namespace: "linkerd", name: "foobar.ns"},
 			expectedProfiles: []*sp.ServiceProfileSpec{
 				nil,
 			},
@@ -70,14 +70,14 @@ spec:
 				t.Fatalf("NewFakeAPI returned an error: %s", err)
 			}
 
-			watcher := newProfileWatcher(k8sAPI, "linkerd")
+			watcher := newProfileWatcher(k8sAPI)
 
 			k8sAPI.Sync(nil)
 
 			listener, cancelFn := newCollectProfileListener()
 			defer cancelFn()
 
-			err = watcher.subscribeToSvc(tt.service, listener)
+			err = watcher.subscribeToProfile(tt.service, listener)
 			if err != nil {
 				t.Fatalf("subscribe returned an error: %s", err)
 			}

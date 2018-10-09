@@ -25,6 +25,9 @@ rules:
 - apiGroups: [""]
   resources: ["pods", "endpoints", "services", "namespaces", "replicationcontrollers"]
   verbs: ["list", "get", "watch"]
+- apiGroups: ["linkerd.io"]
+  resources: ["serviceprofiles"]
+  verbs: ["list", "get", "watch"]
 
 ---
 kind: ClusterRoleBinding
@@ -166,7 +169,7 @@ spec:
       - args:
         - destination
         - -enable-tls=true
-        - -controller-namespace=Namespace        
+        - -controller-namespace=Namespace
         - -log-level=ControllerLogLevel
         image: ControllerImage
         imagePullPolicy: ImagePullPolicy

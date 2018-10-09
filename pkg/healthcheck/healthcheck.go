@@ -249,6 +249,15 @@ func (hc *HealthChecker) addLinkerdPreInstallChecks() {
 			return hc.checkCanCreate(hc.ControlPlaneNamespace, "", "v1", "ConfigMap")
 		},
 	})
+
+	hc.checkers = append(hc.checkers, &checker{
+		category:    LinkerdPreInstallCategory,
+		description: "can create CustomResourceDefinitions",
+		fatal:       true,
+		check: func() error {
+			return hc.checkCanCreate(hc.ControlPlaneNamespace, "apiextensions.k8s.io", "v1beta1", "CustomResourceDefinition")
+		},
+	})
 }
 
 func (hc *HealthChecker) addLinkerdAPIChecks() {

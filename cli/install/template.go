@@ -28,6 +28,9 @@ rules:
 - apiGroups: [""]
   resources: ["pods", "endpoints", "services", "namespaces", "replicationcontrollers"]
   verbs: ["list", "get", "watch"]
+- apiGroups: ["linkerd.io"]
+  resources: ["serviceprofiles"]
+  verbs: ["list", "get", "watch"]
 
 ---
 kind: ClusterRoleBinding
