@@ -1,0 +1,73 @@
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+    name: service-profile-test-d1
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: service-profile-test-d1
+    template:
+        metadata:
+            labels:
+                app: service-profile-test-d1
+        spec:
+            containers:
+            - name: terminus-grpc
+              image: buoyantio/bb:v0.0.1
+              args: ["terminus", "--grpc-server-port", "9090", "--response-text", "BANANA"]
+              ports:
+              - containerPort: 9090
+---
+apiVersion: apps/v1beta1
+kind: Deployment
+metadata:
+    name: service-profile-test-d2
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: service-profile-test-d2
+    template:
+        metadata:
+            labels:
+                app: service-profile-test-d2
+        spec:
+            containers:
+            - name: http-to-grpc
+              image: buoyantio/bb:v0.0.1
+              args: [
+                  "point-to-point-channel",
+                  "--grpc-downstream-server",
+                  "service-profile-test-svc1:9090",
+                  "--h1-server-port",
+                  "8080"]
+              ports:
+              - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: service-profile-test-svc1
+spec:
+    selector:
+        app: service-profile-test-d1
+    type: ClusterIP
+    ports:
+    - name: grpc
+      port: 9090
+      targetPort: 9090
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: service-profile-test-svc2
+spec:
+    selector:
+        app: service-profile-test-d2
+    type: ClusterIP
+    ports:
+    - name: http
+      port: 8080
+      targetPort: 8080

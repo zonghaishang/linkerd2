@@ -20,6 +20,7 @@ import (
 // Kubernetes API using the environment's configured kubeconfig file.
 type KubernetesHelper struct {
 	clientset *kubernetes.Clientset
+	proxy     *k8s.KubernetesProxy
 }
 
 // NewKubernetesHelper creates a new instance of KubernetesHelper.
@@ -203,17 +204,27 @@ func (h *KubernetesHelper) ParseNamespacedResource(resource string) (string, str
 // tests can use for access to the given service. Note that the proxy remains
 // running for the duration of the test.
 func (h *KubernetesHelper) ProxyURLFor(namespace, service, port string) (string, error) {
-	proxy, err := k8s.NewProxy("", "", 0)
+	var err error
+	h.proxy, err = k8s.NewProxy("", "", 0)
 	if err != nil {
 		return "", err
 	}
 
-	url, err := proxy.URLFor(namespace, fmt.Sprintf("/services/%s:%s/proxy/", service, port))
+	url, err := h.GetServiceURL(namespace, service, port)
 	if err != nil {
 		return "", err
 	}
 
-	go proxy.Run()
+	go h.proxy.Run()
+
+	return url, nil
+}
+
+func (h *KubernetesHelper) GetServiceURL(namespace, service, port string) (string, error){
+	url, err := h.proxy.URLFor(namespace, fmt.Sprintf("/services/%s:%s/proxy/", service, port))
+	if err != nil {
+		return "", err
+	}
 
 	return url.String(), nil
 }
