@@ -44,12 +44,14 @@ func TestMain(m *testing.M) {
 }
 
 func TestNoServiceProfile(t *testing.T) {
-	out, _, err := TestHelper.LinkerdRun("inject", "testdata/no_service_profile_deployment.yaml")
+	out, _, err := TestHelper.LinkerdRun("inject","--proxy-log-level","warn,linkerd2_proxy=debug", "testdata/no_service_profile_deployment.yaml")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
 
 	prefixedNs := TestHelper.GetTestNamespace("profile-test")
+	println(prefixedNs)
+	println(out)
 	out, err = TestHelper.KubectlApply(out, prefixedNs)
 	if err != nil {
 		t.Fatalf("Unexpected error: %v\n output: \n %s", err, out)
@@ -75,7 +77,7 @@ func TestNoServiceProfile(t *testing.T) {
 
 		svcUrl, err := TestHelper.ProxyURLFor(prefixedNs, "service-profile-test-svc2", "http")
 		if err != nil {
-			t.Errorf("Unpexpected error: %v", err)
+			t.Errorf("Unpexpected error svcURL: %v", err)
 		}
 
 		for n := 0; n <= 10; n++ {
@@ -114,6 +116,10 @@ func TestNoServiceProfile(t *testing.T) {
 				t.Errorf("Unexpected service profile path\n Output: %v", m)
 			}
 		}
+	})
+
+	t.Run("should have route path metrics",func(t *testing.T) {
+		out, _, err := TestHelper.LinkerdRun("profile", "--namespace", prefixedNs, "--template", )
 	})
 
 }
