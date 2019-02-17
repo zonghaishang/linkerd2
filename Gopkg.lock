@@ -850,7 +850,7 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:5462386895a322b94a79a5de7314310edbd5f4d15f851ae032f146b2c951b3de"
+  digest = "1:733bbd39aeb07cba7586933ac301c66f5504f687b393529125affaf9a096d2a8"
   name = "golang.org/x/crypto"
   packages = [
     "cryptobyte",
@@ -862,7 +862,7 @@
     "ssh/terminal",
   ]
   pruneopts = ""
-  revision = "74369b46fc6756741c016591724fd1cb8e26845f"
+  revision = "d9133f5469342136e669e85192a26056b587f503"
 
 [[projects]]
   branch = "master"
