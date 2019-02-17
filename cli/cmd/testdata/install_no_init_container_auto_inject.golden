@@ -1,20 +1,20 @@
-### Namespace ###
+---
 kind: Namespace
 apiVersion: v1
 metadata:
   name: linkerd
   annotations:
     linkerd.io/inject: disabled
-
-### Service Account Controller ###
+---
+###
+### Controller
+###
 ---
 kind: ServiceAccount
 apiVersion: v1
 metadata:
   name: linkerd-controller
   namespace: linkerd
-
-### Controller RBAC ###
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1beta1
@@ -30,7 +30,6 @@ rules:
 - apiGroups: ["linkerd.io"]
   resources: ["serviceprofiles"]
   verbs: ["list", "get", "watch"]
-
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
@@ -44,41 +43,6 @@ subjects:
 - kind: ServiceAccount
   name: linkerd-controller
   namespace: linkerd
-
-### Service Account Prometheus ###
----
-kind: ServiceAccount
-apiVersion: v1
-metadata:
-  name: linkerd-prometheus
-  namespace: linkerd
-
-### Prometheus RBAC ###
----
-kind: ClusterRole
-apiVersion: rbac.authorization.k8s.io/v1beta1
-metadata:
-  name: linkerd-linkerd-prometheus
-rules:
-- apiGroups: [""]
-  resources: ["pods"]
-  verbs: ["get", "list", "watch"]
-
----
-kind: ClusterRoleBinding
-apiVersion: rbac.authorization.k8s.io/v1beta1
-metadata:
-  name: linkerd-linkerd-prometheus
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: linkerd-linkerd-prometheus
-subjects:
-- kind: ServiceAccount
-  name: linkerd-prometheus
-  namespace: linkerd
-
-### Controller ###
 ---
 kind: Service
 apiVersion: v1
@@ -97,7 +61,6 @@ spec:
   - name: http
     port: 8085
     targetPort: 8085
-
 ---
 kind: Service
 apiVersion: v1
@@ -116,7 +79,6 @@ spec:
   - name: grpc
     port: 8086
     targetPort: 8086
-
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -274,6 +236,10 @@ spec:
       serviceAccountName: linkerd-controller
 status: {}
 ---
+###
+### Service Profile CRD
+###
+---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
@@ -375,16 +341,16 @@ spec:
                                 type: object
                             not:
                               type: object
-
-### Service Account Web ###
+---
+###
+### Web
+###
 ---
 kind: ServiceAccount
 apiVersion: v1
 metadata:
   name: linkerd-web
   namespace: linkerd
-
-### Web ###
 ---
 kind: Service
 apiVersion: v1
@@ -406,7 +372,6 @@ spec:
   - name: admin-http
     port: 9994
     targetPort: 9994
-
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -511,6 +476,38 @@ spec:
       serviceAccountName: linkerd-web
 status: {}
 ---
+###
+### Prometheus
+###
+---
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: linkerd-prometheus
+  namespace: linkerd
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: linkerd-linkerd-prometheus
+rules:
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: linkerd-linkerd-prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: linkerd-linkerd-prometheus
+subjects:
+- kind: ServiceAccount
+  name: linkerd-prometheus
+  namespace: linkerd
+---
 kind: Service
 apiVersion: v1
 metadata:
@@ -528,7 +525,6 @@ spec:
   - name: admin-http
     port: 9090
     targetPort: 9090
-
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -731,16 +727,16 @@ data:
       # foo=bar
       - action: labelmap
         regex: __meta_kubernetes_pod_label_linkerd_io_(.+)
-
-### Service Account Grafana ###
+---
+###
+### Grafana
+###
 ---
 kind: ServiceAccount
 apiVersion: v1
 metadata:
   name: linkerd-grafana
   namespace: linkerd
-
-### Grafana ###
 ---
 kind: Service
 apiVersion: v1
@@ -759,7 +755,6 @@ spec:
   - name: http
     port: 3000
     targetPort: 3000
-
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -932,7 +927,10 @@ data:
         path: /var/lib/grafana/dashboards
         homeDashboardId: linkerd-top-line
 
-### Proxy Injector Deployment ###
+---
+###
+### Proxy Injector
+###
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -1043,14 +1041,11 @@ spec:
         name: proxy-spec
 status: {}
 ---
-### Proxy Injector Service Account ###
 kind: ServiceAccount
 apiVersion: v1
 metadata:
   name: linkerd-proxy-injector
   namespace: linkerd
-
-### Proxy Injector RBAC ###
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
@@ -1063,7 +1058,6 @@ rules:
 - apiGroups: [""]
   resources: ["namespaces"]
   verbs: ["get"]
-
 ---
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
@@ -1078,8 +1072,6 @@ roleRef:
   kind: ClusterRole
   name: linkerd-linkerd-proxy-injector
   apiGroup: rbac.authorization.k8s.io
-
-### Proxy Injector Service ###
 ---
 kind: Service
 apiVersion: v1
@@ -1098,8 +1090,6 @@ spec:
   - name: proxy-injector
     port: 443
     targetPort: proxy-injector
-
-### Proxy Sidecar Container Spec ###
 ---
 kind: ConfigMap
 apiVersion: v1
