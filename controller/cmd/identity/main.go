@@ -1,6 +1,9 @@
 package main
 
 import (
+	"crypto/x509"
+	"encoding/pem"
+	"errors"
 	"flag"
 	"net"
 	"os"
@@ -24,9 +27,11 @@ func main() {
 	kubeConfigPath := flag.String("kubeconfig", "", "path to kube config")
 	controllerNS := flag.String("controller-namespace", "linkerd", "namespace in which Linkerd is installed")
 	trustDomain := flag.String("trust-domain", "cluster.local", "trust domain for identities")
-	lifetime := flag.Duration("lifetime", 24*time.Hour, "certificate lifetime")
+	trustAnchors := flag.String("trust anchors", "", "path to trust anchors")
 	signingKey := flag.String("signing-key", "", "path to signing key")
 	signingCrt := flag.String("signing-crt", "", "path to signing certificate")
+	signingIntermediates := flag.String("signing-intermediates", "", "path to signing key")
+	signingLifetime := flag.Duration("signing-valid-for", 24*time.Hour, "Signature validityl ifetime")
 	flags.ConfigureAndParse()
 
 	stop := make(chan os.Signal, 1)
@@ -48,7 +53,7 @@ func main() {
 		log.Fatalf("Failed to load kubeconfig: %s: %s", *kubeConfigPath, err)
 	}
 	srv := grpc.NewServer()
-	identity.Register(srv, k8s.Authentication(), dom, issuer, *lifetime)
+	identity.Register(srv, k8s.Authentication(), dom, issuer, *signingLifetime)
 
 	go admin.StartServer(*adminAddr)
 
@@ -64,4 +69,34 @@ func main() {
 	<-stop
 	log.Infof("shutting down gRPC server on %s", *addr)
 	srv.GracefulStop()
+}
+
+func parseCrt(crtb []byte) (*x509.Certificate, []byte, error) {
+	block, crtb := pem.Decode(crtb)
+	if block == nil {
+		return nil, nil, errors.New("Failed to decode PEM certificate")
+	}
+	if block.Type != "CERTIFICATE" {
+		return nil, nil, nil
+	}
+	c, err := x509.ParseCertificate(block.Bytes)
+	return c, crtb, err
+}
+
+func parseCrtPool(crtb []byte) (*x509.CertPool, error) {
+	pool := x509.NewCertPool()
+
+	for len(crtb) > 0 {
+		crt, b, err := parseCrt(crtb)
+		if err != nil {
+			return nil, err
+		}
+		crtb = b
+		if crt == nil {
+			continue
+		}
+		pool.AddCert(crt)
+	}
+
+	return pool, nil
 }

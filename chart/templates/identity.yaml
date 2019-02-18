@@ -90,8 +90,11 @@ spec:
         - "-log-level={{.Values.ControllerLogLevel}}"
         - "-controller-namespace={{.Values.Namespace}}"
         - "-trust-domain={{.Values.IdentityTrustDomain}}"
-        - "-trust-anchors=/var/run/linkerd/identity/trust-anchors"
-        - "-lifetime={{.Values.IdentityLifetime}}"
+        - "-trust-anchors=/var/run/linkerd/identity-trust-anchors/roots.pem"
+        - "-signing-intermediates=/var/run/linkerd/identity-signing/trust-anchors.pem"
+        - "-signing-crt=/var/run/linkerd/identity-signing/crt.der"
+        - "-signing-key=/var/run/linkerd/identity-signing/key.der"
+        - "-signing-valid-for={{.Values.IdentityLifetime}}"
         volumeMounts:
         - mountPath: /var/run/linkerd/identity-trust-anchors
           name: identity-trust-anchors
