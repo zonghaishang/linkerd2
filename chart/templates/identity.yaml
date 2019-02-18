@@ -1,0 +1,124 @@
+---
+###
+### Identity
+###
+---
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: linkerd-identity
+  namespace: {{.Values.Namespace}}
+---
+kind: {{if not .Values.SingleNamespace}}Cluster{{end}}Role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: linkerd-{{.Values.Namespace}}-identity
+  {{- if .Values.SingleNamespace}}
+  namespace: {{.Values.Namespace}}
+  {{- end}}
+rules:
+- apiGroups: ["extensions", "authentication"]
+  resources: ["tokenreview"]
+  verbs: ["create"]
+---
+kind: {{if not .Values.SingleNamespace}}Cluster{{end}}RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: linkerd-{{.Values.Namespace}}-identity
+  {{- if .Values.SingleNamespace}}
+  namespace: {{.Values.Namespace}}
+  {{- end}}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: {{if not .Values.SingleNamespace}}Cluster{{end}}Role
+  name: linkerd-{{.Values.Namespace}}-identity
+subjects:
+- kind: ServiceAccount
+  name: linkerd-identity
+  namespace: {{.Values.Namespace}}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: linkerd-identity
+  namespace: {{.Values.Namespace}}
+  labels:
+    {{.Values.ControllerComponentLabel}}: identity
+  annotations:
+    {{.Values.CreatedByAnnotation}}: {{.Values.CliVersion}}
+spec:
+  type: ClusterIP
+  selector:
+    {{.Values.ControllerComponentLabel}}: identity
+  ports:
+  - name: grpc
+    port: 8080
+    targetPort: 8080
+---
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: linkerd-identity
+  namespace: {{.Values.Namespace}}
+  labels:
+    {{.Values.ControllerComponentLabel}}: identity
+  annotations:
+    {{.Values.CreatedByAnnotation}}: {{.Values.CliVersion}}
+spec:
+  replicas: {{.Values.IdentityReplicas}}
+  template:
+    metadata:
+      labels:
+        {{.Values.ControllerComponentLabel}}: identity
+      annotations:
+        {{.Values.CreatedByAnnotation}}: {{.Values.CliVersion}}
+    spec:
+      serviceAccountName: linkerd-identity
+      containers:
+      - name: identity
+        ports:
+        - name: grpc
+          containerPort: 8080
+        - name: admin-http
+          containerPort: 9990
+        image: {{.Values.ControllerImage}}
+        imagePullPolicy: {{.Values.ImagePullPolicy}}
+        args:
+        - "identity"
+        - "-addr=:8080"
+        - "-admin-addr=:9990"
+        - "-log-level={{.Values.ControllerLogLevel}}"
+        - "-controller-namespace={{.Values.Namespace}}"
+        - "-trust-domain={{.Values.IdentityTrustDomain}}"
+        - "-trust-anchors=/var/run/linkerd/identity/trust-anchors"
+        - "-lifetime={{.Values.IdentityLifetime}}"
+        volumeMounts:
+        - mountPath: /var/run/linkerd/identity-trust-anchors
+          name: identity-trust-anchors
+        - mountPath: /var/run/linkerd/identity-signing
+          name: identity-signing
+        livenessProbe:
+          httpGet:
+            path: /ping
+            port: 9990
+          initialDelaySeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 9990
+          failureThreshold: 7
+        {{- if .Values.EnableHA }}
+        resources:
+          requests:
+            cpu: 10m
+            memory: 50Mi
+        {{- end }}
+        securityContext:
+          runAsUser: {{.Values.ControllerUID}}
+      volumes:
+      - name: identity-trust-anchors
+        configMap:
+          name: linkerd-identity-trust-anchors
+      - name: identity-signing
+        secret:
+          secretName: linkerd-identity-signing

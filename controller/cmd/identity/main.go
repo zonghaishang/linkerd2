@@ -20,11 +20,11 @@ import (
 
 func main() {
 	addr := flag.String("addr", ":8083", "address to serve on")
-	metricsAddr := flag.String("metrics-addr", ":9996", "address to serve scrapable metrics on")
+	adminAddr := flag.String("admin-addr", ":9996", "address of HTTP admin server")
 	kubeConfigPath := flag.String("kubeconfig", "", "path to kube config")
 	controllerNS := flag.String("controller-namespace", "linkerd", "namespace in which Linkerd is installed")
 	trustDomain := flag.String("trust-domain", "cluster.local", "trust domain for identities")
-	lifetime := flag.Duration("lifetime", 2*time.Hour, "certificate lifetime")
+	lifetime := flag.Duration("lifetime", 24*time.Hour, "certificate lifetime")
 	signingKey := flag.String("signing-key", "", "path to signing key")
 	signingCrt := flag.String("signing-crt", "", "path to signing certificate")
 	flags.ConfigureAndParse()
@@ -50,7 +50,7 @@ func main() {
 	srv := grpc.NewServer()
 	identity.Register(srv, k8s.Authentication(), dom, issuer, *lifetime)
 
-	go admin.StartServer(*metricsAddr)
+	go admin.StartServer(*adminAddr)
 
 	lis, err := net.Listen("tcp", *addr)
 	if err != nil {

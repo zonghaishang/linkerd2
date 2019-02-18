@@ -87,6 +87,7 @@ const (
 	defaultHAControllerReplicas     = 3
 
 	nsTemplateName             = "templates/namespace.yaml"
+	identityTemplateName       = "templates/identity.yaml"
 	controllerTemplateName     = "templates/controller.yaml"
 	webTemplateName            = "templates/web.yaml"
 	prometheusTemplateName     = "templates/prometheus.yaml"
@@ -232,6 +233,10 @@ func render(config installConfig, w io.Writer, options *installOptions) error {
 	if err != nil {
 		return err
 	}
+	identityTmpl, err := readIntoBytes(identityTemplateName)
+	if err != nil {
+		return err
+	}
 	controllerTmpl, err := readIntoBytes(controllerTemplateName)
 	if err != nil {
 		return err
@@ -260,6 +265,7 @@ func render(config installConfig, w io.Writer, options *installOptions) error {
 	files := []*chartutil.BufferedFile{
 		{Name: chartutil.ChartfileName, Data: chartTmpl},
 		{Name: nsTemplateName, Data: nsTmpl},
+		{Name: identityTemplateName, Data: identityTmpl},
 		{Name: controllerTemplateName, Data: controllerTmpl},
 		{Name: serviceprofileTemplateName, Data: serviceprofileTmpl},
 		{Name: webTemplateName, Data: webTmpl},
@@ -293,6 +299,10 @@ func render(config installConfig, w io.Writer, options *installOptions) error {
 	// Merge templates and inject
 	var buf bytes.Buffer
 	t := path.Join(renderOpts.ReleaseOptions.Name, nsTemplateName)
+	if _, err := buf.WriteString(renderedTemplates[t]); err != nil {
+		return err
+	}
+	t = path.Join(renderOpts.ReleaseOptions.Name, identityTemplateName)
 	if _, err := buf.WriteString(renderedTemplates[t]); err != nil {
 		return err
 	}

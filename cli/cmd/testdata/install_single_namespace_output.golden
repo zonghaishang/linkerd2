@@ -1,5 +1,196 @@
 ---
 ###
+### Identity
+###
+---
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: linkerd-identity
+  namespace: Namespace
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: linkerd-Namespace-identity
+  namespace: Namespace
+rules:
+- apiGroups: ["extensions", "authentication"]
+  resources: ["tokenreview"]
+  verbs: ["create"]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: linkerd-Namespace-identity
+  namespace: Namespace
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: linkerd-Namespace-identity
+subjects:
+- kind: ServiceAccount
+  name: linkerd-identity
+  namespace: Namespace
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: linkerd-identity
+  namespace: Namespace
+  labels:
+    ControllerComponentLabel: identity
+  annotations:
+    CreatedByAnnotation: CliVersion
+spec:
+  type: ClusterIP
+  selector:
+    ControllerComponentLabel: identity
+  ports:
+  - name: grpc
+    port: 8080
+    targetPort: 8080
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  annotations:
+    CreatedByAnnotation: CliVersion
+  creationTimestamp: null
+  labels:
+    ControllerComponentLabel: identity
+  name: linkerd-identity
+  namespace: Namespace
+spec:
+  strategy: {}
+  template:
+    metadata:
+      annotations:
+        CreatedByAnnotation: CliVersion
+        linkerd.io/created-by: linkerd/cli dev-undefined
+        linkerd.io/proxy-version: dev-undefined
+      creationTimestamp: null
+      labels:
+        ControllerComponentLabel: identity
+        linkerd.io/control-plane-ns: Namespace
+        linkerd.io/proxy-deployment: linkerd-identity
+    spec:
+      containers:
+      - args:
+        - identity
+        - -addr=:8080
+        - -admin-addr=:9990
+        - -log-level=ControllerLogLevel
+        - -controller-namespace=Namespace
+        - -trust-domain=
+        - -trust-anchors=/var/run/linkerd/identity/trust-anchors
+        - -lifetime=
+        image: ControllerImage
+        imagePullPolicy: ImagePullPolicy
+        livenessProbe:
+          httpGet:
+            path: /ping
+            port: 9990
+          initialDelaySeconds: 10
+        name: identity
+        ports:
+        - containerPort: 8080
+          name: grpc
+        - containerPort: 9990
+          name: admin-http
+        readinessProbe:
+          failureThreshold: 7
+          httpGet:
+            path: /ready
+            port: 9990
+        resources: {}
+        securityContext:
+          runAsUser: 2103
+        volumeMounts:
+        - mountPath: /var/run/linkerd/identity-trust-anchors
+          name: identity-trust-anchors
+        - mountPath: /var/run/linkerd/identity-signing
+          name: identity-signing
+      - env:
+        - name: LINKERD2_PROXY_LOG
+          value: warn,linkerd2_proxy=info
+        - name: LINKERD2_PROXY_CONTROL_URL
+          value: tcp://linkerd-destination.Namespace.svc.cluster.local:8086
+        - name: LINKERD2_PROXY_CONTROL_LISTENER
+          value: tcp://0.0.0.0:4190
+        - name: LINKERD2_PROXY_METRICS_LISTENER
+          value: tcp://0.0.0.0:4191
+        - name: LINKERD2_PROXY_OUTBOUND_LISTENER
+          value: tcp://127.0.0.1:4140
+        - name: LINKERD2_PROXY_INBOUND_LISTENER
+          value: tcp://0.0.0.0:4143
+        - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
+          value: .
+        - name: LINKERD2_PROXY_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: LINKERD2_PROXY_INBOUND_ACCEPT_KEEPALIVE
+          value: 10000ms
+        - name: LINKERD2_PROXY_OUTBOUND_CONNECT_KEEPALIVE
+          value: 10000ms
+        - name: LINKERD2_PROXY_ID
+          value: linkerd-identity.deployment.$LINKERD2_PROXY_POD_NAMESPACE.linkerd-managed.Namespace.svc.cluster.local
+        image: gcr.io/linkerd-io/proxy:dev-undefined
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: 4191
+          initialDelaySeconds: 10
+        name: linkerd-proxy
+        ports:
+        - containerPort: 4143
+          name: linkerd-proxy
+        - containerPort: 4191
+          name: linkerd-metrics
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: 4191
+          initialDelaySeconds: 10
+        resources: {}
+        securityContext:
+          runAsUser: 2102
+        terminationMessagePolicy: FallbackToLogsOnError
+      initContainers:
+      - args:
+        - --incoming-proxy-port
+        - "4143"
+        - --outgoing-proxy-port
+        - "4140"
+        - --proxy-uid
+        - "2102"
+        - --inbound-ports-to-ignore
+        - 4190,4191
+        image: gcr.io/linkerd-io/proxy-init:dev-undefined
+        imagePullPolicy: IfNotPresent
+        name: linkerd-init
+        resources: {}
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+          privileged: false
+          runAsNonRoot: false
+          runAsUser: 0
+        terminationMessagePolicy: FallbackToLogsOnError
+      serviceAccountName: linkerd-identity
+      volumes:
+      - configMap:
+          name: linkerd-identity-trust-anchors
+        name: identity-trust-anchors
+      - name: identity-signing
+        secret:
+          secretName: linkerd-identity-signing
+status: {}
+---
+###
 ### Controller
 ###
 ---

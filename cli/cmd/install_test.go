@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"log"
+	"os"
 	"testing"
 )
 
@@ -138,14 +140,18 @@ func TestRender(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
-			content := buf.String()
+			if os.Getenv("INSTALL_TEST_OVERWRITE_GOLDEN") != "" {
+				fmt.Fprintf(os.Stderr, "# %s\n", tc.goldenFileName)
+				if err := ioutil.WriteFile(tc.goldenFileName, buf.Bytes(), 0644); err != nil {
+					log.Fatal(err.Error())
+				}
+			}
 
 			goldenFileBytes, err := ioutil.ReadFile(tc.goldenFileName)
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
-			expectedContent := string(goldenFileBytes)
-			diffCompare(t, content, expectedContent)
+			diffCompare(t, buf.String(), string(goldenFileBytes))
 		})
 	}
 }
