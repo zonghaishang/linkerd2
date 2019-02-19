@@ -63,6 +63,12 @@ type installConfig struct {
 	ProfileSuffixes            string
 	EnableH2Upgrade            bool
 	NoInitContainer            bool
+	IdentityTrustAnchors       string
+	IdentityTrustDomain        string
+	IdentityIssuerExpiry       string
+	IdentityIssuerPrivateKey   string
+	IdentityIssuerCertificate  string
+	IdentityIssuerTrustChain   string
 }
 
 // installOptions holds values for command line flags that apply to the install

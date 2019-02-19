@@ -7,7 +7,7 @@ metadata:
     linkerd.io/inject: disabled
 ---
 ###
-### Identity
+### Identity Controller Service
 ###
 ---
 kind: ServiceAccount
@@ -87,11 +87,9 @@ spec:
         - -log-level=info
         - -controller-namespace=linkerd
         - -trust-domain=
-        - -trust-anchors=/var/run/linkerd/identity-trust-anchors/roots.pem
-        - -signing-intermediates=/var/run/linkerd/identity-signing/trust-anchors.pem
-        - -signing-crt=/var/run/linkerd/identity-signing/crt.der
-        - -signing-key=/var/run/linkerd/identity-signing/key.der
-        - -signing-valid-for=
+        - -trust-anchors=/var/run/linkerd/identity/trust-anchors
+        - -issuer-credentials=/var/run/linkerd/identity/issuer-credentials
+        - -issuance-lifetime=
         image: gcr.io/linkerd-io/controller:dev-undefined
         imagePullPolicy: IfNotPresent
         livenessProbe:
@@ -114,10 +112,10 @@ spec:
         securityContext:
           runAsUser: 2103
         volumeMounts:
-        - mountPath: /var/run/linkerd/identity-trust-anchors
+        - mountPath: /var/run/linkerd/identity/trust-anchors
           name: identity-trust-anchors
-        - mountPath: /var/run/linkerd/identity-signing
-          name: identity-signing
+        - mountPath: /var/run/linkerd/identity/issuer-credentials
+          name: identity-issuer-credentials
       - env:
         - name: LINKERD2_PROXY_LOG
           value: warn,linkerd2_proxy=info
@@ -170,13 +168,13 @@ spec:
       - configMap:
           name: linkerd-identity-trust-anchors
         name: identity-trust-anchors
-      - name: identity-signing
+      - name: identity-issuer-credentials
         secret:
-          secretName: linkerd-identity-signing
+          secretName: linkerd-identity-issuer-credentials
 status: {}
 ---
 ###
-### Controller
+### General Controller Services: destination, public-api, tap
 ###
 ---
 kind: ServiceAccount

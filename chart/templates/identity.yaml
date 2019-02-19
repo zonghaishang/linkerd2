@@ -1,6 +1,6 @@
 ---
 ###
-### Identity
+### Identity Controller Service
 ###
 ---
 kind: ServiceAccount
@@ -54,6 +54,40 @@ spec:
   - name: grpc
     port: 8080
     targetPort: 8080
+{{- if .Values.IdentityTrustAnchors}}
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: linkerd-identity-trust-anchors
+  namespace: {{.Values.Namespace}}
+  labels:
+    {{.Values.ControllerComponentLabel}}: identity
+  annotations:
+    {{.Values.CreatedByAnnotation}}: {{.Values.CliVersion}}
+data:
+  trust-anchors.pem: |-
+{{indent 4 .Values.IdentityTrustAnchors}}
+{{- end}}
+{{- if .Values.IdentityIssuerPrivateKey}}
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: linkerd-identity-issuer-credentials
+  namespace: {{.Values.Namespace}}
+  labels:
+    {{.Values.ControllerComponentLabel}}: identity
+  annotations:
+    {{.Values.CreatedByAnnotation}}: {{.Values.CliVersion}}
+    {{.Values.ExpiresAtAnnotation}}: {{.Values.IdentityIssuerExpiry}}
+data:
+  key: {{b64enc .Values.IdentityIssuerPrivateKey}}
+  crt: {{b64enc .Values.IdentityIssuerCertificate}}
+  {{- if .Values.IdentityIssuerTrustChain}}
+  trust-chain.pem: {{b64enc .Values.IdentityIssuerTrustChain}}
+  {{- end}}
+{{- end}}
 ---
 kind: Deployment
 apiVersion: extensions/v1beta1
@@ -90,16 +124,14 @@ spec:
         - "-log-level={{.Values.ControllerLogLevel}}"
         - "-controller-namespace={{.Values.Namespace}}"
         - "-trust-domain={{.Values.IdentityTrustDomain}}"
-        - "-trust-anchors=/var/run/linkerd/identity-trust-anchors/roots.pem"
-        - "-signing-intermediates=/var/run/linkerd/identity-signing/trust-anchors.pem"
-        - "-signing-crt=/var/run/linkerd/identity-signing/crt.der"
-        - "-signing-key=/var/run/linkerd/identity-signing/key.der"
-        - "-signing-valid-for={{.Values.IdentityLifetime}}"
+        - "-trust-anchors=/var/run/linkerd/identity/trust-anchors"
+        - "-issuer-credentials=/var/run/linkerd/identity/issuer-credentials"
+        - "-issuance-lifetime={{.Values.IdentityLifetime}}"
         volumeMounts:
-        - mountPath: /var/run/linkerd/identity-trust-anchors
+        - mountPath: /var/run/linkerd/identity/trust-anchors
           name: identity-trust-anchors
-        - mountPath: /var/run/linkerd/identity-signing
-          name: identity-signing
+        - mountPath: /var/run/linkerd/identity/issuer-credentials
+          name: identity-issuer-credentials
         livenessProbe:
           httpGet:
             path: /ping
@@ -122,6 +154,6 @@ spec:
       - name: identity-trust-anchors
         configMap:
           name: linkerd-identity-trust-anchors
-      - name: identity-signing
+      - name: identity-issuer-credentials
         secret:
-          secretName: linkerd-identity-signing
+          secretName: linkerd-identity-issuer-credentials
