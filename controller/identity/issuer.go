@@ -62,12 +62,18 @@ func IssuerFromDir(dir string, lifetime time.Duration) (*Issuer, error) {
 	return &Issuer{crt, key, trustChain, lifetime}, nil
 }
 
-func (i *Issuer) Verify(anchors *x509.CertPool) ([][]*x509.Certificate, error) {
-	chain := x509.NewCertPool()
-	for _, c := range i.trustChain {
-		chain.AddCert(c)
+func (i *Issuer) Verify(anchors []*x509.Certificate) ([][]*x509.Certificate, error) {
+	as := x509.NewCertPool()
+	for _, c := range anchors {
+		as.AddCert(c)
 	}
-	return i.crt.Verify(x509.VerifyOptions{Roots: anchors, Intermediates: chain})
+
+	is := x509.NewCertPool()
+	for _, c := range i.trustChain {
+		is.AddCert(c)
+	}
+
+	return i.crt.Verify(x509.VerifyOptions{Roots: as, Intermediates: is})
 }
 
 func (i *Issuer) Issue(csr *x509.CertificateRequest) (crtb []byte, validUntil time.Time, err error) {

@@ -1,14 +1,10 @@
 package main
 
 import (
-	"encoding/pem"
-	"errors"
 	"flag"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"syscall"
 	"time"
 
@@ -17,8 +13,6 @@ import (
 	"github.com/linkerd/linkerd2/pkg/admin"
 	"github.com/linkerd/linkerd2/pkg/flags"
 	log "github.com/sirupsen/logrus"
-	"github.com/smallstep/cli/crypto/x509util"
-	"github.com/smallstep/cli/pkg/x509"
 
 	"google.golang.org/grpc"
 )
@@ -30,14 +24,15 @@ func main() {
 	controllerNS := flag.String("controller-namespace", "linkerd",
 		"namespace in which Linkerd is installed")
 	trustDomain := flag.String("trust-domain", "cluster.local", "trust domain for identities")
-	trustAnchorsPath := flag.String("trust anchors",
+	trustAnchorsPath := flag.String("trust-anchors",
 		"/var/run/linkerd/identity/trust-anchors",
 		"path to file or directory containing trust anchors")
-	issuerCredsPath := flag.String("issuer-credentials",
-		"/var/run/linkerd/identity/issuer-credentials",
+	issuerPath := flag.String("issuer",
+		"/var/run/linkerd/identity/issuer",
 		"path to directoring containing issuer credentials")
 	issuanceLifetime := flag.Duration("issuance-lifetime", 24*time.Hour,
 		"The amount of time for which a signed certificate is valid")
+	// TODO flag.String("audience", "linkerd.io/identity", "Token audience")
 	flags.ConfigureAndParse()
 
 	stop := make(chan os.Signal, 1)
@@ -49,18 +44,18 @@ func main() {
 	}
 
 	// TODO watch trustAnchorsPath for changes
-	trustAnchors, err := x509util.ReadCertPool(*trustAnchorsPath)
+	trustAnchors, err := identity.ReadPemCrts(*trustAnchorsPath)
 	if err != nil {
 		log.Fatalf("Failed to read trust anchors from %s: %s", *trustAnchorsPath, err)
 	}
 
-	// TODO watch issuerCredsPath for changes
-	issuerCreds, err := loadSigningCreds(*issuerCredsPath)
+	// TODO watch issuerPath for changes
+	issuer, err := identity.IssuerFromDir(*issuerPath, *issuanceLifetime)
 	if err != nil {
-		log.Fatalf("Failed to read issuer credentials from %s: %s", *issuerCredsPath, err)
+		log.Fatalf("Failed to read issuer credentials from %s: %s", *issuerPath, err)
 	}
 
-	if _, err := issuerCreds.Verify(trustAnchors); err != nil {
+	if _, err := issuer.Verify(trustAnchors); err != nil {
 		log.Fatalf("Failed to verify issuer credentials with trust anchors: %s", err)
 	}
 
@@ -68,7 +63,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to load kubeconfig: %s: %s", *kubeConfigPath, err)
 	}
-	svc := identity.NewService(k8s.Authentication(), dom, issuerIdentity, *issuanceLifetime)
+	svc := identity.NewService(k8s.Authentication(), dom, issuer)
 
 	go admin.StartServer(*adminAddr)
 	lis, err := net.Listen("tcp", *addr)
@@ -85,67 +80,4 @@ func main() {
 	<-stop
 	log.Infof("shutting down gRPC server on %s", *addr)
 	srv.GracefulStop()
-}
-
-func parsePemCrt(crtb []byte) (*x509.Certificate, []byte, error) {
-	block, crtb := pem.Decode(crtb)
-	if block == nil {
-		return nil, nil, errors.New("Failed to decode PEM certificate")
-	}
-	if block.Type != "CERTIFICATE" {
-		return nil, nil, nil
-	}
-	c, err := x509.ParseCertificate(block.Bytes)
-	return c, crtb, err
-}
-
-func parsePemCrtPool(crtb []byte) (*x509.CertPool, error) {
-	pool := x509.NewCertPool()
-
-	for len(crtb) > 0 {
-		crt, b, err := parsePemCrt(crtb)
-		if err != nil {
-			return nil, err
-		}
-		crtb = b
-		if crt == nil {
-			continue
-		}
-		pool.AddCert(crt)
-	}
-
-	return pool, nil
-}
-
-func readPemCrtPool(path string) (*x509.CertPool, error) {
-	s, err := os.Stat(path)
-	if err != nil {
-		return nil, err
-	}
-
-	var crtb []byte
-
-	if s.IsDir() {
-		dir, err := ioutil.ReadDir(path)
-		if err != nil {
-			return nil, err
-		}
-		for _, f := range dir {
-			p := filepath.Join(path, f.Name())
-			b, err := ioutil.ReadFile(p)
-			if err != nil {
-				return nil, err
-			}
-			crtb = append(crtb, b...)
-			crtb = append(crtb, '\n')
-		}
-	} else {
-		b, err := ioutil.ReadFile(path)
-		if err != nil {
-			return nil, err
-		}
-		crtb = b
-	}
-
-	return parsePemCrtPool(crtb)
 }

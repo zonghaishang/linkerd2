@@ -84,7 +84,7 @@ spec:
         - -controller-namespace=Namespace
         - -trust-domain=
         - -trust-anchors=/var/run/linkerd/identity/trust-anchors
-        - -issuer-credentials=/var/run/linkerd/identity/issuer-credentials
+        - -issuer=/var/run/linkerd/identity/issuer
         - -issuance-lifetime=
         image: ControllerImage
         imagePullPolicy: ImagePullPolicy
@@ -110,8 +110,8 @@ spec:
         volumeMounts:
         - mountPath: /var/run/linkerd/identity/trust-anchors
           name: identity-trust-anchors
-        - mountPath: /var/run/linkerd/identity/issuer-credentials
-          name: identity-issuer-credentials
+        - mountPath: /var/run/linkerd/identity/issuer
+          name: identity-issuer
       - env:
         - name: LINKERD2_PROXY_LOG
           value: warn,linkerd2_proxy=info
@@ -186,9 +186,9 @@ spec:
       - configMap:
           name: linkerd-identity-trust-anchors
         name: identity-trust-anchors
-      - name: identity-issuer-credentials
+      - name: identity-issuer
         secret:
-          secretName: linkerd-identity-issuer-credentials
+          secretName: linkerd-identity-issuer
 status: {}
 ---
 ###

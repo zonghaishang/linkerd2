@@ -74,7 +74,7 @@ data:
 kind: Secret
 apiVersion: v1
 metadata:
-  name: linkerd-identity-issuer-credentials
+  name: linkerd-identity-issuer
   namespace: {{.Values.Namespace}}
   labels:
     {{.Values.ControllerComponentLabel}}: identity
@@ -125,13 +125,13 @@ spec:
         - "-controller-namespace={{.Values.Namespace}}"
         - "-trust-domain={{.Values.IdentityTrustDomain}}"
         - "-trust-anchors=/var/run/linkerd/identity/trust-anchors"
-        - "-issuer-credentials=/var/run/linkerd/identity/issuer-credentials"
+        - "-issuer=/var/run/linkerd/identity/issuer"
         - "-issuance-lifetime={{.Values.IdentityLifetime}}"
         volumeMounts:
         - mountPath: /var/run/linkerd/identity/trust-anchors
           name: identity-trust-anchors
-        - mountPath: /var/run/linkerd/identity/issuer-credentials
-          name: identity-issuer-credentials
+        - mountPath: /var/run/linkerd/identity/issuer
+          name: identity-issuer
         livenessProbe:
           httpGet:
             path: /ping
@@ -154,6 +154,6 @@ spec:
       - name: identity-trust-anchors
         configMap:
           name: linkerd-identity-trust-anchors
-      - name: identity-issuer-credentials
+      - name: identity-issuer
         secret:
-          secretName: linkerd-identity-issuer-credentials
+          secretName: linkerd-identity-issuer
