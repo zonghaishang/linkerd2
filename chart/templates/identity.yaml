@@ -1,3 +1,5 @@
+{{with .Values -}}
+{{if .Identity -}}
 ---
 ###
 ### Identity Controller Service
@@ -7,105 +9,105 @@ kind: ServiceAccount
 apiVersion: v1
 metadata:
   name: linkerd-identity
-  namespace: {{.Values.Namespace}}
+  namespace: {{.Namespace}}
 ---
-kind: {{if not .Values.SingleNamespace}}Cluster{{end}}Role
+kind: {{if not .SingleNamespace}}Cluster{{end}}Role
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
-  name: linkerd-{{.Values.Namespace}}-identity
-  {{- if .Values.SingleNamespace}}
-  namespace: {{.Values.Namespace}}
+  name: linkerd-{{.Namespace}}-identity
+  {{- if .SingleNamespace}}
+  namespace: {{.Namespace}}
   {{- end}}
 rules:
 - apiGroups: ["extensions", "authentication"]
   resources: ["tokenreview"]
   verbs: ["create"]
 ---
-kind: {{if not .Values.SingleNamespace}}Cluster{{end}}RoleBinding
+kind: {{if not .SingleNamespace}}Cluster{{end}}RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
-  name: linkerd-{{.Values.Namespace}}-identity
-  {{- if .Values.SingleNamespace}}
-  namespace: {{.Values.Namespace}}
+  name: linkerd-{{.Namespace}}-identity
+  {{- if .SingleNamespace}}
+  namespace: {{.Namespace}}
   {{- end}}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: {{if not .Values.SingleNamespace}}Cluster{{end}}Role
-  name: linkerd-{{.Values.Namespace}}-identity
+  kind: {{if not .SingleNamespace}}Cluster{{end}}Role
+  name: linkerd-{{.Namespace}}-identity
 subjects:
 - kind: ServiceAccount
   name: linkerd-identity
-  namespace: {{.Values.Namespace}}
+  namespace: {{.Namespace}}
 ---
 kind: Service
 apiVersion: v1
 metadata:
   name: linkerd-identity
-  namespace: {{.Values.Namespace}}
+  namespace: {{.Namespace}}
   labels:
-    {{.Values.ControllerComponentLabel}}: identity
+    {{.ControllerComponentLabel}}: identity
   annotations:
-    {{.Values.CreatedByAnnotation}}: {{.Values.CliVersion}}
+    {{.CreatedByAnnotation}}: {{.CliVersion}}
 spec:
   type: ClusterIP
   selector:
-    {{.Values.ControllerComponentLabel}}: identity
+    {{.ControllerComponentLabel}}: identity
   ports:
   - name: grpc
     port: 8080
     targetPort: 8080
-{{- if .Values.IdentityTrustAnchors}}
+{{- if .Identity.TrustAnchors}}
 ---
 kind: ConfigMap
 apiVersion: v1
 metadata:
   name: linkerd-identity-trust-anchors
-  namespace: {{.Values.Namespace}}
+  namespace: {{.Namespace}}
   labels:
-    {{.Values.ControllerComponentLabel}}: identity
+    {{.ControllerComponentLabel}}: identity
   annotations:
-    {{.Values.CreatedByAnnotation}}: {{.Values.CliVersion}}
+    {{.CreatedByAnnotation}}: {{.CliVersion}}
 data:
   trust-anchors.pem: |-
-{{indent 4 .Values.IdentityTrustAnchors}}
+{{indent 4 .Identity.TrustAnchors}}
 {{- end}}
-{{- if .Values.IdentityIssuerPrivateKey}}
+{{- if .Identity.Issuer}}
 ---
 kind: Secret
 apiVersion: v1
 metadata:
   name: linkerd-identity-issuer
-  namespace: {{.Values.Namespace}}
+  namespace: {{.Namespace}}
   labels:
-    {{.Values.ControllerComponentLabel}}: identity
+    {{.ControllerComponentLabel}}: identity
   annotations:
-    {{.Values.CreatedByAnnotation}}: {{.Values.CliVersion}}
-    {{.Values.ExpiresAtAnnotation}}: {{.Values.IdentityIssuerExpiry}}
+    {{.CreatedByAnnotation}}: {{.CliVersion}}
+    {{.Identity.Issuer.ExpiryAnnotation}}: {{.Identity.Issuer.Expiry}}
 data:
-  key: {{b64enc .Values.IdentityIssuerPrivateKey}}
-  crt: {{b64enc .Values.IdentityIssuerCertificate}}
-  {{- if .Values.IdentityIssuerTrustChain}}
-  trust-chain.pem: {{b64enc .Values.IdentityIssuerTrustChain}}
+  {{- if .Identity.Issuer.TrustChainPEM}}
+  trust-chain.pem: {{b64enc .Identity.Issuer.TrustChainPEM}}
   {{- end}}
+  crt: {{b64enc .Identity.Issuer.Crt}}
+  key: {{b64enc .Identity.Issuer.Key}}
 {{- end}}
 ---
 kind: Deployment
 apiVersion: extensions/v1beta1
 metadata:
   name: linkerd-identity
-  namespace: {{.Values.Namespace}}
+  namespace: {{.Namespace}}
   labels:
-    {{.Values.ControllerComponentLabel}}: identity
+    {{.ControllerComponentLabel}}: identity
   annotations:
-    {{.Values.CreatedByAnnotation}}: {{.Values.CliVersion}}
+    {{.CreatedByAnnotation}}: {{.CliVersion}}
 spec:
-  replicas: {{.Values.IdentityReplicas}}
+  replicas: {{.IdentityReplicas}}
   template:
     metadata:
       labels:
-        {{.Values.ControllerComponentLabel}}: identity
+        {{.ControllerComponentLabel}}: identity
       annotations:
-        {{.Values.CreatedByAnnotation}}: {{.Values.CliVersion}}
+        {{.CreatedByAnnotation}}: {{.CliVersion}}
     spec:
       serviceAccountName: linkerd-identity
       containers:
@@ -115,18 +117,18 @@ spec:
           containerPort: 8080
         - name: admin-http
           containerPort: 9990
-        image: {{.Values.ControllerImage}}
-        imagePullPolicy: {{.Values.ImagePullPolicy}}
+        image: {{.ControllerImage}}
+        imagePullPolicy: {{.ImagePullPolicy}}
         args:
         - "identity"
         - "-addr=:8080"
         - "-admin-addr=:9990"
-        - "-log-level={{.Values.ControllerLogLevel}}"
-        - "-controller-namespace={{.Values.Namespace}}"
-        - "-trust-domain={{.Values.IdentityTrustDomain}}"
+        - "-log-level={{.ControllerLogLevel}}"
+        - "-controller-namespace={{.Namespace}}"
+        - "-trust-domain={{.Identity.TrustDomain}}"
         - "-trust-anchors=/var/run/linkerd/identity/trust-anchors"
         - "-issuer=/var/run/linkerd/identity/issuer"
-        - "-issuance-lifetime={{.Values.IdentityLifetime}}"
+        - "-issuance-lifetime={{.Identity.IssuanceLifetime}}"
         volumeMounts:
         - mountPath: /var/run/linkerd/identity/trust-anchors
           name: identity-trust-anchors
@@ -142,14 +144,14 @@ spec:
             path: /ready
             port: 9990
           failureThreshold: 7
-        {{- if .Values.EnableHA }}
+        {{- if .EnableHA }}
         resources:
           requests:
             cpu: 10m
             memory: 50Mi
         {{- end }}
         securityContext:
-          runAsUser: {{.Values.ControllerUID}}
+          runAsUser: {{.ControllerUID}}
       volumes:
       - name: identity-trust-anchors
         configMap:
@@ -157,3 +159,5 @@ spec:
       - name: identity-issuer
         secret:
           secretName: linkerd-identity-issuer
+{{end -}}
+{{end -}}

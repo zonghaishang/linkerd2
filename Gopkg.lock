@@ -1462,6 +1462,7 @@
     "github.com/sergi/go-diff/diffmatchpatch",
     "github.com/shurcooL/vfsgen",
     "github.com/sirupsen/logrus",
+    "github.com/smallstep/cli/crypto/pemutil",
     "github.com/smallstep/cli/crypto/x509util",
     "github.com/smallstep/cli/pkg/x509",
     "github.com/spf13/cobra",

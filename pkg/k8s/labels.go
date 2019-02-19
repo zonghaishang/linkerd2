@@ -58,6 +58,10 @@ const (
 	// (e.g. linkerd/cli v2.0.0).
 	CreatedByAnnotation = "linkerd.io/created-by"
 
+	// IssuerExpiryAnnotation indicates the time at which this set of identity
+	// issuer credentials will cease to be valid.
+	IdentityIssuerExpiryAnnotation = "linkerd.io/identity-issuer-expiry"
+
 	// ProxyVersionAnnotation indicates the version of the injected data plane
 	// (e.g. v0.1.3).
 	ProxyVersionAnnotation = "linkerd.io/proxy-version"

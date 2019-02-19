@@ -87,7 +87,7 @@ spec:
         - -admin-addr=:9990
         - -log-level=ControllerLogLevel
         - -controller-namespace=Namespace
-        - -trust-domain=
+        - -trust-domain=cluster.local
         - -trust-anchors=/var/run/linkerd/identity/trust-anchors
         - -issuer=/var/run/linkerd/identity/issuer
         - -issuance-lifetime=

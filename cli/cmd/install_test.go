@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 )
 
 // TestMain parses flags before running tests
@@ -28,6 +29,17 @@ func TestRender(t *testing.T) {
 	}
 
 	defaultConfig.UUID = "deaab91a-f4ab-448a-b7d1-c832a2fa0a60"
+
+	mockIdentityConfig := &identityConfig{
+		TrustDomain: "cluster.local",
+		Issuer: &issuerConfig{
+			IssuanceLifetime: 24 * time.Hour,
+			Expiry:           time.Now().Add(24 * time.Hour),
+			Key:              "abc",
+			Crt:              "def",
+			TrustChainPEM:    "ghi",
+		},
+	}
 
 	// A configuration that shows that all config setting strings are honored
 	// by `render()`. Note that `SingleNamespace` is tested in a separate
@@ -72,6 +84,7 @@ func TestRender(t *testing.T) {
 		ProfileSuffixes:            "suffix.",
 		EnableH2Upgrade:            true,
 		NoInitContainer:            false,
+		Identity:                   mockIdentityConfig,
 	}
 
 	singleNamespaceConfig := installConfig{
@@ -98,6 +111,7 @@ func TestRender(t *testing.T) {
 		SingleNamespace:            true,
 		EnableH2Upgrade:            true,
 		NoInitContainer:            false,
+		Identity:                   mockIdentityConfig,
 	}
 
 	haOptions := newInstallOptions()

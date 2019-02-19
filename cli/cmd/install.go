@@ -2,12 +2,17 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"path"
 	"strings"
+	"time"
+
+	"github.com/smallstep/cli/crypto/pemutil"
+	"github.com/smallstep/cli/crypto/x509util"
 
 	"github.com/linkerd/linkerd2/cli/static"
 	"github.com/linkerd/linkerd2/pkg/k8s"
@@ -63,12 +68,22 @@ type installConfig struct {
 	ProfileSuffixes            string
 	EnableH2Upgrade            bool
 	NoInitContainer            bool
-	IdentityTrustAnchors       string
-	IdentityTrustDomain        string
-	IdentityIssuerExpiry       string
-	IdentityIssuerPrivateKey   string
-	IdentityIssuerCertificate  string
-	IdentityIssuerTrustChain   string
+	Identity                   *identityConfig
+}
+
+type identityConfig struct {
+	TrustDomain      string
+	TrustAnchorsPEM  string
+	Issuer           *issuerConfig
+	IssuanceLifetime time.Duration
+}
+
+type issuerConfig struct {
+	ExpiryAnnotation string
+	Expiry           time.Time
+	Key              string
+	Crt              string
+	TrustChainPEM    string
 }
 
 // installOptions holds values for command line flags that apply to the install
@@ -84,13 +99,21 @@ type installOptions struct {
 	highAvailability   bool
 	controllerUID      int64
 	disableH2Upgrade   bool
+	identityOptions    identityOptions
 	*proxyConfigOptions
+}
+
+type identityOptions struct {
+	trustDomain      string
+	issuanceLifetime time.Duration
 }
 
 const (
 	prometheusProxyOutboundCapacity = 10000
 	defaultControllerReplicas       = 1
 	defaultHAControllerReplicas     = 3
+	defaultIdentityTrustDomain      = "cluster.local"
+	defaultIdentityIssuanceLifetime = 24 * time.Hour
 
 	nsTemplateName             = "templates/namespace.yaml"
 	identityTemplateName       = "templates/identity.yaml"
@@ -112,6 +135,10 @@ func newInstallOptions() *installOptions {
 		controllerUID:      2103,
 		disableH2Upgrade:   false,
 		proxyConfigOptions: newProxyConfigOptions(),
+		identityOptions: identityOptions{
+			trustDomain:      defaultIdentityTrustDomain,
+			issuanceLifetime: defaultIdentityIssuanceLifetime,
+		},
 	}
 }
 
@@ -177,6 +204,43 @@ func validateAndBuildConfig(options *installOptions) (*installConfig, error) {
 		profileSuffixes = "svc.cluster.local."
 	}
 
+	var identity *identityConfig
+	trustDomain := options.identityOptions.trustDomain
+	if options.identityOptions.trustDomain != "" {
+		// TODO accept roots as configuration
+		root, err := x509util.NewRootProfile(trustDomain)
+		if err != nil {
+			log.Fatalf("Failed to create root certificate for identity")
+		}
+
+		subdomain := fmt.Sprintf("identity.%s.%s", controlPlaneNamespace, trustDomain)
+		issuer, err := x509util.NewIntermediateProfile(subdomain, root.Subject(), root.SubjectPrivateKey())
+		if err != nil {
+			log.Fatalf("Failed to create issuer certificate for identity")
+		}
+
+		ta := &pem.Block{Type: "CERTIFICATE", Bytes: root.Subject().Raw}
+		pk, err := pemutil.Serialize(issuer.SubjectPrivateKey())
+		if err != nil {
+			log.Fatalf("Failed to serialize issuer certificate for identity")
+		}
+		crt := &pem.Block{Type: "CERTIFICATE", Bytes: issuer.Subject().Raw}
+
+		// TODO preserve the root key (generate and display a password)
+
+		identity = &identityConfig{
+			TrustDomain:      trustDomain,
+			TrustAnchorsPEM:  string(pem.EncodeToMemory(ta)),
+			IssuanceLifetime: options.identityOptions.issuanceLifetime,
+			Issuer: &issuerConfig{
+				Crt:              string(pem.EncodeToMemory(crt)),
+				Key:              string(pem.EncodeToMemory(pk)),
+				ExpiryAnnotation: k8s.IdentityIssuerExpiryAnnotation,
+				Expiry:           issuer.Subject().NotAfter,
+			},
+		}
+	}
+
 	return &installConfig{
 		Namespace:                  controlPlaneNamespace,
 		ControllerImage:            fmt.Sprintf("%s/controller:%s", options.dockerRegistry, options.linkerdVersion),
@@ -219,6 +283,7 @@ func validateAndBuildConfig(options *installOptions) (*installConfig, error) {
 		ProfileSuffixes:            profileSuffixes,
 		EnableH2Upgrade:            !options.disableH2Upgrade,
 		NoInitContainer:            options.noInitContainer,
+		Identity:                   identity,
 	}, nil
 }
 
