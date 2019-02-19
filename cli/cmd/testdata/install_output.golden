@@ -88,8 +88,11 @@ spec:
         - -log-level=ControllerLogLevel
         - -controller-namespace=Namespace
         - -trust-domain=
-        - -trust-anchors=/var/run/linkerd/identity/trust-anchors
-        - -lifetime=
+        - -trust-anchors=/var/run/linkerd/identity-trust-anchors/roots.pem
+        - -signing-intermediates=/var/run/linkerd/identity-signing/trust-anchors.pem
+        - -signing-crt=/var/run/linkerd/identity-signing/crt.der
+        - -signing-key=/var/run/linkerd/identity-signing/key.der
+        - -signing-valid-for=
         image: ControllerImage
         imagePullPolicy: ImagePullPolicy
         livenessProbe:
@@ -327,6 +330,7 @@ spec:
         - -addr=:123
         - -controller-namespace=Namespace
         - -single-namespace=false
+        - -enable-tls=
         - -enable-h2-upgrade=true
         - -log-level=ControllerLogLevel
         image: ControllerImage

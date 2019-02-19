@@ -85,8 +85,11 @@ spec:
         - -log-level=info
         - -controller-namespace=linkerd
         - -trust-domain=
-        - -trust-anchors=/var/run/linkerd/identity/trust-anchors
-        - -lifetime=
+        - -trust-anchors=/var/run/linkerd/identity-trust-anchors/roots.pem
+        - -signing-intermediates=/var/run/linkerd/identity-signing/trust-anchors.pem
+        - -signing-crt=/var/run/linkerd/identity-signing/crt.der
+        - -signing-key=/var/run/linkerd/identity-signing/key.der
+        - -signing-valid-for=
         image: gcr.io/linkerd-io/controller:dev-undefined
         imagePullPolicy: IfNotPresent
         livenessProbe:
@@ -323,6 +326,7 @@ spec:
         - -addr=:8086
         - -controller-namespace=linkerd
         - -single-namespace=false
+        - -enable-tls=
         - -enable-h2-upgrade=true
         - -log-level=info
         image: gcr.io/linkerd-io/controller:dev-undefined

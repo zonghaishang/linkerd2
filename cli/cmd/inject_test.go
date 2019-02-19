@@ -34,9 +34,10 @@ func testUninjectAndInject(t *testing.T, tc injectYAML) {
 	}
 
 	actualOutput := output.String()
-	expectedOutput := readOptionalTestFile(t, tc.goldenFileName)
-	if expectedOutput != actualOutput {
-		t.Errorf("Result mismatch.\nExpected: %s\nActual: %s", expectedOutput, actualOutput)
+	expectedOutput := readTestdata(t, tc.goldenFileName)
+	if actualOutput != expectedOutput {
+		writeTestdataIfUpdate(t, tc.goldenFileName, output.Bytes())
+		diffCompare(t, actualOutput, expectedOutput)
 	}
 
 	actualReport := report.String()
@@ -44,9 +45,10 @@ func testUninjectAndInject(t *testing.T, tc injectYAML) {
 	if verbose {
 		reportFileName += ".verbose"
 	}
-	expectedReport := readOptionalTestFile(t, reportFileName)
+	expectedReport := readTestdata(t, reportFileName)
 	if expectedReport != actualReport {
-		t.Errorf("Result mismatch.\nExpected: %s\nActual: %s", expectedReport, actualReport)
+		writeTestdataIfUpdate(t, reportFileName, report.Bytes())
+		diffCompare(t, actualReport, expectedReport)
 	}
 }
 
@@ -187,21 +189,22 @@ func testInjectCmd(t *testing.T, tc injectCmd) {
 	}
 
 	actualStdOutResult := outBuffer.String()
-	expectedStdOutResult := readOptionalTestFile(t, tc.stdOutGoldenFileName)
+	expectedStdOutResult := readTestdataIfFileName(t, tc.stdOutGoldenFileName)
 	if expectedStdOutResult != actualStdOutResult {
-		t.Errorf("Result mismatch.\nExpected: %s\nActual: %s", expectedStdOutResult, actualStdOutResult)
+		writeTestdataIfUpdate(t, tc.stdOutGoldenFileName, outBuffer.Bytes())
+		diffCompare(t, actualStdOutResult, expectedStdOutResult)
 	}
-
-	actualStdErrResult := errBuffer.String()
 
 	stdErrGoldenFileName := tc.stdErrGoldenFileName
 	if verbose {
 		stdErrGoldenFileName += ".verbose"
 	}
 
-	expectedStdErrResult := readOptionalTestFile(t, stdErrGoldenFileName)
+	actualStdErrResult := errBuffer.String()
+	expectedStdErrResult := readTestdataIfFileName(t, stdErrGoldenFileName)
 	if expectedStdErrResult != actualStdErrResult {
-		t.Errorf("Result mismatch.\nExpected: %s\nActual: %s", expectedStdErrResult, actualStdErrResult)
+		writeTestdataIfUpdate(t, tc.stdOutGoldenFileName, errBuffer.Bytes())
+		diffCompare(t, actualStdErrResult, expectedStdErrResult)
 	}
 }
 func TestRunInjectCmd(t *testing.T) {
@@ -250,9 +253,10 @@ func testInjectFilePath(t *testing.T, tc injectFilePath) {
 		t.Fatal("Unexpected error. Exit code from runInjectCmd: ", exitCode)
 	}
 
-	expected := readOptionalTestFile(t, tc.expectedFile)
+	expected := readTestdata(t, tc.expectedFile)
 	if expected != actual.String() {
-		t.Errorf("Result mismatch.\nExpected: %s\nActual: %s", expected, actual.String())
+		writeTestdataIfUpdate(t, tc.expectedFile, actual.Bytes())
+		diffCompare(t, actual.String(), expected)
 	}
 
 	stdErrFile := tc.stdErrFile
@@ -260,9 +264,10 @@ func testInjectFilePath(t *testing.T, tc injectFilePath) {
 		stdErrFile += ".verbose"
 	}
 
-	stdErr := readOptionalTestFile(t, stdErrFile)
+	stdErr := readTestdata(t, stdErrFile)
 	if stdErr != errBuf.String() {
-		t.Errorf("Result mismatch.\nExpected: %s\nActual: %s", stdErr, errBuf.String())
+		writeTestdataIfUpdate(t, stdErrFile, errBuf.Bytes())
+		diffCompare(t, errBuf.String(), stdErr)
 	}
 }
 
@@ -278,9 +283,11 @@ func testReadFromFolder(t *testing.T, resourceFolder string, expectedFolder stri
 		t.Fatal("Unexpected error. Exit code from runInjectCmd: ", exitCode)
 	}
 
-	expected := readOptionalTestFile(t, filepath.Join(expectedFolder, "injected_nginx_redis.yaml"))
+	expectedFile := filepath.Join(expectedFolder, "injected_nginx_redis.yaml")
+	expected := readTestdata(t, expectedFile)
 	if expected != actual.String() {
-		t.Errorf("Result mismatch.\nExpected: %s\nActual: %s", expected, actual.String())
+		writeTestdataIfUpdate(t, expectedFile, actual.Bytes())
+		diffCompare(t, actual.String(), expected)
 	}
 
 	stdErrFileName := filepath.Join(expectedFolder, "injected_nginx_redis.stderr")
@@ -288,9 +295,10 @@ func testReadFromFolder(t *testing.T, resourceFolder string, expectedFolder stri
 		stdErrFileName += ".verbose"
 	}
 
-	stdErr := readOptionalTestFile(t, stdErrFileName)
+	stdErr := readTestdata(t, stdErrFileName)
 	if stdErr != errBuf.String() {
-		t.Errorf("Result mismatch.\nExpected: %s\nActual: %s", stdErr, errBuf.String())
+		writeTestdataIfUpdate(t, stdErrFileName, errBuf.Bytes())
+		diffCompare(t, errBuf.String(), stdErr)
 	}
 }
 
@@ -352,7 +360,7 @@ func TestWalk(t *testing.T) {
 	defer os.RemoveAll(tmpFolderRoot)
 
 	var (
-		data  = []byte(readOptionalTestFile(t, "inject_gettest_deployment.bad.input.yml"))
+		data  = []byte(readTestdata(t, "inject_gettest_deployment.bad.input.yml"))
 		file1 = filepath.Join(tmpFolderRoot, "root.txt")
 		file2 = filepath.Join(tmpFolderData, "data.txt")
 	)
