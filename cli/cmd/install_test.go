@@ -2,10 +2,17 @@ package cmd
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"testing"
 )
+
+func TestMain(m *testing.M) {
+	flag.BoolVar(&updateFixtures, "update", false, "update text fixtures in place")
+	flag.Parse()
+	os.Exit(m.Run())
+}
 
 func TestRender(t *testing.T) {
 	// The default configuration, with the random UUID overridden with a fixed
@@ -120,13 +127,13 @@ func TestRender(t *testing.T) {
 		controlPlaneNamespace string
 		goldenFileName        string
 	}{
-		{*defaultConfig, defaultOptions, defaultControlPlaneNamespace, "testdata/install_default.golden"},
-		{metaConfig, defaultOptions, metaConfig.Namespace, "testdata/install_output.golden"},
-		{singleNamespaceConfig, defaultOptions, singleNamespaceConfig.Namespace, "testdata/install_single_namespace_output.golden"},
-		{*haConfig, haOptions, haConfig.Namespace, "testdata/install_ha_output.golden"},
-		{*haWithOverridesConfig, haWithOverridesOptions, haWithOverridesConfig.Namespace, "testdata/install_ha_with_overrides_output.golden"},
-		{*noInitContainerConfig, noInitContainerOptions, noInitContainerConfig.Namespace, "testdata/install_no_init_container.golden"},
-		{*noInitContainerWithProxyAutoInjectConfig, noInitContainerWithProxyAutoInjectOptions, noInitContainerWithProxyAutoInjectConfig.Namespace, "testdata/install_no_init_container_auto_inject.golden"},
+		{*defaultConfig, defaultOptions, defaultControlPlaneNamespace, "install_default.golden"},
+		{metaConfig, defaultOptions, metaConfig.Namespace, "install_output.golden"},
+		{singleNamespaceConfig, defaultOptions, singleNamespaceConfig.Namespace, "install_single_namespace_output.golden"},
+		{*haConfig, haOptions, haConfig.Namespace, "install_ha_output.golden"},
+		{*haWithOverridesConfig, haWithOverridesOptions, haWithOverridesConfig.Namespace, "install_ha_with_overrides_output.golden"},
+		{*noInitContainerConfig, noInitContainerOptions, noInitContainerConfig.Namespace, "install_no_init_container.golden"},
+		{*noInitContainerWithProxyAutoInjectConfig, noInitContainerWithProxyAutoInjectOptions, noInitContainerWithProxyAutoInjectConfig.Namespace, "install_no_init_container_auto_inject.golden"},
 	}
 
 	for i, tc := range testCases {
@@ -134,18 +141,16 @@ func TestRender(t *testing.T) {
 			controlPlaneNamespace = tc.controlPlaneNamespace
 
 			var buf bytes.Buffer
-			err := render(tc.config, &buf, tc.options)
-			if err != nil {
+			if err := render(tc.config, &buf, tc.options); err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}
-			content := buf.String()
 
-			goldenFileBytes, err := ioutil.ReadFile(tc.goldenFileName)
-			if err != nil {
-				t.Fatalf("Unexpected error: %v", err)
+			actual := buf.String()
+			expected := readTestdata(t, tc.goldenFileName)
+			if actual != expected {
+				writeTestdataIfUpdate(t, tc.goldenFileName, buf.Bytes())
+				diffCompare(t, actual, expected)
 			}
-			expectedContent := string(goldenFileBytes)
-			diffCompare(t, content, expectedContent)
 		})
 	}
 }
