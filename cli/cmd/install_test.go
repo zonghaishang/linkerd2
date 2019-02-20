@@ -32,7 +32,7 @@ func TestRender(t *testing.T) {
 
 	mockIdentityConfig := &identityConfig{
 		TrustDomain:      "cluster.local",
-		IssuanceLifetime: 24 * time.Hour,
+		IssuanceLifetime: "24h",
 		Issuer: &issuerConfig{
 			Expiry:        time.Now().Add(24 * time.Hour),
 			Key:           "abc",

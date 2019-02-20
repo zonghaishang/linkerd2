@@ -54,6 +54,43 @@ spec:
     port: 8080
     targetPort: 8080
 ---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: linkerd-identity-trust-anchors
+  namespace: linkerd
+  labels:
+    linkerd.io/control-plane-component: identity
+  annotations:
+    linkerd.io/created-by: linkerd/cli dev-undefined
+data:
+  trust-anchors.pem: |-
+    -----BEGIN CERTIFICATE-----
+    MIIBYTCCAQegAwIBAgIBATAKBggqhkjOPQQDAjAYMRYwFAYDVQQDEw1jbHVzdGVy
+    LmxvY2FsMB4XDTE5MDIyMDA2NDgwOVoXDTIwMDIyMDA4NDgwOVowGDEWMBQGA1UE
+    AxMNY2x1c3Rlci5sb2NhbDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABCk5x514
+    dmBA2K+rQMJnEUymaeHfVSr4Jtg3F8vz1AFFLlBxyJjzI9+merZ6a8Gcvii3Pttb
+    ZCu8pZtV335QvIKjQjBAMA4GA1UdDwEB/wQEAwIBBjAdBgNVHSUEFjAUBggrBgEF
+    BQcDAQYIKwYBBQUHAwIwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNIADBF
+    AiEA1RUGWgyTaBOaLrL2YK6X1gpr4h/6rwdnsQJUWKzAbrgCIBsiwf3zYu0Q9Ngh
+    zNz/4fu7yl2DcPw09sv8FLJXkuJK
+    -----END CERTIFICATE-----
+    
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: linkerd-identity-issuer
+  namespace: linkerd
+  labels:
+    linkerd.io/control-plane-component: identity
+  annotations:
+    linkerd.io/created-by: linkerd/cli dev-undefined
+    linkerd.io/identity-issuer-expiry: 2020-02-20T08:48:09Z
+data:
+  crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJjakNDQVJpZ0F3SUJBZ0lCQWpBS0JnZ3Foa2pPUFFRREFqQVlNUll3RkFZRFZRUURFdzFqYkhWemRHVnkKTG14dlkyRnNNQjRYRFRFNU1ESXlNREEyTkRnd09Wb1hEVEl3TURJeU1EQTRORGd3T1Zvd0tURW5NQ1VHQTFVRQpBeE1lYVdSbGJuUnBkSGt1YkdsdWEyVnlaQzVqYkhWemRHVnlMbXh2WTJGc01Ga3dFd1lIS29aSXpqMENBUVlJCktvWkl6ajBEQVFjRFFnQUVPUGpqaUVmWStWdkN3K0hRa0J4aFNWUGRQaWd4QTE3d2xMc0xJMVlxRDErZGxMWjgKd2p2YStiR1FPa09nN253RkFMTjRoWmlDQm9SSUZwMExMejQydzZOQ01FQXdEZ1lEVlIwUEFRSC9CQVFEQWdFRwpNQjBHQTFVZEpRUVdNQlFHQ0NzR0FRVUZCd01CQmdnckJnRUZCUWNEQWpBUEJnTlZIUk1CQWY4RUJUQURBUUgvCk1Bb0dDQ3FHU000OUJBTUNBMGdBTUVVQ0lEbUIxY24vWGFEbDhFY0Y0OEVLdWR2SUpRaE1lYkkrR1BKTXhjdUgKaXA3ckFpRUExd1FRRUhjTGo4R0JGRXRwS2tYMnBteitUM0RFZXpUWldkN3c4OHN3RU5BPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+  key: LS0tLS1CRUdJTiBFQyBQUklWQVRFIEtFWS0tLS0tCk1IY0NBUUVFSUtpTDNTKzhVNEpJbFNKRTdzK1N2QldaajhsQjhRZGZxdDZ1WStiTXc4KzJvQW9HQ0NxR1NNNDkKQXdFSG9VUURRZ0FFT1BqamlFZlkrVnZDdytIUWtCeGhTVlBkUGlneEExN3dsTHNMSTFZcUQxK2RsTFo4d2p2YQorYkdRT2tPZzdud0ZBTE40aFppQ0JvUklGcDBMTHo0Mnd3PT0KLS0tLS1FTkQgRUMgUFJJVkFURSBLRVktLS0tLQo=
+---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -87,7 +124,7 @@ spec:
         - -trust-domain=cluster.local
         - -trust-anchors=/var/run/linkerd/identity/trust-anchors
         - -issuer=/var/run/linkerd/identity/issuer
-        - -issuance-lifetime=
+        - -issuance-lifetime=24h0m0s
         image: gcr.io/linkerd-io/controller:dev-undefined
         imagePullPolicy: IfNotPresent
         livenessProbe:
@@ -333,7 +370,6 @@ spec:
         - -addr=:8086
         - -controller-namespace=linkerd
         - -single-namespace=false
-        - -enable-tls=
         - -enable-h2-upgrade=true
         - -log-level=info
         image: gcr.io/linkerd-io/controller:dev-undefined

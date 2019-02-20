@@ -75,7 +75,7 @@ type identityConfig struct {
 	TrustDomain      string
 	TrustAnchorsPEM  string
 	Issuer           *issuerConfig
-	IssuanceLifetime time.Duration
+	IssuanceLifetime string
 }
 
 type issuerConfig struct {
@@ -231,7 +231,7 @@ func validateAndBuildConfig(options *installOptions) (*installConfig, error) {
 		identity = &identityConfig{
 			TrustDomain:      trustDomain,
 			TrustAnchorsPEM:  string(pem.EncodeToMemory(ta)),
-			IssuanceLifetime: options.identityOptions.issuanceLifetime,
+			IssuanceLifetime: options.identityOptions.issuanceLifetime.String(),
 			Issuer: &issuerConfig{
 				Crt:              string(pem.EncodeToMemory(crt)),
 				Key:              string(pem.EncodeToMemory(pk)),
