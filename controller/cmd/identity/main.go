@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/linkerd/linkerd2/controller/k8s"
 	"github.com/linkerd/linkerd2/pkg/admin"
 	"github.com/linkerd/linkerd2/pkg/flags"
+	"github.com/linkerd/linkerd2/pkg/tls"
 	log "github.com/sirupsen/logrus"
 
 	"google.golang.org/grpc"
@@ -25,7 +27,7 @@ func main() {
 		"namespace in which Linkerd is installed")
 	trustDomain := flag.String("trust-domain", "cluster.local", "trust domain for identities")
 	trustAnchorsPath := flag.String("trust-anchors",
-		"/var/run/linkerd/identity/trust-anchors",
+		"/var/run/linkerd/identity/trust-anchors/trust-anchors.pem",
 		"path to file or directory containing trust anchors")
 	issuerPath := flag.String("issuer",
 		"/var/run/linkerd/identity/issuer",
@@ -44,13 +46,18 @@ func main() {
 	}
 
 	// TODO watch trustAnchorsPath for changes
-	trustAnchors, err := identity.ReadPemCrts(*trustAnchorsPath)
+	trustAnchors, err := tls.ReadTrustAnchorsPEM(*trustAnchorsPath)
 	if err != nil {
 		log.Fatalf("Failed to read trust anchors from %s: %s", *trustAnchorsPath, err)
 	}
 
 	// TODO watch issuerPath for changes
-	issuer, err := identity.IssuerFromDir(*issuerPath, *issuanceLifetime)
+	ca, err := tls.ReadCA(filepath.Join(*issuerPath, "key.pem"), filepath.Join(*issuerPath, "crt.pem"))
+	if err != nil {
+		log.Fatalf("Failed to read CA from %s: %s", *issuerPath, err)
+	}
+
+	issuer, err := identity.NewIssuer(ca, *issuanceLifetime)
 	if err != nil {
 		log.Fatalf("Failed to read issuer credentials from %s: %s", *issuerPath, err)
 	}

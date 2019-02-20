@@ -8,6 +8,9 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
+	"errors"
+	"fmt"
+	"io/ioutil"
 	"math/big"
 	"time"
 )
@@ -29,14 +32,11 @@ type CA struct {
 	// more than this allowance in either direction.
 	clockSkewAllocance time.Duration
 
-	// The CA's private key.
-	privateKey *ecdsa.PrivateKey
+	// PrivateKey of the CA.
+	PrivateKey *ecdsa.PrivateKey
 
-	// The CA's certificate.
-	root *x509.Certificate
-
-	// The PEM X.509 encoding of `root`
-	rootPEM string
+	// Crt is the certificate and trust chain.
+	Crt Crt
 
 	// nextSerialNumber is the serial number of the next certificate to issue.
 	// Serial numbers must not be reused.
@@ -49,97 +49,167 @@ type CA struct {
 	nextSerialNumber uint64
 }
 
-// CertificateAndPrivateKey encapsulates a certificate / private key pair.
-type CertificateAndPrivateKey struct {
-	// The ASN.1 DER-encoded (binary, not PEM) certificate.
-	Certificate []byte
-
-	// The PKCS#8 DER-encoded (binary, not PEM) private key.
-	PrivateKey []byte
+// Crt is a certificate and trust chain.
+type Crt struct {
+	Certificate *x509.Certificate
+	TrustChain  []*x509.Certificate
 }
 
-// NewCA is the only way to create a CA.
-func NewCA() (*CA, error) {
-	// Initially all certificates will be valid for one year. TODO: Shorten the
-	// validity duration of CA and end-entity certificates downward.
-	validity := (24 * 365) * time.Hour
-
-	// Allow half a day of clock skew. TODO: decrease the default value of this
-	// and make it tunable. TODO: Reconsider how this interacts with the
-	// similar logic in the webpki verifier; since both are trying to account
-	// for clock skew, there is somewhat of an over-correction.
-	clockSkewAllocance := 12 * time.Hour
-
-	privateKey, err := generateKeyPair()
-	if err != nil {
-		return nil, err
-	}
-
-	ca := CA{
-		validity:           validity,
-		clockSkewAllocance: clockSkewAllocance,
-		privateKey:         privateKey,
-		nextSerialNumber:   1,
-	}
-
-	template := ca.createTemplate(&ca.privateKey.PublicKey)
-
-	template.Subject = pkix.Name{CommonName: "Cluster-local Managed Pod CA"}
-
-	// basicConstraints.cA = true
-	template.IsCA = true
-	template.MaxPathLen = -1
-	template.BasicConstraintsValid = true
-
-	// `parent == template` means "self-signed".
-	rootDer, err := x509.CreateCertificate(rand.Reader, &template, &template, privateKey.Public(), privateKey)
-	if err != nil {
-		return nil, err
-	}
-
-	ca.root, err = x509.ParseCertificate(rootDer)
-	if err != nil {
-		return nil, err
-	}
-
-	ca.rootPEM = string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: ca.root.Raw}))
-
-	return &ca, nil
+type EndEntity struct {
+	PrivateKey *ecdsa.PrivateKey
+	Crt
 }
 
-// TrustAnchorPEM returns the PEM-encoded X.509 certificate of the trust anchor
-// (root CA).
-func (ca *CA) TrustAnchorPEM() string {
-	return ca.rootPEM
+func newCA() *CA {
+	return &CA{
+		// Initially all certificates will be valid for one year. TODO: Shorten the
+		// validity duration of CA and end-entity certificates downward.
+		validity: (24 * 365) * time.Hour,
+
+		// Allow an hour of clock skew. TODO: decrease the default value of this
+		// and make it tunable. TODO: Reconsider how this interacts with the
+		// similar logic in the webpki verifier; since both are trying to account
+		// for clock skew, there is somewhat of an over-correction.
+		clockSkewAllocance: 1 * time.Hour,
+
+		nextSerialNumber: 1,
+	}
 }
 
-// IssueEndEntityCertificate creates a new certificate that is valid for the
+// WithClockSkewAllowance sets the maximum allowable time for a node's clock to skew.
+func (ca *CA) WithClockSkewAllowance(v time.Duration) *CA {
+	ca.validity = v
+	return ca
+}
+
+// WithValidity sets the lifetime for ceritificates issued by this CA.
+func (ca *CA) WithValidity(v time.Duration) *CA {
+	ca.validity = v
+	return ca
+}
+
+func ReadCA(keyPath, crtPath string) (ca *CA, err error) {
+	ca = newCA()
+
+	ca.PrivateKey, err = ReadKeyPEM(keyPath)
+	if err != nil {
+		return
+	}
+
+	ca.Crt, err = ReadCrtPEM(crtPath)
+	return
+}
+
+// GenerateRootCA is the only way to create a CA.
+func GenerateRootCA(name string) (ca *CA, err error) {
+	ca = newCA()
+
+	ca.PrivateKey, err = generateKeyPair()
+	if err != nil {
+		return
+	}
+
+	t := ca.createTemplate(&ca.PrivateKey.PublicKey)
+	t.Subject = pkix.Name{CommonName: name}
+	t.IsCA = true
+	t.MaxPathLen = -1
+	t.BasicConstraintsValid = true
+	t.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign
+	der, err := x509.CreateCertificate(rand.Reader, &t, &t, ca.PrivateKey.Public(), ca.PrivateKey)
+	if err != nil {
+		return
+	}
+	crt, err := x509.ParseCertificate(der)
+	if err != nil {
+		return
+	}
+
+	ca.Crt.Certificate = crt
+	return
+}
+
+// GenerateIntermediary creates a new certificate that is valid for the
 // given DNS name, generating a new keypair for it.
-func (ca *CA) IssueEndEntityCertificate(dnsName string) (*CertificateAndPrivateKey, error) {
+func (ca *CA) GenerateIntermediary(name string, maxPathLen int) (*CA, error) {
 	privateKey, err := generateKeyPair()
 	if err != nil {
 		return nil, err
 	}
-	p8, err := x509.MarshalPKCS8PrivateKey(privateKey)
+
+	t := ca.createTemplate(&privateKey.PublicKey)
+	t.Subject = pkix.Name{CommonName: name}
+	t.IsCA = true
+	t.MaxPathLen = maxPathLen
+	t.BasicConstraintsValid = true
+	t.KeyUsage = x509.KeyUsageCertSign | x509.KeyUsageCRLSign
+	crtb, err := x509.CreateCertificate(rand.Reader, &t, ca.Crt.Certificate, privateKey.Public(), ca.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+	crt, err := x509.ParseCertificate(crtb)
 	if err != nil {
 		return nil, err
 	}
 
-	template := ca.createTemplate(&privateKey.PublicKey)
-	template.DNSNames = []string{dnsName}
-	crt, err := x509.CreateCertificate(rand.Reader, &template, ca.root, &privateKey.PublicKey, ca.privateKey)
-	if err != nil {
-		return nil, err
-	}
-	return &CertificateAndPrivateKey{
-		Certificate: crt,
-		PrivateKey:  p8,
-	}, nil
+	ica := newCA()
+	ica.validity = ca.validity
+	ica.clockSkewAllocance = ca.clockSkewAllocance
+	ica.PrivateKey = privateKey
+	ica.Crt.Certificate = crt
+	ica.Crt.TrustChain = append(ca.Crt.TrustChain, ca.Crt.Certificate)
+	return ica, nil
 }
 
-// createTemplate returns a certificate template for a non-CA certificate with
-// no subject name, no subjectAltNames. The template can then be modified into
-// a (root) CA template or an end-entity template by the caller.
+// GenerateEndEntity creates a new certificate that is valid for the
+// given DNS name, generating a new keypair for it.
+func (ca *CA) GenerateEndEntity(dnsName string) (*EndEntity, error) {
+	pk, err := generateKeyPair()
+	if err != nil {
+		return nil, err
+	}
+	crt, err := ca.SignEndEntity(&x509.CertificateRequest{
+		Subject:   pkix.Name{CommonName: dnsName},
+		DNSNames:  []string{dnsName},
+		PublicKey: pk.PublicKey,
+	})
+	return &EndEntity{PrivateKey: pk, Crt: crt}, err
+}
+
+// SignEndEntity creates a new certificate that is valid for the
+// given DNS name, generating a new keypair for it.
+func (ca *CA) SignEndEntity(csr *x509.CertificateRequest) (Crt, error) {
+	pubkey, ok := csr.PublicKey.(ecdsa.PublicKey)
+	if !ok {
+		return Crt{}, fmt.Errorf("CSR must contain an ECDSA public key: %+v", csr.PublicKey)
+	}
+
+	t := ca.createTemplate(&pubkey)
+	t.Issuer = ca.Crt.Certificate.Subject
+	t.Subject = csr.Subject
+	t.Extensions = csr.Extensions
+	t.ExtraExtensions = csr.ExtraExtensions
+	t.DNSNames = csr.DNSNames
+	t.EmailAddresses = csr.EmailAddresses
+	t.IPAddresses = csr.IPAddresses
+	t.URIs = csr.URIs
+
+	crtb, err := x509.CreateCertificate(rand.Reader, &t, ca.Crt.Certificate, &pubkey, ca.PrivateKey)
+	if err != nil {
+		return Crt{}, fmt.Errorf("Failed to create certificate: %s", err)
+	}
+
+	crt, err := x509.ParseCertificate(crtb)
+	if err != nil {
+		return Crt{}, fmt.Errorf("Failed to parse certificate: %s", err)
+	}
+
+	chain := append(ca.Crt.TrustChain, ca.Crt.Certificate)
+	return Crt{Certificate: crt, TrustChain: chain}, nil
+}
+
+// createTemplate returns a certificate t for a non-CA certificate with
+// no subject name, no subjectAltNames. The t can then be modified into
+// a (root) CA t or an end-entity t by the caller.
 func (ca *CA) createTemplate(publicKey *ecdsa.PublicKey) x509.Certificate {
 	// ECDSA is used instead of RSA because ECDSA key generation is
 	// straightforward and fast whereas RSA key generation is extremely slow
@@ -165,23 +235,144 @@ func (ca *CA) createTemplate(publicKey *ecdsa.PublicKey) x509.Certificate {
 		NotBefore:          notBefore.Add(-ca.clockSkewAllocance),
 		NotAfter:           notBefore.Add(ca.validity).Add(ca.clockSkewAllocance),
 		PublicKey:          publicKey,
+		KeyUsage:           x509.KeyUsageKeyEncipherment | x509.KeyUsageDigitalSignature,
+		ExtKeyUsage: []x509.ExtKeyUsage{
+			x509.ExtKeyUsageServerAuth,
+			x509.ExtKeyUsageClientAuth,
+		},
 	}
-}
-
-// EncodedCertificate returns the PEM encoding of the certificate
-func (cpk *CertificateAndPrivateKey) EncodedCertificate() ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := pem.Encode(buf, &pem.Block{Type: "CERTIFICATE", Bytes: cpk.Certificate})
-	return buf.Bytes(), err
-}
-
-// EncodedPrivateKey returns the PEM encoding of key.
-func (cpk *CertificateAndPrivateKey) EncodedPrivateKey() ([]byte, error) {
-	buf := &bytes.Buffer{}
-	err := pem.Encode(buf, &pem.Block{Type: "EC PRIVATE KEY", Bytes: cpk.PrivateKey})
-	return buf.Bytes(), err
 }
 
 func generateKeyPair() (*ecdsa.PrivateKey, error) {
 	return ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+}
+
+func (crt *Crt) EncodePEM() []byte {
+	w := bytes.Buffer{}
+	n := len(crt.TrustChain)
+
+	// Serialize certificates from leaf to root.
+	_ = pem.Encode(&w, &pem.Block{Type: "CERTIFICATE", Bytes: crt.Certificate.Raw})
+	for i := n - 1; i >= 0; i-- {
+		_ = pem.Encode(&w, &pem.Block{Type: "CERTIFICATE", Bytes: crt.TrustChain[i].Raw})
+	}
+
+	return w.Bytes()
+}
+
+func (crt *Crt) EncodeTrustChainDER() [][]byte {
+	// Serialize certificates from leaf to root.
+	chain := make([][]byte, len(crt.TrustChain))
+	for i, c := range crt.TrustChain {
+		chain[len(crt.TrustChain)-i-1] = c.Raw
+	}
+	return chain
+}
+
+func (ee *EndEntity) PemEncodePrivateKey() ([]byte, error) {
+	der, err := x509.MarshalECPrivateKey(ee.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: der}), nil
+}
+
+// ReadCertificatePEm reads a PEM-encoded certificates from the given path.
+func ReadCertificatePEM(path string) (*x509.Certificate, error) {
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	crt, _, err := decodeCertificatePEM(b)
+	return crt, err
+}
+
+// ReadCertificatePEM reads a PEM-encoded certificates from the given path.
+func ReadTrustAnchorsPEM(path string) ([]*x509.Certificate, error) {
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+
+	return DecodeTrustAnchorsPEM(b)
+}
+
+// ReadCrtPEM reads PEM-encoded certificates from the named file
+func ReadCrtPEM(path string) (Crt, error) {
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		return Crt{}, err
+	}
+	return DecodeCrtPEM(b)
+}
+
+func ReadKeyPEM(path string) (*ecdsa.PrivateKey, error) {
+	b, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	return DecodeKeyPEM(b)
+}
+
+func DecodeKeyPEM(b []byte) (*ecdsa.PrivateKey, error) {
+	block, _ := pem.Decode(b)
+	if block == nil {
+		return nil, errors.New("Not PEM-encoded")
+	}
+	if block.Type != "EC PRIVATE KEY" {
+		return nil, fmt.Errorf("Expected 'EC PRIVATE KEY'; found: '%s'", block.Type)
+	}
+	return x509.ParseECPrivateKey(block.Bytes)
+}
+
+func decodeCertificatePEM(crtb []byte) (*x509.Certificate, []byte, error) {
+	block, crtb := pem.Decode(crtb)
+	if block == nil {
+		return nil, nil, errors.New("Failed to decode PEM certificate")
+	}
+	if block.Type != "CERTIFICATE" {
+		return nil, nil, nil
+	}
+	c, err := x509.ParseCertificate(block.Bytes)
+	return c, crtb, err
+}
+
+// DecodeCrtPEM decodes PEM-encoded certificates from leaf to root.
+func DecodeCrtPEM(buf []byte) (crt Crt, err error) {
+	certs, err := decodeCertificatesPEM(buf)
+	if err != nil {
+		return
+	}
+
+	crt.Certificate = certs[0]
+	certs = certs[1:]
+
+	// The chain is read from Leaf to Root, but we store it from Root to Leaf.
+	crt.TrustChain = make([]*x509.Certificate, len(certs))
+	for i, c := range certs {
+		crt.TrustChain[len(certs)-i-1] = c
+	}
+	return
+}
+
+// DecodeTrustAnchorsPEM decodes PEM-encoded certificates.
+func DecodeTrustAnchorsPEM(buf []byte) ([]*x509.Certificate, error) {
+	return decodeCertificatesPEM(buf)
+}
+
+func decodeCertificatesPEM(buf []byte) (certs []*x509.Certificate, err error) {
+	for len(buf) > 0 {
+		var c *x509.Certificate
+		c, buf, err = decodeCertificatePEM(buf)
+		if err != nil {
+			return
+		}
+		if c == nil {
+			continue // not a CERTIFICATE, skip
+		}
+		certs = append(certs, c)
+	}
+	return
 }

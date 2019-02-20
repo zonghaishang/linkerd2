@@ -4,12 +4,12 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/linkerd/linkerd2/pkg/k8s"
 	pkgTls "github.com/linkerd/linkerd2/pkg/tls"
-	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -77,7 +77,7 @@ func (w *WebhookServer) Shutdown() error {
 	return w.Server.Shutdown(context.Background())
 }
 
-func tlsConfig(rootCA *pkgTls.CA, controllerNamespace string) (*tls.Config, error) {
+func tlsConfig(ca *pkgTls.CA, controllerNamespace string) (*tls.Config, error) {
 	tlsIdentity := k8s.TLSIdentity{
 		Name:                "linkerd-proxy-injector",
 		Kind:                k8s.Service,
@@ -85,28 +85,20 @@ func tlsConfig(rootCA *pkgTls.CA, controllerNamespace string) (*tls.Config, erro
 		ControllerNamespace: controllerNamespace,
 	}
 	dnsName := tlsIdentity.ToDNSName()
-	certAndPrivateKey, err := rootCA.IssueEndEntityCertificate(dnsName)
+
+	leaf, err := ca.GenerateEndEntity(dnsName)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed to generate end entity for %s: %s", dnsName, err)
 	}
 
-	certPEM, err := certAndPrivateKey.EncodedCertificate()
-	if err != nil {
-		return nil, err
+	c := &tls.Config{
+		Certificates: []tls.Certificate{
+			tls.Certificate{
+				Certificate: leaf.Crt.EncodeTrustChainDER(),
+				Leaf:        leaf.Certificate,
+				PrivateKey:  leaf.PrivateKey,
+			},
+		},
 	}
-	log.Debugf("PEM-encoded certificate: %s\n", certPEM)
-
-	keyPEM, err := certAndPrivateKey.EncodedPrivateKey()
-	if err != nil {
-		return nil, err
-	}
-
-	cert, err := tls.X509KeyPair(certPEM, keyPEM)
-	if err != nil {
-		return nil, err
-	}
-
-	return &tls.Config{
-		Certificates: []tls.Certificate{cert},
-	}, nil
+	return c, nil
 }

@@ -31,13 +31,13 @@ func TestRender(t *testing.T) {
 	defaultConfig.UUID = "deaab91a-f4ab-448a-b7d1-c832a2fa0a60"
 
 	mockIdentityConfig := &identityConfig{
-		TrustDomain: "cluster.local",
+		TrustDomain:      "cluster.local",
+		IssuanceLifetime: 24 * time.Hour,
 		Issuer: &issuerConfig{
-			IssuanceLifetime: 24 * time.Hour,
-			Expiry:           time.Now().Add(24 * time.Hour),
-			Key:              "abc",
-			Crt:              "def",
-			TrustChainPEM:    "ghi",
+			Expiry:        time.Now().Add(24 * time.Hour),
+			Key:           "abc",
+			Crt:           "def",
+			TrustChainPEM: "ghi",
 		},
 	}
 

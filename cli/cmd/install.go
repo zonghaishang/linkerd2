@@ -12,10 +12,10 @@ import (
 	"time"
 
 	"github.com/smallstep/cli/crypto/pemutil"
-	"github.com/smallstep/cli/crypto/x509util"
 
 	"github.com/linkerd/linkerd2/cli/static"
 	"github.com/linkerd/linkerd2/pkg/k8s"
+	"github.com/linkerd/linkerd2/pkg/tls"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -208,23 +208,23 @@ func validateAndBuildConfig(options *installOptions) (*installConfig, error) {
 	trustDomain := options.identityOptions.trustDomain
 	if options.identityOptions.trustDomain != "" {
 		// TODO accept roots as configuration
-		root, err := x509util.NewRootProfile(trustDomain)
+		root, err := tls.GenerateRootCA(trustDomain)
 		if err != nil {
-			log.Fatalf("Failed to create root certificate for identity")
+			return nil, fmt.Errorf("Failed to create root certificate for identity: %s", err)
 		}
 
 		subdomain := fmt.Sprintf("identity.%s.%s", controlPlaneNamespace, trustDomain)
-		issuer, err := x509util.NewIntermediateProfile(subdomain, root.Subject(), root.SubjectPrivateKey())
+		issuer, err := root.GenerateIntermediary(subdomain, -1)
 		if err != nil {
-			log.Fatalf("Failed to create issuer certificate for identity")
+			return nil, fmt.Errorf("Failed to create issuer certificate for identity: %s", err)
 		}
 
-		ta := &pem.Block{Type: "CERTIFICATE", Bytes: root.Subject().Raw}
-		pk, err := pemutil.Serialize(issuer.SubjectPrivateKey())
+		ta := &pem.Block{Type: "CERTIFICATE", Bytes: root.Crt.Certificate.Raw}
+		pk, err := pemutil.Serialize(issuer.PrivateKey)
 		if err != nil {
-			log.Fatalf("Failed to serialize issuer certificate for identity")
+			return nil, fmt.Errorf("Failed to serialize issuer certificate for identity: %s", err)
 		}
-		crt := &pem.Block{Type: "CERTIFICATE", Bytes: issuer.Subject().Raw}
+		crt := &pem.Block{Type: "CERTIFICATE", Bytes: issuer.Crt.Certificate.Raw}
 
 		// TODO preserve the root key (generate and display a password)
 
@@ -236,7 +236,7 @@ func validateAndBuildConfig(options *installOptions) (*installConfig, error) {
 				Crt:              string(pem.EncodeToMemory(crt)),
 				Key:              string(pem.EncodeToMemory(pk)),
 				ExpiryAnnotation: k8s.IdentityIssuerExpiryAnnotation,
-				Expiry:           issuer.Subject().NotAfter,
+				Expiry:           issuer.Crt.Certificate.NotAfter,
 			},
 		}
 	}

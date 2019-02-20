@@ -2,14 +2,13 @@ package identity
 
 import (
 	"context"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/golang/protobuf/ptypes"
 	log "github.com/sirupsen/logrus"
-	"github.com/smallstep/cli/crypto/x509util"
-	"github.com/smallstep/cli/pkg/x509"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -77,24 +76,25 @@ func (s *Service) Certify(ctx context.Context, req *pb.CertifyRequest) (*pb.Cert
 	}
 
 	// Create a certificate
-	leaf, validUntil, err := s.issuer.Issue(csr)
+	leaf, err := s.issuer.Issue(csr)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	log.Infof("certifying %s until %s", tokIdentity, validUntil.String())
+	log.Infof("certifying %s until %s", tokIdentity, leaf.Certificate.NotAfter)
+
+	chain := make([][]byte, len(leaf.TrustChain))
+	for i, c := range leaf.TrustChain {
+		chain[len(leaf.TrustChain)-i-1] = c.Raw
+	}
 
 	// Bundle issuer crt with certificate so the trust path to the root can be verified.
-	v, err := ptypes.TimestampProto(validUntil)
+	v, err := ptypes.TimestampProto(leaf.Certificate.NotAfter)
 	if err != nil {
 		log.Error("Invalid expiry time: %s", err)
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	var chain [][]byte
-	for _, c := range s.issuer.ExportTrustChain() {
-		chain = append(chain, c.Raw)
-	}
 	rsp := &pb.CertifyResponse{
-		LeafCertificate:          leaf,
+		LeafCertificate:          leaf.Certificate.Raw,
 		IntermediateCertificates: chain,
 		ValidUntil:               v,
 	}
@@ -136,13 +136,12 @@ func checkRequest(req *pb.CertifyRequest) (reqIdentity string, tok []byte, csr *
 		return
 	}
 
-	csrb := req.GetCertificateSigningRequest()
-	if len(csrb) == 0 {
+	der := req.GetCertificateSigningRequest()
+	if len(der) == 0 {
 		err = errors.New("missing certificate signing request")
 		return
 	}
-
-	csr, err = x509util.LoadCSRFromBytes(csrb)
+	csr, err = x509.ParseCertificateRequest(der)
 	return
 }
 

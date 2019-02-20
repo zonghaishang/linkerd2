@@ -56,7 +56,7 @@ spec:
   - name: grpc
     port: 8080
     targetPort: 8080
-{{- if .Identity.TrustAnchors}}
+{{- if .Identity.TrustAnchorsPEM}}
 ---
 kind: ConfigMap
 apiVersion: v1
@@ -69,7 +69,7 @@ metadata:
     {{.CreatedByAnnotation}}: {{.CliVersion}}
 data:
   trust-anchors.pem: |-
-{{indent 4 .Identity.TrustAnchors}}
+{{indent 4 .Identity.TrustAnchorsPEM}}
 {{- end}}
 {{- if .Identity.Issuer}}
 ---
