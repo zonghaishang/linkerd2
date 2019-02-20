@@ -90,7 +90,7 @@
       "timeShift": null,
       "title": "MEMORY USAGE",
       "tooltip": {
-        "shared": false,
+        "shared": true,
         "sort": 2,
         "value_type": "individual"
       },
@@ -174,7 +174,7 @@
       "timeShift": null,
       "title": "CPU USAGE",
       "tooltip": {
-        "shared": false,
+        "shared": true,
         "sort": 2,
         "value_type": "individual"
       },
@@ -258,7 +258,7 @@
       "timeShift": null,
       "title": "OPEN FILE DESCRIPTORS",
       "tooltip": {
-        "shared": false,
+        "shared": true,
         "sort": 2,
         "value_type": "individual"
       },
@@ -2205,7 +2205,7 @@
         "multi": false,
         "name": "deployment",
         "options": [],
-        "query": "label_values(request_total{control_plane_component!=\"\"}, deployment)",
+        "query": "label_values(process_start_time_seconds{control_plane_component!=\"\"}, deployment)",
         "refresh": 2,
         "regex": "",
         "sort": 1,
@@ -2245,7 +2245,7 @@
         "multi": false,
         "name": "namespace",
         "options": [],
-        "query": "label_values(request_total{control_plane_ns!=\"\"},  control_plane_ns)",
+        "query": "label_values(process_start_time_seconds{control_plane_ns!=\"\"},  control_plane_ns)",
         "refresh": 2,
         "regex": "",
         "sort": 0,

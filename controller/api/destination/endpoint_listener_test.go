@@ -188,7 +188,7 @@ func TestEndpointListener(t *testing.T) {
 
 		actualAddedAddress1MetricLabels := mockGetServer.updatesReceived[0].GetAdd().Addrs[0].MetricLabels
 		expectedAddedAddress1MetricLabels := map[string]string{
-			"pod":                   expectedPodName,
+			"pod": expectedPodName,
 			"replicationcontroller": expectedReplicationControllerName,
 		}
 		if !reflect.DeepEqual(actualAddedAddress1MetricLabels, expectedAddedAddress1MetricLabels) {
