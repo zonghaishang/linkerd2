@@ -79,7 +79,7 @@ metadata:
     linkerd.io/identity-issuer-expiry: 2030-02-12T00:00:00Z
 data:
   crt.pem: ZGVm
-  key: YWJj
+  key.pem: YWJj
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -112,7 +112,7 @@ spec:
         - -log-level=info
         - -controller-namespace=linkerd
         - -trust-domain=cluster.local
-        - -trust-anchors=/var/run/linkerd/identity/trust-anchors
+        - -trust-anchors=/var/run/linkerd/identity/trust-anchors/trust-anchors.pem
         - -issuer=/var/run/linkerd/identity/issuer
         - -issuance-lifetime=24h
         image: gcr.io/linkerd-io/controller:dev-undefined
