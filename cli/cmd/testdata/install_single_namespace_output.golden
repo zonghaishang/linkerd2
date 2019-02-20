@@ -51,6 +51,33 @@ spec:
     port: 8080
     targetPort: 8080
 ---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: linkerd-identity-trust-anchors
+  namespace: Namespace
+  labels:
+    ControllerComponentLabel: identity
+  annotations:
+    CreatedByAnnotation: CliVersion
+data:
+  trust-anchors.pem: |-
+    zyx
+---
+kind: Secret
+apiVersion: v1
+metadata:
+  name: linkerd-identity-issuer
+  namespace: Namespace
+  labels:
+    ControllerComponentLabel: identity
+  annotations:
+    CreatedByAnnotation: CliVersion
+    linkerd.io/identity-issuer-expiry: 2030-02-12T00:00:00Z
+data:
+  crt.pem: ZGVm
+  key: YWJj
+---
 apiVersion: extensions/v1beta1
 kind: Deployment
 metadata:
@@ -85,7 +112,7 @@ spec:
         - -trust-domain=cluster.local
         - -trust-anchors=/var/run/linkerd/identity/trust-anchors
         - -issuer=/var/run/linkerd/identity/issuer
-        - -issuance-lifetime=
+        - -issuance-lifetime=24h
         image: ControllerImage
         imagePullPolicy: ImagePullPolicy
         livenessProbe:
@@ -326,7 +353,6 @@ spec:
         - -addr=:123
         - -controller-namespace=Namespace
         - -single-namespace=true
-        - -enable-tls=
         - -enable-h2-upgrade=true
         - -log-level=ControllerLogLevel
         image: ControllerImage

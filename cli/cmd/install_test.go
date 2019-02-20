@@ -7,6 +7,8 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/linkerd/linkerd2/pkg/k8s"
 )
 
 // TestMain parses flags before running tests
@@ -33,13 +35,15 @@ func TestRender(t *testing.T) {
 	mockIdentityConfig := &identityConfig{
 		TrustDomain:      "cluster.local",
 		IssuanceLifetime: "24h",
+		TrustAnchorsPEM:  "zyx",
 		Issuer: &issuerConfig{
-			Expiry:        time.Now().Add(24 * time.Hour),
-			Key:           "abc",
-			Crt:           "def",
-			TrustChainPEM: "ghi",
+			ExpiryAnnotation: k8s.IdentityIssuerExpiryAnnotation,
+			Expiry:           time.Date(2030, time.February, 12, 0, 0, 0, 0, time.UTC),
+			Key:              "abc",
+			Crt:              "def",
 		},
 	}
+	defaultConfig.Identity = mockIdentityConfig
 
 	// A configuration that shows that all config setting strings are honored
 	// by `render()`. Note that `SingleNamespace` is tested in a separate
@@ -118,6 +122,7 @@ func TestRender(t *testing.T) {
 	haOptions.highAvailability = true
 	haConfig, _ := validateAndBuildConfig(haOptions)
 	haConfig.UUID = "deaab91a-f4ab-448a-b7d1-c832a2fa0a60"
+	haConfig.Identity = mockIdentityConfig
 
 	haWithOverridesOptions := newInstallOptions()
 	haWithOverridesOptions.highAvailability = true
@@ -126,17 +131,20 @@ func TestRender(t *testing.T) {
 	haWithOverridesOptions.proxyMemoryRequest = "300Mi"
 	haWithOverridesConfig, _ := validateAndBuildConfig(haWithOverridesOptions)
 	haWithOverridesConfig.UUID = "deaab91a-f4ab-448a-b7d1-c832a2fa0a60"
+	haWithOverridesConfig.Identity = mockIdentityConfig
 
 	noInitContainerOptions := newInstallOptions()
 	noInitContainerOptions.noInitContainer = true
 	noInitContainerConfig, _ := validateAndBuildConfig(noInitContainerOptions)
 	noInitContainerConfig.UUID = "deaab91a-f4ab-448a-b7d1-c832a2fa0a60"
+	noInitContainerConfig.Identity = mockIdentityConfig
 
 	noInitContainerWithProxyAutoInjectOptions := newInstallOptions()
 	noInitContainerWithProxyAutoInjectOptions.noInitContainer = true
 	noInitContainerWithProxyAutoInjectOptions.proxyAutoInject = true
 	noInitContainerWithProxyAutoInjectConfig, _ := validateAndBuildConfig(noInitContainerWithProxyAutoInjectOptions)
 	noInitContainerWithProxyAutoInjectConfig.UUID = "deaab91a-f4ab-448a-b7d1-c832a2fa0a60"
+	noInitContainerWithProxyAutoInjectConfig.Identity = mockIdentityConfig
 
 	testCases := []struct {
 		config                installConfig
@@ -159,7 +167,7 @@ func TestRender(t *testing.T) {
 
 			var buf bytes.Buffer
 			if err := render(tc.config, &buf, tc.options); err != nil {
-				t.Fatalf("Unexpected error: %v", err)
+				t.Fatalf("Unexpected error: %v:\n%s", err, buf.String())
 			}
 			testDiff(t, tc.goldenFileName, buf.String())
 		})

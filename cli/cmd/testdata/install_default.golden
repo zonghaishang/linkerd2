@@ -65,17 +65,7 @@ metadata:
     linkerd.io/created-by: linkerd/cli dev-undefined
 data:
   trust-anchors.pem: |-
-    -----BEGIN CERTIFICATE-----
-    MIIBYDCCAQegAwIBAgIBATAKBggqhkjOPQQDAjAYMRYwFAYDVQQDEw1jbHVzdGVy
-    LmxvY2FsMB4XDTE5MDIyMDA2NDgwOVoXDTIwMDIyMDA4NDgwOVowGDEWMBQGA1UE
-    AxMNY2x1c3Rlci5sb2NhbDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABMx0r6QM
-    2zr0n2b6uKIW6shWGEjlQxjpRtm2NsxYLk958J5yuHGXxjTjJZsaIdppm8i5MU5d
-    zA2mgaTrheRuKaSjQjBAMA4GA1UdDwEB/wQEAwIBBjAdBgNVHSUEFjAUBggrBgEF
-    BQcDAQYIKwYBBQUHAwIwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNHADBE
-    AiAXPXCU8UdbOiavOm/p9oiHhU0q+3qnprvR7tdJReQpzQIgJ2g9OFNqicBa7IVK
-    5fSYZWShHsXnugP3Z2uPJjcLzYc=
-    -----END CERTIFICATE-----
-    
+    zyx
 ---
 kind: Secret
 apiVersion: v1
@@ -86,10 +76,10 @@ metadata:
     linkerd.io/control-plane-component: identity
   annotations:
     linkerd.io/created-by: linkerd/cli dev-undefined
-    linkerd.io/identity-issuer-expiry: 2020-02-20T08:48:09Z
+    linkerd.io/identity-issuer-expiry: 2030-02-12T00:00:00Z
 data:
-  crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUJjakNDQVJpZ0F3SUJBZ0lCQWpBS0JnZ3Foa2pPUFFRREFqQVlNUll3RkFZRFZRUURFdzFqYkhWemRHVnkKTG14dlkyRnNNQjRYRFRFNU1ESXlNREEyTkRnd09Wb1hEVEl3TURJeU1EQTRORGd3T1Zvd0tURW5NQ1VHQTFVRQpBeE1lYVdSbGJuUnBkSGt1YkdsdWEyVnlaQzVqYkhWemRHVnlMbXh2WTJGc01Ga3dFd1lIS29aSXpqMENBUVlJCktvWkl6ajBEQVFjRFFnQUVKZFpLUGx5NlZBYy9HY1cyVElvWEdPSkp5Nk5nZnlERCs4bSs4ODR6Q0IyTU5XV2QKR2hlWFNCUjNSZmp0MjVOMDVtTktkOHlSMTlVSEdxRHZ2RVV1cWFOQ01FQXdEZ1lEVlIwUEFRSC9CQVFEQWdFRwpNQjBHQTFVZEpRUVdNQlFHQ0NzR0FRVUZCd01CQmdnckJnRUZCUWNEQWpBUEJnTlZIUk1CQWY4RUJUQURBUUgvCk1Bb0dDQ3FHU000OUJBTUNBMGdBTUVVQ0lEMmxPclVhWDU0Z1dTR1pWY3R6dnR2QUVka2VyaE5KSVlvdlFnQWsKeXh1SUFpRUF1Q3ZHMHNyZ0xZY1dOVGNnRkhpaTdCWWpvWkwyUlBGQlBidnBWYUFldlI0PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
-  key: LS0tLS1CRUdJTiBFQyBQUklWQVRFIEtFWS0tLS0tCk1IY0NBUUVFSU10WWRmTTB6NFRWU1V5RVIreGczamg0RGNvTGE3ZlF6bHhUVHJycUEyditvQW9HQ0NxR1NNNDkKQXdFSG9VUURRZ0FFSmRaS1BseTZWQWMvR2NXMlRJb1hHT0pKeTZOZ2Z5REQrOG0rODg0ekNCMk1OV1dkR2hlWApTQlIzUmZqdDI1TjA1bU5LZDh5UjE5VUhHcUR2dkVVdXFRPT0KLS0tLS1FTkQgRUMgUFJJVkFURSBLRVktLS0tLQo=
+  crt.pem: ZGVm
+  key: YWJj
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -124,7 +114,7 @@ spec:
         - -trust-domain=cluster.local
         - -trust-anchors=/var/run/linkerd/identity/trust-anchors
         - -issuer=/var/run/linkerd/identity/issuer
-        - -issuance-lifetime=24h0m0s
+        - -issuance-lifetime=24h
         image: gcr.io/linkerd-io/controller:dev-undefined
         imagePullPolicy: IfNotPresent
         livenessProbe:

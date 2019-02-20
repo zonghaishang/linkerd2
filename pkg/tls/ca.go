@@ -1,16 +1,12 @@
 package tls
 
 import (
-	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"encoding/pem"
-	"errors"
 	"fmt"
-	"io/ioutil"
 	"math/big"
 	"time"
 )
@@ -170,7 +166,7 @@ func (ca *CA) GenerateEndEntity(dnsName string) (*EndEntity, error) {
 	crt, err := ca.SignEndEntity(&x509.CertificateRequest{
 		Subject:   pkix.Name{CommonName: dnsName},
 		DNSNames:  []string{dnsName},
-		PublicKey: pk.PublicKey,
+		PublicKey: &pk.PublicKey,
 	})
 	return &EndEntity{PrivateKey: pk, Crt: crt}, err
 }
@@ -178,12 +174,12 @@ func (ca *CA) GenerateEndEntity(dnsName string) (*EndEntity, error) {
 // SignEndEntity creates a new certificate that is valid for the
 // given DNS name, generating a new keypair for it.
 func (ca *CA) SignEndEntity(csr *x509.CertificateRequest) (Crt, error) {
-	pubkey, ok := csr.PublicKey.(ecdsa.PublicKey)
+	pubkey, ok := csr.PublicKey.(*ecdsa.PublicKey)
 	if !ok {
 		return Crt{}, fmt.Errorf("CSR must contain an ECDSA public key: %+v", csr.PublicKey)
 	}
 
-	t := ca.createTemplate(&pubkey)
+	t := ca.createTemplate(pubkey)
 	t.Issuer = ca.Crt.Certificate.Subject
 	t.Subject = csr.Subject
 	t.Extensions = csr.Extensions
@@ -193,7 +189,7 @@ func (ca *CA) SignEndEntity(csr *x509.CertificateRequest) (Crt, error) {
 	t.IPAddresses = csr.IPAddresses
 	t.URIs = csr.URIs
 
-	crtb, err := x509.CreateCertificate(rand.Reader, &t, ca.Crt.Certificate, &pubkey, ca.PrivateKey)
+	crtb, err := x509.CreateCertificate(rand.Reader, &t, ca.Crt.Certificate, pubkey, ca.PrivateKey)
 	if err != nil {
 		return Crt{}, fmt.Errorf("Failed to create certificate: %s", err)
 	}
@@ -245,134 +241,4 @@ func (ca *CA) createTemplate(publicKey *ecdsa.PublicKey) x509.Certificate {
 
 func generateKeyPair() (*ecdsa.PrivateKey, error) {
 	return ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-}
-
-func (crt *Crt) EncodePEM() []byte {
-	w := bytes.Buffer{}
-	n := len(crt.TrustChain)
-
-	// Serialize certificates from leaf to root.
-	_ = pem.Encode(&w, &pem.Block{Type: "CERTIFICATE", Bytes: crt.Certificate.Raw})
-	for i := n - 1; i >= 0; i-- {
-		_ = pem.Encode(&w, &pem.Block{Type: "CERTIFICATE", Bytes: crt.TrustChain[i].Raw})
-	}
-
-	return w.Bytes()
-}
-
-func (crt *Crt) EncodeTrustChainDER() [][]byte {
-	// Serialize certificates from leaf to root.
-	chain := make([][]byte, len(crt.TrustChain))
-	for i, c := range crt.TrustChain {
-		chain[len(crt.TrustChain)-i-1] = c.Raw
-	}
-	return chain
-}
-
-func (ee *EndEntity) PemEncodePrivateKey() ([]byte, error) {
-	der, err := x509.MarshalECPrivateKey(ee.PrivateKey)
-	if err != nil {
-		return nil, err
-	}
-
-	return pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: der}), nil
-}
-
-// ReadCertificatePEm reads a PEM-encoded certificates from the given path.
-func ReadCertificatePEM(path string) (*x509.Certificate, error) {
-	b, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	crt, _, err := decodeCertificatePEM(b)
-	return crt, err
-}
-
-// ReadCertificatePEM reads a PEM-encoded certificates from the given path.
-func ReadTrustAnchorsPEM(path string) ([]*x509.Certificate, error) {
-	b, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	return DecodeTrustAnchorsPEM(b)
-}
-
-// ReadCrtPEM reads PEM-encoded certificates from the named file
-func ReadCrtPEM(path string) (Crt, error) {
-	b, err := ioutil.ReadFile(path)
-	if err != nil {
-		return Crt{}, err
-	}
-	return DecodeCrtPEM(b)
-}
-
-func ReadKeyPEM(path string) (*ecdsa.PrivateKey, error) {
-	b, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	return DecodeKeyPEM(b)
-}
-
-func DecodeKeyPEM(b []byte) (*ecdsa.PrivateKey, error) {
-	block, _ := pem.Decode(b)
-	if block == nil {
-		return nil, errors.New("Not PEM-encoded")
-	}
-	if block.Type != "EC PRIVATE KEY" {
-		return nil, fmt.Errorf("Expected 'EC PRIVATE KEY'; found: '%s'", block.Type)
-	}
-	return x509.ParseECPrivateKey(block.Bytes)
-}
-
-func decodeCertificatePEM(crtb []byte) (*x509.Certificate, []byte, error) {
-	block, crtb := pem.Decode(crtb)
-	if block == nil {
-		return nil, nil, errors.New("Failed to decode PEM certificate")
-	}
-	if block.Type != "CERTIFICATE" {
-		return nil, nil, nil
-	}
-	c, err := x509.ParseCertificate(block.Bytes)
-	return c, crtb, err
-}
-
-// DecodeCrtPEM decodes PEM-encoded certificates from leaf to root.
-func DecodeCrtPEM(buf []byte) (crt Crt, err error) {
-	certs, err := decodeCertificatesPEM(buf)
-	if err != nil {
-		return
-	}
-
-	crt.Certificate = certs[0]
-	certs = certs[1:]
-
-	// The chain is read from Leaf to Root, but we store it from Root to Leaf.
-	crt.TrustChain = make([]*x509.Certificate, len(certs))
-	for i, c := range certs {
-		crt.TrustChain[len(certs)-i-1] = c
-	}
-	return
-}
-
-// DecodeTrustAnchorsPEM decodes PEM-encoded certificates.
-func DecodeTrustAnchorsPEM(buf []byte) ([]*x509.Certificate, error) {
-	return decodeCertificatesPEM(buf)
-}
-
-func decodeCertificatesPEM(buf []byte) (certs []*x509.Certificate, err error) {
-	for len(buf) > 0 {
-		var c *x509.Certificate
-		c, buf, err = decodeCertificatePEM(buf)
-		if err != nil {
-			return
-		}
-		if c == nil {
-			continue // not a CERTIFICATE, skip
-		}
-		certs = append(certs, c)
-	}
-	return
 }

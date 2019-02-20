@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"bytes"
-	"encoding/pem"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -10,8 +9,6 @@ import (
 	"path"
 	"strings"
 	"time"
-
-	"github.com/smallstep/cli/crypto/pemutil"
 
 	"github.com/linkerd/linkerd2/cli/static"
 	"github.com/linkerd/linkerd2/pkg/k8s"
@@ -83,7 +80,6 @@ type issuerConfig struct {
 	Expiry           time.Time
 	Key              string
 	Crt              string
-	TrustChainPEM    string
 }
 
 // installOptions holds values for command line flags that apply to the install
@@ -219,22 +215,20 @@ func validateAndBuildConfig(options *installOptions) (*installConfig, error) {
 			return nil, fmt.Errorf("Failed to create issuer certificate for identity: %s", err)
 		}
 
-		ta := &pem.Block{Type: "CERTIFICATE", Bytes: root.Crt.Certificate.Raw}
-		pk, err := pemutil.Serialize(issuer.PrivateKey)
+		pk, err := tls.EncodePrivateKeyPEM(issuer.PrivateKey)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to serialize issuer certificate for identity: %s", err)
+			return nil, fmt.Errorf("Failed to encode private key : %s", err)
 		}
-		crt := &pem.Block{Type: "CERTIFICATE", Bytes: issuer.Crt.Certificate.Raw}
 
 		// TODO preserve the root key (generate and display a password)
 
 		identity = &identityConfig{
 			TrustDomain:      trustDomain,
-			TrustAnchorsPEM:  string(pem.EncodeToMemory(ta)),
+			TrustAnchorsPEM:  string(tls.EncodeCertificatePEM(root.Crt.Certificate)),
 			IssuanceLifetime: options.identityOptions.issuanceLifetime.String(),
 			Issuer: &issuerConfig{
-				Crt:              string(pem.EncodeToMemory(crt)),
-				Key:              string(pem.EncodeToMemory(pk)),
+				Crt:              string(issuer.Crt.EncodePEM()),
+				Key:              string(pk),
 				ExpiryAnnotation: k8s.IdentityIssuerExpiryAnnotation,
 				Expiry:           issuer.Crt.Certificate.NotAfter,
 			},
