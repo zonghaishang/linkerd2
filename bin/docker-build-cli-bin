@@ -28,7 +28,7 @@ IMG=$(docker_repo cli-bin):$tag
 ID=$(docker create "$IMG")
 
 # copy the newly built linkerd cli binaries to the local system
-for OS in darwin linux windows ; do
+for OS in darwin linux ; do
     DIR="${rootdir}/target/cli/${OS}"
     mkdir -p "$DIR"
 

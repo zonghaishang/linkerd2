@@ -25,11 +25,8 @@ fi
 # create the cli-bin container in order to extract the binaries
 id=$(docker create "$(docker_repo cli-bin):$tag")
 
-for os in darwin linux windows ; do
+for os in darwin linux ; do
   ext="$os"
-  if [ "$os" == "windows" ]; then
-    ext="windows.exe"
-  fi
   filepath="$workdir/linkerd2-cli-$shorttag-$ext"
   docker cp "$id:/out/linkerd-$os" "$filepath"
   openssl dgst -sha256 "$filepath" | awk '{print $2}' > "$filepath.sha256"
