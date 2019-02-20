@@ -85,7 +85,7 @@ metadata:
     {{- end}}
 data:
   crt.pem: {{b64enc .Identity.Issuer.Crt}}
-  key: {{b64enc .Identity.Issuer.Key}}
+  key.pem: {{b64enc .Identity.Issuer.Key}}
 {{- end}}
 ---
 kind: Deployment
@@ -123,7 +123,7 @@ spec:
         - "-log-level={{.ControllerLogLevel}}"
         - "-controller-namespace={{.Namespace}}"
         - "-trust-domain={{.Identity.TrustDomain}}"
-        - "-trust-anchors=/var/run/linkerd/identity/trust-anchors"
+        - "-trust-anchors=/var/run/linkerd/identity/trust-anchors/trust-anchors.pem"
         - "-issuer=/var/run/linkerd/identity/issuer"
         - "-issuance-lifetime={{.Identity.IssuanceLifetime}}"
         volumeMounts:
