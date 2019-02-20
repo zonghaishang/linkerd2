@@ -2,23 +2,12 @@ package cmd
 
 import (
 	"bytes"
-	"flag"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/linkerd/linkerd2/pkg/k8s"
 )
-
-// TestMain parses flags before running tests
-func TestMain(m *testing.M) {
-	flag.BoolVar(&updateFixtures, "update", false, "update text fixtures in place")
-	prettyDiff = os.Getenv("LINKERD_TEST_PRETTY_DIFF") != ""
-	flag.BoolVar(&prettyDiff, "pretty-diff", prettyDiff, "display the full text when diffing")
-	flag.Parse()
-	os.Exit(m.Run())
-}
 
 func TestRender(t *testing.T) {
 	// The default configuration, with the random UUID overridden with a fixed
@@ -169,7 +158,7 @@ func TestRender(t *testing.T) {
 			if err := render(tc.config, &buf, tc.options); err != nil {
 				t.Fatalf("Unexpected error: %v:\n%s", err, buf.String())
 			}
-			testDiff(t, tc.goldenFileName, buf.String())
+			diffTestdata(t, tc.goldenFileName, buf.String())
 		})
 	}
 }
