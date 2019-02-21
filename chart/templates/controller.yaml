@@ -203,3 +203,9 @@ spec:
         {{- end }}
         securityContext:
           runAsUser: {{.Values.ControllerUID}}
+      {{ if .Values.DebugMode }}
+      - name: debug
+        image: {{.Values.DebugImage}}
+        securityContext:
+          privileged: true
+      {{ end -}}

@@ -26,6 +26,7 @@ type installConfig struct {
 	ControllerImage                  string
 	WebImage                         string
 	PrometheusImage                  string
+	DebugImage                       string
 	PrometheusVolumeName             string
 	GrafanaImage                     string
 	GrafanaVolumeName                string
@@ -73,6 +74,7 @@ type installConfig struct {
 	ControllerUID                    int64
 	ProfileSuffixes                  string
 	EnableH2Upgrade                  bool
+	DebugMode                        bool
 	NoInitContainer                  bool
 }
 
@@ -89,6 +91,7 @@ type installOptions struct {
 	highAvailability   bool
 	controllerUID      int64
 	disableH2Upgrade   bool
+	debugMode          bool
 	*proxyConfigOptions
 }
 
@@ -116,6 +119,7 @@ func newInstallOptions() *installOptions {
 		highAvailability:   false,
 		controllerUID:      2103,
 		disableH2Upgrade:   false,
+		debugMode:          false,
 		proxyConfigOptions: newProxyConfigOptions(),
 	}
 }
@@ -145,6 +149,7 @@ func newCmdInstall() *cobra.Command {
 	cmd.PersistentFlags().BoolVar(&options.highAvailability, "ha", options.highAvailability, "Experimental: Enable HA deployment config for the control plane (default false)")
 	cmd.PersistentFlags().Int64Var(&options.controllerUID, "controller-uid", options.controllerUID, "Run the control plane components under this user ID")
 	cmd.PersistentFlags().BoolVar(&options.disableH2Upgrade, "disable-h2-upgrade", options.disableH2Upgrade, "Prevents the controller from instructing proxies to perform transparent HTTP/2 upgrading (default false)")
+	cmd.PersistentFlags().BoolVar(&options.debugMode, "debug-mode", options.debugMode, "Add a sidecar container to the control plane for debugging")
 	return cmd
 }
 
@@ -186,6 +191,7 @@ func validateAndBuildConfig(options *installOptions) (*installConfig, error) {
 		Namespace:                        controlPlaneNamespace,
 		ControllerImage:                  fmt.Sprintf("%s/controller:%s", options.dockerRegistry, options.linkerdVersion),
 		WebImage:                         fmt.Sprintf("%s/web:%s", options.dockerRegistry, options.linkerdVersion),
+		DebugImage:                       fmt.Sprintf("%s/debug:%s", options.dockerRegistry, options.linkerdVersion),
 		PrometheusImage:                  "prom/prometheus:v2.7.1",
 		PrometheusVolumeName:             "data",
 		GrafanaImage:                     fmt.Sprintf("%s/grafana:%s", options.dockerRegistry, options.linkerdVersion),
@@ -234,6 +240,7 @@ func validateAndBuildConfig(options *installOptions) (*installConfig, error) {
 		EnableHA:                         options.highAvailability,
 		ProfileSuffixes:                  profileSuffixes,
 		EnableH2Upgrade:                  !options.disableH2Upgrade,
+		DebugMode:                        options.debugMode,
 		NoInitContainer:                  options.noInitContainer,
 	}, nil
 }
