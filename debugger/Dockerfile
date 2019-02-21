@@ -7,4 +7,4 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     tar \
     net-tools && \
     rm -rf /var/lib/apt/lists/*
-ENTRYPOINT [ "bin/sh" ]
+ENTRYPOINT [ "/bin/sh", "-c", "sleep infinity" ]
