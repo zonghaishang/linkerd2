@@ -130,6 +130,11 @@ func TestRender(t *testing.T) {
 	noInitContainerWithProxyAutoInjectConfig, _ := validateAndBuildConfig(noInitContainerWithProxyAutoInjectOptions)
 	noInitContainerWithProxyAutoInjectConfig.UUID = "deaab91a-f4ab-448a-b7d1-c832a2fa0a60"
 
+	debugModeOptions := newInstallOptions()
+	debugModeOptions.debugMode = true
+	debugModeConfig, _ := validateAndBuildConfig(debugModeOptions)
+	debugModeConfig.UUID = "deaab91a-f4ab-448a-b7d1-c832a2fa0a60"
+
 	testCases := []struct {
 		config                installConfig
 		options               *installOptions
@@ -143,6 +148,7 @@ func TestRender(t *testing.T) {
 		{*haWithOverridesConfig, haWithOverridesOptions, haWithOverridesConfig.Namespace, "install_ha_with_overrides_output.golden"},
 		{*noInitContainerConfig, noInitContainerOptions, noInitContainerConfig.Namespace, "install_no_init_container.golden"},
 		{*noInitContainerWithProxyAutoInjectConfig, noInitContainerWithProxyAutoInjectOptions, noInitContainerWithProxyAutoInjectConfig.Namespace, "install_no_init_container_auto_inject.golden"},
+		{*debugModeConfig, debugModeOptions, defaultControlPlaneNamespace, "install_debug_mode.golden"},
 	}
 
 	for i, tc := range testCases {
