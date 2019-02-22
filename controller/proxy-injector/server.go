@@ -90,9 +90,10 @@ func tlsConfig(ca *pkgTls.CA, controllerNamespace string) (*tls.Config, error) {
 		return nil, err
 	}
 
-	keyPEM := cred.EncodePrivateKeyPEM()
 	certPEM := cred.EncodePEM()
 	log.Debugf("PEM-encoded certificate: %s\n", certPEM)
+
+	keyPEM := cred.EncodePrivateKeyPEM()
 	cert, err := tls.X509KeyPair([]byte(certPEM), []byte(keyPEM))
 	if err != nil {
 		return nil, err
