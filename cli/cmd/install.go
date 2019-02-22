@@ -57,6 +57,8 @@ type installConfig struct {
 	ProxyImage                 string
 	ProxyResourceRequestCPU    string
 	ProxyResourceRequestMemory string
+	ProxyResourceLimitCPU      string
+	ProxyResourceLimitMemory   string
 	SingleNamespace            bool
 	EnableHA                   bool
 	ControllerUID              int64
@@ -207,6 +209,8 @@ func validateAndBuildConfig(options *installOptions) (*installConfig, error) {
 		ProxyImage:                 options.taggedProxyImage(),
 		ProxyResourceRequestCPU:    options.proxyCPURequest,
 		ProxyResourceRequestMemory: options.proxyMemoryRequest,
+		ProxyResourceLimitCPU:      options.proxyCPULimit,
+		ProxyResourceLimitMemory:   options.proxyMemoryLimit,
 		SingleNamespace:            options.singleNamespace,
 		EnableHA:                   options.highAvailability,
 		ProfileSuffixes:            profileSuffixes,
