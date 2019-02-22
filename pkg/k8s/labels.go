@@ -58,7 +58,7 @@ const (
 	// (e.g. linkerd/cli v2.0.0).
 	CreatedByAnnotation = "linkerd.io/created-by"
 
-	// IssuerExpiryAnnotation indicates the time at which this set of identity
+	// IdentityIssuerExpiryAnnotation indicates the time at which this set of identity
 	// issuer credentials will cease to be valid.
 	IdentityIssuerExpiryAnnotation = "linkerd.io/identity-issuer-expiry"
 

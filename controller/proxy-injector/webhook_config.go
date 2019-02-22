@@ -26,13 +26,15 @@ type WebhookConfig struct {
 }
 
 // NewWebhookConfig returns a new instance of initiator.
-func NewWebhookConfig(client kubernetes.Interface, controllerNamespace, webhookServiceName string, ca *tls.CA) (*WebhookConfig, error) {
+func NewWebhookConfig(client kubernetes.Interface, controllerNamespace, webhookServiceName string, rootCA *tls.CA) (*WebhookConfig, error) {
+	trustAnchor := rootCA.Cred.Crt.EncodeCertificatePEM()
+
 	t := template.New(k8sPkg.ProxyInjectorWebhookConfig)
 
 	return &WebhookConfig{
 		controllerNamespace: controllerNamespace,
 		webhookServiceName:  webhookServiceName,
-		trustAnchor:         ca.Crt.EncodePEM(),
+		trustAnchor:         []byte(trustAnchor),
 		configTemplate:      template.Must(t.Parse(tmpl.MutatingWebhookConfigurationSpec)),
 		k8sAPI:              client,
 	}, nil

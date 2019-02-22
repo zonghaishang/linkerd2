@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"io/ioutil"
 	"net"
 	"os"
 	"os/signal"
@@ -46,31 +48,37 @@ func main() {
 	}
 
 	// TODO watch trustAnchorsPath for changes
-	trustAnchors, err := tls.ReadTrustAnchorsPEM(*trustAnchorsPath)
+	tab, err := ioutil.ReadFile(*trustAnchorsPath)
+	if err != nil {
+		log.Fatalf("Failed to read trust anchors from %s: %s", *trustAnchorsPath, err)
+	}
+	trustAnchors, err := tls.DecodePEMCertPool(string(tab))
 	if err != nil {
 		log.Fatalf("Failed to read trust anchors from %s: %s", *trustAnchorsPath, err)
 	}
 
 	// TODO watch issuerPath for changes
-	ca, err := tls.ReadCA(filepath.Join(*issuerPath, "key.pem"), filepath.Join(*issuerPath, "crt.pem"))
+	creds, err := tls.ReadPEMCreds(filepath.Join(*issuerPath, "key.pem"), filepath.Join(*issuerPath, "crt.pem"))
 	if err != nil {
 		log.Fatalf("Failed to read CA from %s: %s", *issuerPath, err)
 	}
 
-	issuer, err := identity.NewIssuer(ca, *issuanceLifetime)
-	if err != nil {
-		log.Fatalf("Failed to read issuer credentials from %s: %s", *issuerPath, err)
+	expectedName := fmt.Sprintf("%s.%s", *controllerNS, *trustDomain)
+	if err := creds.Crt.Verify(trustAnchors, expectedName); err != nil {
+		log.Fatalf("Failed to verify issuer credentials for '%s' with trust anchors: %s", expectedName, err)
 	}
 
-	if _, err := issuer.Verify(trustAnchors); err != nil {
-		log.Fatalf("Failed to verify issuer credentials with trust anchors: %s", err)
+	ca := tls.NewCA(*creds, tls.Validity{Lifetime: *issuanceLifetime})
+	if err != nil {
+		log.Fatalf("Failed to read issuer credentials from %s: %s", *issuerPath, err)
 	}
 
 	k8s, err := k8s.NewClientSet(*kubeConfigPath)
 	if err != nil {
 		log.Fatalf("Failed to load kubeconfig: %s: %s", *kubeConfigPath, err)
 	}
-	svc := identity.NewService(k8s.Authentication(), dom, issuer)
+
+	svc := identity.NewService(k8s.Authentication(), dom, ca)
 
 	go admin.StartServer(*adminAddr)
 	lis, err := net.Listen("tcp", *addr)

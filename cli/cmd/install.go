@@ -204,33 +204,28 @@ func validateAndBuildConfig(options *installOptions) (*installConfig, error) {
 	trustDomain := options.identityOptions.trustDomain
 	if options.identityOptions.trustDomain != "" {
 		// TODO accept roots as configuration
-		root, err := tls.GenerateRootCA(trustDomain)
+		root, err := tls.GenerateRootCAWithDefaults(trustDomain)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to create root certificate for identity: %s", err)
 		}
 
 		subdomain := fmt.Sprintf("identity.%s.%s", controlPlaneNamespace, trustDomain)
-		issuer, err := root.GenerateIntermediary(subdomain, -1)
+		issuer, err := root.GenerateCA(subdomain, tls.Validity{}, -1)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to create issuer certificate for identity: %s", err)
-		}
-
-		pk, err := tls.EncodePrivateKeyPEM(issuer.PrivateKey)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to encode private key : %s", err)
 		}
 
 		// TODO preserve the root key (generate and display a password)
 
 		identity = &identityConfig{
 			TrustDomain:      trustDomain,
-			TrustAnchorsPEM:  string(tls.EncodeCertificatePEM(root.Crt.Certificate)),
+			TrustAnchorsPEM:  root.Cred.Crt.EncodeCertificatePEM(),
 			IssuanceLifetime: options.identityOptions.issuanceLifetime.String(),
 			Issuer: &issuerConfig{
-				Crt:              string(issuer.Crt.EncodePEM()),
-				Key:              string(pk),
+				Crt:              issuer.Cred.Crt.EncodeCertificatePEM(),
+				Key:              issuer.Cred.EncodePrivateKeyPEM(),
 				ExpiryAnnotation: k8s.IdentityIssuerExpiryAnnotation,
-				Expiry:           issuer.Crt.Certificate.NotAfter,
+				Expiry:           issuer.Cred.Crt.Certificate.NotAfter,
 			},
 		}
 	}

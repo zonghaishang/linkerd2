@@ -4,12 +4,12 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/linkerd/linkerd2/pkg/k8s"
 	pkgTls "github.com/linkerd/linkerd2/pkg/tls"
+	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -85,20 +85,20 @@ func tlsConfig(ca *pkgTls.CA, controllerNamespace string) (*tls.Config, error) {
 		ControllerNamespace: controllerNamespace,
 	}
 	dnsName := tlsIdentity.ToDNSName()
-
-	leaf, err := ca.GenerateEndEntity(dnsName)
+	cred, err := ca.GenerateEndEntityCred(dnsName)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to generate end entity for %s: %s", dnsName, err)
+		return nil, err
 	}
 
-	c := &tls.Config{
-		Certificates: []tls.Certificate{
-			tls.Certificate{
-				Certificate: leaf.Crt.EncodeTrustChainDER(),
-				Leaf:        leaf.Certificate,
-				PrivateKey:  leaf.PrivateKey,
-			},
-		},
+	keyPEM := cred.EncodePrivateKeyPEM()
+	certPEM := cred.EncodePEM()
+	log.Debugf("PEM-encoded certificate: %s\n", certPEM)
+	cert, err := tls.X509KeyPair([]byte(certPEM), []byte(keyPEM))
+	if err != nil {
+		return nil, err
 	}
-	return c, nil
+
+	return &tls.Config{
+		Certificates: []tls.Certificate{cert},
+	}, nil
 }
