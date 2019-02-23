@@ -7,7 +7,6 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"flag"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -92,59 +91,62 @@ func main() {
 	for {
 		token, err := ioutil.ReadFile(*tokenPath)
 		if err != nil {
-			log.Fatal(fmt.Errorf("failed to read token: %s: %s", *tokenPath, err.Error()))
+			log.Fatalf("Failed to read token: %s", err)
 		}
 
 		certifyReq.Token = token
 		rsp, err := client.Certify(context.Background(), &certifyReq)
-		if err != nil {
-			log.Fatal(fmt.Errorf("Failed to obtain certificate: %s", err.Error()))
-		}
 
-		crtb := rsp.GetLeafCertificate()
-		if len(crtb) == 0 {
-			log.Fatal("Missing certificate in response")
-		}
-		crt, err := x509.ParseCertificate(crtb)
+		var refreshIn time.Duration
 		if err != nil {
-			log.Fatal(err.Error())
-		}
+			log.Errorf("Failed to obtain certificate: %s", err)
+			refreshIn = 1 * time.Minute
+		} else {
+			crtb := rsp.GetLeafCertificate()
+			if len(crtb) == 0 {
+				log.Fatal("Missing certificate in response")
+			}
+			crt, err := x509.ParseCertificate(crtb)
+			if err != nil {
+				log.Fatalf("Failed to parse certificate: %s", err)
+			}
 
-		intermediates := x509.NewCertPool()
-		for _, b := range rsp.GetIntermediateCertificates() {
-			c, err := x509.ParseCertificate(b)
+			intermediates := x509.NewCertPool()
+			for _, b := range rsp.GetIntermediateCertificates() {
+				c, err := x509.ParseCertificate(b)
+				if err != nil {
+					log.Fatal(err.Error())
+				}
+				intermediates.AddCert(c)
+			}
+
+			_, err = crt.Verify(x509.VerifyOptions{
+				Roots:         roots,
+				Intermediates: intermediates,
+			})
 			if err != nil {
 				log.Fatal(err.Error())
 			}
-			intermediates.AddCert(c)
-		}
 
-		_, err = crt.Verify(x509.VerifyOptions{
-			Roots:         roots,
-			Intermediates: intermediates,
-		})
-		if err != nil {
-			log.Fatal(err.Error())
-		}
+			if time.Now().After(crt.NotAfter) || time.Now().Before(crt.NotBefore) {
+				log.Fatal("Received expired certificate")
+			}
 
-		if time.Now().After(crt.NotAfter) || time.Now().Before(crt.NotBefore) {
-			log.Fatal("Received expired certificate")
-		}
+			if err := ioutil.WriteFile(crtPath, crtb, 0600); err != nil {
+				log.Errorf("Failed to write CRT: %s", err)
+			}
 
-		if err := ioutil.WriteFile(crtPath, crtb, 0600); err != nil {
-			log.Errorf("Failed to write CRT: %s", err)
-		}
+			// Refresh in 80% of the time expiry time, with a max of 1 day
+			expiresIn := time.Until(crt.NotAfter)
+			refreshIn = (expiresIn / time.Second) * (800 * time.Millisecond)
+			if refreshIn > 24*time.Hour {
+				refreshIn = 24 * time.Hour
+			}
 
-		// Refresh in 80% of the time expiry time, with a max of 1 day
-		expiresIn := time.Until(crt.NotAfter)
-		refreshIn := (expiresIn / time.Second) * (800 * time.Millisecond)
-		if refreshIn > 24*time.Hour {
-			refreshIn = 24 * time.Hour
+			s := sha256.Sum256(crt.Raw)
+			sum := strings.ToLower(hex.EncodeToString(s[:]))
+			log.Infof("id=%s; fp=%s; expiry=%s; refresh=%s", *name, sum, expiresIn, refreshIn)
 		}
-
-		s := sha256.Sum256(crt.Raw)
-		sum := strings.ToLower(hex.EncodeToString(s[:]))
-		log.Infof("id=%s; fp=%s; expiry=%s; refresh=%s", *name, sum, expiresIn, refreshIn)
 
 		select {
 		case <-time.NewTimer(refreshIn).C:
