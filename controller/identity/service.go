@@ -148,13 +148,17 @@ func checkRequest(req *pb.CertifyRequest) (reqIdentity string, tok []byte, csr *
 
 func getIdentity(uname string, d *TrustDomain) (string, error) {
 	uns := strings.Split(uname, ":")
-	if len(uns) != 4 ||
-		uns[0] != "system" || uns[1] != "serviceaccount" ||
-		!isLabel(uns[2]) || !isLabel(uns[3]) {
-		return "", errors.New("must be in form system:serviceaccount:NS:SA")
+	if len(uns) != 4 || uns[0] != "system" {
+		return "", fmt.Errorf("Username must be in form system:TYPE:NS:SA: %s", uname)
+	}
+	uns = uns[1:]
+	for _, l := range uns {
+		if !isLabel(l) {
+			return "", fmt.Errorf("Not a label: %s", l)
+		}
 	}
 
-	return d.ServiceAccountIdentity(uns[3], uns[2])
+	return d.Identity(uns[0], uns[2], uns[1])
 }
 
 func checkCSR(csr *x509.CertificateRequest, identity string) error {

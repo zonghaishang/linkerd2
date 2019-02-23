@@ -23,16 +23,16 @@ func NewTrustDomain(controlNamespace, domain string) (*TrustDomain, error) {
 	return &TrustDomain{controlNamespace, domain}, nil
 }
 
-// ServiceAccountIdentity formats the identity for a K8s ServiceAccount.
-func (d *TrustDomain) ServiceAccountIdentity(sa, ns string) (string, error) {
-	if !isLabel(sa) {
-		return "", fmt.Errorf("Service account must be a label: '%s'", sa)
+// Identity formats the identity for a K8s user.
+func (d *TrustDomain) Identity(typ, nm, ns string) (string, error) {
+	if !isLabel(nm) {
+		return "", fmt.Errorf("Name must be a label: '%s'", nm)
 	}
 	if !isLabel(ns) {
 		return "", fmt.Errorf("Namespace account must be a label: '%s'", ns)
 	}
 
-	id := fmt.Sprintf("%s.%s.serviceaccount.identity.%s.%s", sa, ns, d.controlNamespace, d.domain)
+	id := fmt.Sprintf("%s.%s.%s.identity.%s.%s", nm, ns, typ, d.controlNamespace, d.domain)
 	return id, nil
 }
 
