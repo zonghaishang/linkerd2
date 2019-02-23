@@ -10,7 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/linkerd/linkerd2/cli/static"
+	"github.com/linkerd/linkerd2/controller/gen/config"
 	"github.com/linkerd/linkerd2/pkg/k8s"
 	"github.com/linkerd/linkerd2/pkg/tls"
 	uuid "github.com/satori/go.uuid"
@@ -59,6 +61,8 @@ type installConfig struct {
 	ProxyImage                 string
 	ProxyResourceRequestCPU    string
 	ProxyResourceRequestMemory string
+	ProxyResourceLimitCPU      string
+	ProxyResourceLimitMemory   string
 	SingleNamespace            bool
 	EnableHA                   bool
 	ControllerUID              int64
@@ -66,6 +70,8 @@ type installConfig struct {
 	EnableH2Upgrade            bool
 	NoInitContainer            bool
 	Identity                   *identityConfig
+	GlobalConfig               string
+	ProxyConfig                string
 }
 
 type identityConfig struct {
@@ -230,6 +236,17 @@ func validateAndBuildConfig(options *installOptions) (*installConfig, error) {
 		}
 	}
 
+	jsonMarshaler := jsonpb.Marshaler{EmitDefaults: true}
+	globalConfig, err := jsonMarshaler.MarshalToString(globalConfig(options))
+	if err != nil {
+		return nil, err
+	}
+
+	proxyConfig, err := jsonMarshaler.MarshalToString(proxyConfig(options))
+	if err != nil {
+		return nil, err
+	}
+
 	return &installConfig{
 		Namespace:                  controlPlaneNamespace,
 		ControllerImage:            fmt.Sprintf("%s/controller:%s", options.dockerRegistry, options.linkerdVersion),
@@ -267,12 +284,16 @@ func validateAndBuildConfig(options *installOptions) (*installConfig, error) {
 		ProxyImage:                 options.taggedProxyImage(),
 		ProxyResourceRequestCPU:    options.proxyCPURequest,
 		ProxyResourceRequestMemory: options.proxyMemoryRequest,
+		ProxyResourceLimitCPU:      options.proxyCPULimit,
+		ProxyResourceLimitMemory:   options.proxyMemoryLimit,
 		SingleNamespace:            options.singleNamespace,
 		EnableHA:                   options.highAvailability,
 		ProfileSuffixes:            profileSuffixes,
 		EnableH2Upgrade:            !options.disableH2Upgrade,
 		NoInitContainer:            options.noInitContainer,
 		Identity:                   identity,
+		GlobalConfig:               globalConfig,
+		ProxyConfig:                proxyConfig,
 	}, nil
 }
 
@@ -368,4 +389,68 @@ func readIntoBytes(filename string) ([]byte, error) {
 	buf.ReadFrom(file)
 
 	return buf.Bytes(), nil
+}
+
+func globalConfig(options *installOptions) *config.GlobalConfig {
+	var identityContext *config.IdentityContext
+	if options.identityOptions.trustDomain != "" {
+		identityContext = new(config.IdentityContext)
+	}
+
+	return &config.GlobalConfig{
+		LinkerdNamespace: controlPlaneNamespace,
+		CniEnabled:       options.noInitContainer,
+		IdentityContext:  identityContext,
+	}
+}
+
+func proxyConfig(options *installOptions) *config.ProxyConfig {
+	ignoreInboundPorts := []*config.Port{}
+	for _, port := range options.ignoreInboundPorts {
+		ignoreInboundPorts = append(ignoreInboundPorts, &config.Port{Port: uint32(port)})
+	}
+
+	ignoreOutboundPorts := []*config.Port{}
+	for _, port := range options.ignoreOutboundPorts {
+		ignoreOutboundPorts = append(ignoreOutboundPorts, &config.Port{Port: uint32(port)})
+	}
+
+	return &config.ProxyConfig{
+		ProxyImage: &config.Image{
+			ImageName:  options.taggedProxyImage(),
+			PullPolicy: options.imagePullPolicy,
+		},
+		ProxyInitImage: &config.Image{
+			ImageName:  options.taggedProxyInitImage(),
+			PullPolicy: options.imagePullPolicy,
+		},
+		DestinationApiPort: &config.Port{
+			Port: uint32(options.destinationAPIPort),
+		},
+		ControlPort: &config.Port{
+			Port: uint32(options.proxyControlPort),
+		},
+		IgnoreInboundPorts:  ignoreInboundPorts,
+		IgnoreOutboundPorts: ignoreOutboundPorts,
+		InboundPort: &config.Port{
+			Port: uint32(options.inboundPort),
+		},
+		MetricsPort: &config.Port{
+			Port: uint32(options.proxyMetricsPort),
+		},
+		OutboundPort: &config.Port{
+			Port: uint32(options.outboundPort),
+		},
+		Resource: &config.ResourceRequirements{
+			RequestCpu:    options.proxyCPURequest,
+			RequestMemory: options.proxyMemoryRequest,
+			LimitCpu:      options.proxyCPULimit,
+			LimitMemory:   options.proxyMemoryLimit,
+		},
+		ProxyUid: options.proxyUID,
+		LogLevel: &config.LogLevel{
+			Level: options.proxyLogLevel,
+		},
+		DisableExternalProfiles: options.disableExternalProfiles,
+	}
 }

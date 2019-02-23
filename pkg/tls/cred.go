@@ -20,8 +20,8 @@ type (
 
 	// Crt is a container for a certificate and trust chain.
 	//
-	// The trust chain stores all issuer certificates from root at the head direct
-	// issuer at the tail.
+	// The trust chain stores all issuer certificates from the root at the head to
+	// the direct issuer at the tail.
 	Crt struct {
 		Certificate *x509.Certificate
 		TrustChain  []*x509.Certificate
@@ -103,10 +103,9 @@ func (cred *Cred) EncodePrivateKeyP8() ([]byte, error) {
 }
 
 // certificateMatchesKey returns whether the key and certificate match.
-func certificateMatchesKey(c *x509.Certificate, k *ecdsa.PrivateKey) (ok bool) {
+func certificateMatchesKey(c *x509.Certificate, k *ecdsa.PrivateKey) bool {
 	pub, ok := c.PublicKey.(*ecdsa.PublicKey)
-	ok = ok && pub.X.Cmp(k.X) == 0 && pub.Y.Cmp(k.Y) == 0
-	return
+	return ok && pub.X.Cmp(k.X) == 0 && pub.Y.Cmp(k.Y) == 0
 }
 
 // SignCrt uses this Cred to sign a new certificate.

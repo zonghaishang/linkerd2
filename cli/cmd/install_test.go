@@ -78,6 +78,8 @@ func TestRender(t *testing.T) {
 		EnableH2Upgrade:            true,
 		NoInitContainer:            false,
 		Identity:                   mockIdentityConfig,
+		GlobalConfig:               "GlobalConfig",
+		ProxyConfig:                "ProxyConfig",
 	}
 
 	singleNamespaceConfig := installConfig{
@@ -105,6 +107,8 @@ func TestRender(t *testing.T) {
 		EnableH2Upgrade:            true,
 		NoInitContainer:            false,
 		Identity:                   mockIdentityConfig,
+		GlobalConfig:               "GlobalConfig",
+		ProxyConfig:                "ProxyConfig",
 	}
 
 	haOptions := newInstallOptions()
