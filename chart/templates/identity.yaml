@@ -164,6 +164,7 @@ spec:
         - "-name=linkerd-identity.{{.Namespace}}.sa.identity.{{.Namespace}}.{{.Identity.TrustDomain}}"
         - "-trust-anchors=/var/run/linkerd/identity/trust-anchors/trust-anchors.pem"
         - "-dir=/var/run/linkerd/identity/end-entity"
+        - "-token=/var/run/secrets/kubernetes.io/serviceaccount/token"
         volumeMounts:
         - mountPath: /var/run/linkerd/identity/trust-anchors
           name: identity-trust-anchors
