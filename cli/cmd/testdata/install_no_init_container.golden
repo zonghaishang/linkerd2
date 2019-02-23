@@ -141,6 +141,39 @@ spec:
           name: identity-trust-anchors
         - mountPath: /var/run/linkerd/identity/issuer
           name: identity-issuer
+      - args:
+        - identity-client
+        - -addr=localhost:8080
+        - -log-level=DEBUG
+        - -name=linkerd-identity.linkerd.sa.identity.linkerd.cluster.local
+        - -trust-anchors=/var/run/linkerd/identity/trust-anchors/trust-anchors.pem
+        - -dir=/var/run/linkerd/identity/end-entity
+        image: gcr.io/linkerd-io/controller:dev-undefined
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          httpGet:
+            path: /ping
+            port: 9990
+          initialDelaySeconds: 10
+        name: identity-client
+        ports:
+        - containerPort: 8080
+          name: grpc
+        - containerPort: 9990
+          name: admin-http
+        readinessProbe:
+          failureThreshold: 7
+          httpGet:
+            path: /ready
+            port: 9990
+        resources: {}
+        securityContext:
+          runAsUser: 2103
+        volumeMounts:
+        - mountPath: /var/run/linkerd/identity/trust-anchors
+          name: identity-trust-anchors
+        - mountPath: /var/run/linkerd/identity/end-entity
+          name: identity-end-entity
       - env:
         - name: LINKERD2_PROXY_LOG
           value: warn,linkerd2_proxy=info
@@ -196,6 +229,9 @@ spec:
       - name: identity-issuer
         secret:
           secretName: linkerd-identity-issuer
+      - emptyDir:
+          medium: Memory
+        name: identity-end-entity
 status: {}
 ---
 ###
