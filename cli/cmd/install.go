@@ -115,7 +115,7 @@ const (
 	defaultControllerReplicas       = 1
 	defaultHAControllerReplicas     = 3
 	defaultIdentityTrustDomain      = "cluster.local"
-	defaultIdentityIssuanceLifetime = 2 * time.Minutes
+	defaultIdentityIssuanceLifetime = 2 * time.Minute
 
 	nsTemplateName             = "templates/namespace.yaml"
 	identityTemplateName       = "templates/identity.yaml"
