@@ -66,14 +66,14 @@ const (
 	// DefaultClockSkewAllowance indicates the maximum allowed difference in clocks
 	// in the network.
 	//
-	// Allow an two hours of clock skew.
+	// Allow an two minutes of clock skew.
 	//
-	// TODO: decrease the default value of this and make it tunable.
+	// TODO: make it tunable.
 	//
 	// TODO: Reconsider how this interacts with the similar logic in the webpki
 	// verifier; since both are trying to account for clock skew, there is
 	// somewhat of an over-correction.
-	DefaultClockSkewAllowance = 2 * time.Hour
+	DefaultClockSkewAllowance = 2 * time.Minute
 )
 
 // NewCA initializes a new CA with default settings.
