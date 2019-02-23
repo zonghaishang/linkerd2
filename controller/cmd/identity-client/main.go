@@ -45,7 +45,7 @@ func main() {
 		log.Fatalf("Failed to generate a key: %s", err)
 	}
 	if err = ioutil.WriteFile(keyPath, tls.EncodePrivateKeyP8(key), 0400); err != nil {
-		log.Fatalf("Failed to write CSR to %s: %s", csrPath, err)
+		log.Errorf("Failed to write CSR to %s: %s", csrPath, err)
 	}
 
 	csr := x509.CertificateRequest{DNSNames: []string{*name}}
@@ -54,7 +54,7 @@ func main() {
 		log.Fatalf("Failed to create CSR: %s", err)
 	}
 	if err = ioutil.WriteFile(csrPath, csrb, 0400); err != nil {
-		log.Fatalf("Failed to write CSR to %s: %s", csrPath, err)
+		log.Errorf("Failed to write CSR to %s: %s", csrPath, err)
 	}
 
 	roots, err := tls.DecodePEMCertPool(string(rootsb))
@@ -119,7 +119,7 @@ func main() {
 		}
 
 		if err := ioutil.WriteFile(crtPath, crtb, 0600); err != nil {
-			log.Fatalf("Failed to write: %s", err.Error())
+			log.Errorf("Failed to write: %s", err.Error())
 		}
 
 		// Refresh in 80% of the time expiry time, with a max of 1 day
