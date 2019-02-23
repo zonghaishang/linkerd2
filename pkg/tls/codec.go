@@ -31,6 +31,15 @@ func EncodePrivateKeyPEM(k *ecdsa.PrivateKey) ([]byte, error) {
 	return pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: der}), nil
 }
 
+// EncodePrivateKeyP8 encodes the provided key as PEM-encoded text
+func EncodePrivateKeyP8(k *ecdsa.PrivateKey) []byte {
+	p8, err := x509.MarshalPKCS8PrivateKey(k)
+	if err != nil {
+		panic("ECDSA keys must be encodeable as PKCS8")
+	}
+	return p8
+}
+
 func encode(buf *bytes.Buffer, blk *pem.Block) {
 	if err := pem.Encode(buf, blk); err != nil {
 		panic("encoding to memory must not fail")
