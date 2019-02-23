@@ -63,7 +63,7 @@ func main() {
 		log.Fatalf("Failed to read CA from %s: %s", *issuerPath, err)
 	}
 
-	expectedName := fmt.Sprintf("%s.%s", *controllerNS, *trustDomain)
+	expectedName := fmt.Sprintf("identity.%s.%s", *controllerNS, *trustDomain)
 	if err := creds.Crt.Verify(trustAnchors, expectedName); err != nil {
 		log.Fatalf("Failed to verify issuer credentials for '%s' with trust anchors: %s", expectedName, err)
 	}
