@@ -83,8 +83,8 @@ type installIdentityConfig struct {
 }
 
 type issuerConfig struct {
-	ClockSkewAllowance time.Duration
-	IssuanceLifetime   time.Duration
+	ClockSkewAllowance string
+	IssuanceLifetime   string
 
 	ExpiryAnnotation string
 	Expiry           time.Time
@@ -234,8 +234,8 @@ func validateAndBuildConfig(options *installOptions) (*installConfig, error) {
 			TrustDomain:     trustDomain,
 			TrustAnchorsPEM: root.Cred.Crt.EncodeCertificatePEM(),
 			Issuer: &issuerConfig{
-				ClockSkewAllowance: options.identityOptions.clockSkewAllowance,
-				IssuanceLifetime:   options.identityOptions.issuanceLifetime,
+				ClockSkewAllowance: options.identityOptions.clockSkewAllowance.String(),
+				IssuanceLifetime:   options.identityOptions.issuanceLifetime.String(),
 				Crt:                issuer.Cred.Crt.EncodeCertificatePEM(),
 				Key:                issuer.Cred.EncodePrivateKeyPEM(),
 				ExpiryAnnotation:   k8s.IdentityIssuerExpiryAnnotation,
