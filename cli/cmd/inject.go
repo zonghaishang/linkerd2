@@ -41,6 +41,11 @@ type injectOptions struct {
 	*proxyConfigOptions
 }
 
+type identityConfig struct {
+	trustDomain     string
+	trustAnchorsPEM string
+}
+
 type resourceTransformerInject struct{}
 
 // InjectYAML processes resource definitions and outputs them after injection in out
@@ -272,6 +277,54 @@ func injectPodSpec(t *v1.PodSpec, identity k8s.TLSIdentity, controlPlaneDNSNameO
 		LivenessProbe:  &proxyProbe,
 		ReadinessProbe: &proxyProbe,
 	}
+
+	// - name: identity-client
+	//   ports:
+	// 	 - name: grpc
+	// 	   containerPort: 8080
+	// 	 - name: admin-http
+	// 	   containerPort: 9990
+	// 	 image: {{.ControllerImage}}
+	// 	 imagePullPolicy: {{.ImagePullPolicy}}
+	// 	 args:
+	// 	 - "identity-client"
+	// 	 - "-addr=localhost:8080"
+	// 	 - "-log-level=DEBUG"
+	// 	 - "-name=linkerd-identity.{{.Namespace}}.serviceaccount.identity.{{.Namespace}}.{{.Identity.TrustDomain}}"
+	// 	 - "-trust-anchors=/var/run/linkerd/identity/trust-anchors/trust-anchors.pem"
+	// 	 - "-dir=/var/run/linkerd/identity/end-entity"
+	// 	 - "-token=/var/run/secrets/kubernetes.io/serviceaccount/token"
+	// 	 volumeMounts:
+	// 	 - mountPath: /var/run/linkerd/identity/trust-anchors
+	// 	   name: identity-trust-anchors
+	// 	 - mountPath: /var/run/linkerd/identity/end-entity
+	// 	   name: identity-end-entity
+	// 	 livenessProbe:
+	// 	   httpGet:
+	// 	 	 path: /ping
+	// 	 	 port: 9990
+	// 	   initialDelaySeconds: 10
+	// 	 readinessProbe:
+	// 	   httpGet:
+	// 		 path: /ready
+	// 		 port: 9990
+	// 	   failureThreshold: 7
+	// 	 {{- if .EnableHA }}
+	// 	 resources:
+	// 	   requests:
+	// 		 cpu: 10m
+	// 		 memory: 50Mi
+	// 	 {{- end }}
+	// 	 securityContext:
+	// 	   runAsUser: {{.ControllerUID}}
+
+	// volumes:
+	// - name: identity-end-entity
+	//   emptyDir:
+	//     medium: Memory
+	// - name: identity-end-entity
+	//   emptyDir:
+	//     medium: Memory
 
 	// Special case if the caller specifies that
 	// LINKERD2_PROXY_OUTBOUND_ROUTER_CAPACITY be set on the pod.

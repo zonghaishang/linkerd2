@@ -21,15 +21,16 @@ func TestRender(t *testing.T) {
 
 	defaultConfig.UUID = "deaab91a-f4ab-448a-b7d1-c832a2fa0a60"
 
-	mockIdentityConfig := &identityConfig{
-		TrustDomain:      "cluster.local",
-		IssuanceLifetime: "24h",
-		TrustAnchorsPEM:  "zyx",
+	mockIdentityConfig := &installIdentityConfig{
+		TrustDomain:     "cluster.local",
+		TrustAnchorsPEM: "zyx",
 		Issuer: &issuerConfig{
 			ExpiryAnnotation: k8s.IdentityIssuerExpiryAnnotation,
-			Expiry:           time.Date(2030, time.February, 12, 0, 0, 0, 0, time.UTC),
-			Key:              "abc",
-			Crt:              "def",
+			IssuanceLifetime: "24h",
+
+			Expiry: time.Date(2030, time.February, 12, 0, 0, 0, 0, time.UTC),
+			Key:    "abc",
+			Crt:    "def",
 		},
 	}
 	defaultConfig.Identity = mockIdentityConfig

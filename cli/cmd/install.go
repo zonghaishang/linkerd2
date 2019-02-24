@@ -69,23 +69,28 @@ type installConfig struct {
 	ProfileSuffixes            string
 	EnableH2Upgrade            bool
 	NoInitContainer            bool
-	Identity                   *identityConfig
 	GlobalConfig               string
 	ProxyConfig                string
+
+	Identity *installIdentityConfig
 }
 
-type identityConfig struct {
-	TrustDomain      string
-	TrustAnchorsPEM  string
-	Issuer           *issuerConfig
-	IssuanceLifetime string
+type installIdentityConfig struct {
+	TrustDomain     string
+	TrustAnchorsPEM string
+
+	Issuer *issuerConfig
 }
 
 type issuerConfig struct {
+	ClockSkewAllowance time.Duration
+	IssuanceLifetime   time.Duration
+
 	ExpiryAnnotation string
 	Expiry           time.Time
-	Key              string
-	Crt              string
+
+	Key string
+	Crt string
 }
 
 // installOptions holds values for command line flags that apply to the install
@@ -101,21 +106,23 @@ type installOptions struct {
 	highAvailability   bool
 	controllerUID      int64
 	disableH2Upgrade   bool
-	identityOptions    identityOptions
+	identityOptions    installIdentityOptions
 	*proxyConfigOptions
 }
 
-type identityOptions struct {
-	trustDomain      string
-	issuanceLifetime time.Duration
+type installIdentityOptions struct {
+	trustDomain        string
+	issuanceLifetime   time.Duration
+	clockSkewAllowance time.Duration
 }
 
 const (
-	prometheusProxyOutboundCapacity = 10000
-	defaultControllerReplicas       = 1
-	defaultHAControllerReplicas     = 3
-	defaultIdentityTrustDomain      = "cluster.local"
-	defaultIdentityIssuanceLifetime = 2 * time.Minute
+	prometheusProxyOutboundCapacity   = 10000
+	defaultControllerReplicas         = 1
+	defaultHAControllerReplicas       = 3
+	defaultIdentityTrustDomain        = "cluster.local"
+	defaultIdentityIssuanceLifetime   = 2 * time.Minute
+	defaultIdentityClockSkewAllowance = 2 * time.Minute
 
 	nsTemplateName             = "templates/namespace.yaml"
 	identityTemplateName       = "templates/identity.yaml"
@@ -137,7 +144,7 @@ func newInstallOptions() *installOptions {
 		controllerUID:      2103,
 		disableH2Upgrade:   false,
 		proxyConfigOptions: newProxyConfigOptions(),
-		identityOptions: identityOptions{
+		identityOptions: installIdentityOptions{
 			trustDomain:      defaultIdentityTrustDomain,
 			issuanceLifetime: defaultIdentityIssuanceLifetime,
 		},
@@ -206,7 +213,7 @@ func validateAndBuildConfig(options *installOptions) (*installConfig, error) {
 		profileSuffixes = "svc.cluster.local."
 	}
 
-	var identity *identityConfig
+	var identity *installIdentityConfig
 	trustDomain := options.identityOptions.trustDomain
 	if options.identityOptions.trustDomain != "" {
 		// TODO accept roots as configuration
@@ -223,15 +230,16 @@ func validateAndBuildConfig(options *installOptions) (*installConfig, error) {
 
 		// TODO preserve the root key (generate and display a password)
 
-		identity = &identityConfig{
-			TrustDomain:      trustDomain,
-			TrustAnchorsPEM:  root.Cred.Crt.EncodeCertificatePEM(),
-			IssuanceLifetime: options.identityOptions.issuanceLifetime.String(),
+		identity = &installIdentityConfig{
+			TrustDomain:     trustDomain,
+			TrustAnchorsPEM: root.Cred.Crt.EncodeCertificatePEM(),
 			Issuer: &issuerConfig{
-				Crt:              issuer.Cred.Crt.EncodeCertificatePEM(),
-				Key:              issuer.Cred.EncodePrivateKeyPEM(),
-				ExpiryAnnotation: k8s.IdentityIssuerExpiryAnnotation,
-				Expiry:           issuer.Cred.Crt.Certificate.NotAfter,
+				ClockSkewAllowance: options.identityOptions.clockSkewAllowance,
+				IssuanceLifetime:   options.identityOptions.issuanceLifetime,
+				Crt:                issuer.Cred.Crt.EncodeCertificatePEM(),
+				Key:                issuer.Cred.EncodePrivateKeyPEM(),
+				ExpiryAnnotation:   k8s.IdentityIssuerExpiryAnnotation,
+				Expiry:             issuer.Cred.Crt.Certificate.NotAfter,
 			},
 		}
 	}

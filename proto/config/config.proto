@@ -49,7 +49,10 @@ message ResourceRequirements {
   string limit_memory = 4;
 }
 
-message IdentityContext {}
+message IdentityContext {
+  string trust_domain = 3;
+  string trust_chain_pem = 3;
+}
 
 message LogLevel {
   string level = 1;

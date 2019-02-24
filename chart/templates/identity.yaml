@@ -195,8 +195,5 @@ spec:
       - name: identity-issuer
         secret:
           secretName: linkerd-identity-issuer
-      - name: identity-end-entity
-        emptyDir:
-          medium: Memory
 {{end -}}
 {{end -}}

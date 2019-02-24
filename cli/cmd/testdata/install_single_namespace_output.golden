@@ -143,9 +143,10 @@ spec:
         - identity-client
         - -addr=localhost:8080
         - -log-level=DEBUG
-        - -name=linkerd-identity.Namespace.sa.identity.Namespace.cluster.local
+        - -name=linkerd-identity.Namespace.serviceaccount.identity.Namespace.cluster.local
         - -trust-anchors=/var/run/linkerd/identity/trust-anchors/trust-anchors.pem
         - -dir=/var/run/linkerd/identity/end-entity
+        - -token=/var/run/secrets/kubernetes.io/serviceaccount/token
         image: ControllerImage
         imagePullPolicy: ImagePullPolicy
         livenessProbe:
