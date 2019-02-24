@@ -7,7 +7,6 @@ import (
 
 	"github.com/linkerd/linkerd2/controller/proxy-injector/fake"
 	"github.com/linkerd/linkerd2/pkg/k8s"
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -142,19 +141,41 @@ func TestContainersSpec(t *testing.T) {
 	}
 }
 
-func assertEqualAdmissionReview(t *testing.T, expected, actual *admissionv1beta1.AdmissionReview) {
-	if !reflect.DeepEqual(expected.Request, actual.Request) {
-		if !reflect.DeepEqual(expected.Request.Object, actual.Request.Object) {
-			t.Errorf("Request object mismatch\nExpected: %s\nActual: %s", expected.Request.Object, actual.Request.Object)
-		} else {
-			t.Errorf("Request mismatch\nExpected: %+v\nActual: %+v", expected.Request, actual.Request)
-		}
-	}
-
-	if !reflect.DeepEqual(expected.Response, actual.Response) {
-		if actual.Response.Result != nil {
-			t.Errorf("Actual response message: %s", actual.Response.Result.Message)
-		}
-		t.Errorf("Response patch mismatch\nExpected: %s\nActual: %s", expected.Response.Patch, actual.Response.Patch)
-	}
-}
+// func TestVolumesSpec(t *testing.T) {
+// 	fakeClient := fake.NewClient("")
+//
+// 	webhook, err := NewWebhook(fakeClient, testWebhookResources, fake.DefaultControllerNamespace, fake.DefaultNoInitContainer, fake.DefaultTLSEnabled)
+// 	if err != nil {
+// 		t.Fatal("Unexpected error: ", err)
+// 	}
+//
+// 	expectedTrustAnchors, err := factory.Volume("inject-trust-anchors-volume-spec.yaml")
+// 	if err != nil {
+// 		t.Fatal("Unexpected error: ", err)
+// 	}
+//
+// 	expectedLinkerdSecrets, err := factory.Volume("inject-linkerd-secrets-volume-spec.yaml")
+// 	if err != nil {
+// 		t.Fatal("Unexpected error: ", err)
+// 	}
+//
+// 	identity := &k8s.TLSIdentity{
+// 		Name:                "nginx",
+// 		Kind:                "deployment",
+// 		Namespace:           fake.DefaultNamespace,
+// 		ControllerNamespace: fake.DefaultControllerNamespace,
+// 	}
+//
+// 	actualTrustAnchors, actualLinkerdSecrets, err := webhook.volumesSpec(identity)
+// 	if err != nil {
+// 		t.Fatal("Unexpected error: ", err)
+// 	}
+//
+// 	if !reflect.DeepEqual(expectedTrustAnchors, actualTrustAnchors) {
+// 		t.Errorf("Content mismatch\nExpected: %+v\nActual: %+v", expectedTrustAnchors, actualTrustAnchors)
+// 	}
+//
+// 	if !reflect.DeepEqual(expectedLinkerdSecrets, actualLinkerdSecrets) {
+// 		t.Errorf("Content mismatch\nExpected: %+v\nActual: %+v", expectedLinkerdSecrets, actualLinkerdSecrets)
+// 	}
+// }
