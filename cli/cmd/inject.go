@@ -42,8 +42,7 @@ type injectOptions struct {
 }
 
 type identityConfig struct {
-	trustDomain     string
-	trustAnchorsPEM string
+	trustDomain, trustAnchorsPEM string
 }
 
 type resourceTransformerInject struct{}
@@ -389,16 +388,6 @@ func (rt resourceTransformerInject) transform(bytes []byte, options *injectOptio
 		metaAccessor, err := k8sMeta.Accessor(conf.obj)
 		if err != nil {
 			return nil, nil, err
-		}
-
-		// The namespace isn't necessarily in the input so it has to be substituted
-		// at runtime. The proxy recognizes the "$NAME" syntax for this variable
-		// but not necessarily other variables.
-		identity := k8s.TLSIdentity{
-			Name:                metaAccessor.GetName(),
-			Kind:                strings.ToLower(conf.meta.Kind),
-			Namespace:           "$" + PodNamespaceEnvVarName,
-			ControllerNamespace: controlPlaneNamespace,
 		}
 
 		if injectPodSpec(conf.podSpec, identity, conf.dnsNameOverride, options, &report) &&

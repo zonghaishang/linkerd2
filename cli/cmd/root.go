@@ -269,7 +269,6 @@ type proxyConfigOptions struct {
 }
 
 const (
-	optionalTLS           = "optional"
 	defaultDockerRegistry = "gcr.io/linkerd-io"
 	defaultKeepaliveMs    = 10000
 )
