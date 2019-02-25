@@ -24,9 +24,8 @@ const (
 	// must be in absolute form for the proxy to special-case it.
 	LocalhostDNSNameOverride = "localhost."
 	// ControlPlanePodName default control plane pod name.
-	ControlPlanePodName = "linkerd-controller"
-	// PodNamespaceEnvVarName is the name of the variable used to pass the pod's namespace.
-	PodNamespaceEnvVarName = "LINKERD2_PROXY_POD_NAMESPACE"
+	ControlPlanePodName    = "linkerd-controller"
+	PodNamespaceEnvVarName = "K8S_NS"
 
 	// for inject reports
 
@@ -142,6 +141,9 @@ func injectObjectMeta(t *metaV1.ObjectMeta, k8sLabels map[string]string, options
 		t.Labels[k] = v
 	}
 
+	// t.Annotations[k8s.IdentityModeAnnotation] = k8s.IdentityModeOptional
+	t.Annotations[k8s.IdentityModeAnnotation] = k8s.IdentityModeDisabled
+
 	return true
 }
 
@@ -235,6 +237,7 @@ func injectPodSpec(t *v1.PodSpec, identity k8s.TLSIdentity, controlPlaneDNSNameO
 	if options.disableExternalProfiles {
 		profileSuffixes = "svc.cluster.local."
 	}
+	identity.Namespace = fmt.Sprintf("$(%s)", PodNamespaceEnvVarName)
 	sidecar := v1.Container{
 		Name:                     k8s.ProxyContainerName,
 		Image:                    options.taggedProxyImage(),
@@ -343,6 +346,50 @@ func injectPodSpec(t *v1.PodSpec, identity k8s.TLSIdentity, controlPlaneDNSNameO
 		}
 	}
 
+	// if options.enableTLS() {
+	// 	yes := true
+
+	// 	configMapVolume := v1.Volume{
+	// 		Name: k8s.TLSTrustAnchorVolumeName,
+	// 		VolumeSource: v1.VolumeSource{
+	// 			ConfigMap: &v1.ConfigMapVolumeSource{
+	// 				LocalObjectReference: v1.LocalObjectReference{Name: k8s.TLSTrustAnchorConfigMapName},
+	// 				Optional:             &yes,
+	// 			},
+	// 		},
+	// 	}
+	// 	secretVolume := v1.Volume{
+	// 		Name: k8s.TLSSecretsVolumeName,
+	// 		VolumeSource: v1.VolumeSource{
+	// 			Secret: &v1.SecretVolumeSource{
+	// 				SecretName: identity.ToSecretName(),
+	// 				Optional:   &yes,
+	// 			},
+	// 		},
+	// 	}
+	// 	t.Volumes = append(t.Volumes, configMapVolume, secretVolume)
+
+	// 	base := "/var/run/linkerd"
+	// 	configMapBase := base + "/trust-anchors"
+	// 	secretBase := base + "/identity"
+	// 	tlsEnvVars := []v1.EnvVar{
+	// 		{Name: "LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS", Value: configMapBase + "/" + k8s.TLSTrustAnchorFileName},
+	// 		{Name: "LINKERD2_PROXY_IDENTITY_CERT", Value: secretBase + "/" + k8s.TLSCertFileName},
+	// 		{Name: "LINKERD2_PROXY_IDENTITY_PRIVATE_KEY", Value: secretBase + "/" + k8s.TLSPrivateKeyFileName},
+	// 		{
+	// 			Name:  "LINKERD2_PROXY_TLS_LOCAL_IDENTITY",
+	// 			Value: localIdentity.ToDNSName(),
+	// 		},
+	// 		{Name: "LINKERD2_PROXY_CONTROLLER_NAMESPACE", Value: controlPlaneNamespace},
+	// 		{Name: "LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY", Value: controllerIdentity.ToDNSName()},
+	// 	}
+	// 	sidecar.Env = append(sidecar.Env, tlsEnvVars...)
+	// 	sidecar.VolumeMounts = []v1.VolumeMount{
+	// 		{Name: configMapVolume.Name, MountPath: configMapBase, ReadOnly: true},
+	// 		{Name: secretVolume.Name, MountPath: secretBase, ReadOnly: true},
+	// 	}
+	// }
+
 	t.Containers = append(t.Containers, sidecar)
 	if !options.noInitContainer {
 		nonRoot := false
@@ -388,6 +435,15 @@ func (rt resourceTransformerInject) transform(bytes []byte, options *injectOptio
 		metaAccessor, err := k8sMeta.Accessor(conf.obj)
 		if err != nil {
 			return nil, nil, err
+		}
+
+		// The namespace isn't necessarily in the input so it has to be substituted
+		// at runtime. The proxy recognizes the "$NAME" syntax for this variable
+		// but not necessarily other variables.
+		identity := k8s.TLSIdentity{
+			Name:                metaAccessor.GetName(),
+			Kind:                strings.ToLower(conf.meta.Kind),
+			ControllerNamespace: controlPlaneNamespace,
 		}
 
 		if injectPodSpec(conf.podSpec, identity, conf.dnsNameOverride, options, &report) &&

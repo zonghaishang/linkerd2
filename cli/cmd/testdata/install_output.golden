@@ -100,6 +100,7 @@ spec:
       annotations:
         CreatedByAnnotation: CliVersion
         linkerd.io/created-by: linkerd/cli dev-undefined
+        linkerd.io/identity-mode: disabled
         linkerd.io/proxy-version: dev-undefined
       creationTimestamp: null
       labels:
@@ -117,7 +118,7 @@ spec:
         - -trust-domain=cluster.local
         - -trust-anchors=/var/run/linkerd/identity/trust-anchors/trust-anchors.pem
         - -issuer=/var/run/linkerd/identity/issuer
-        - -issuance-lifetime=24h
+        - -issuance-lifetime=
         image: ControllerImage
         imagePullPolicy: ImagePullPolicy
         livenessProbe:
@@ -193,7 +194,7 @@ spec:
           value: tcp://0.0.0.0:4143
         - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
           value: .
-        - name: LINKERD2_PROXY_POD_NAMESPACE
+        - name: K8S_NS
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
@@ -202,7 +203,7 @@ spec:
         - name: LINKERD2_PROXY_OUTBOUND_CONNECT_KEEPALIVE
           value: 10000ms
         - name: LINKERD2_PROXY_ID
-          value: linkerd-identity.deployment.$LINKERD2_PROXY_POD_NAMESPACE.linkerd-managed.Namespace.svc.cluster.local
+          value: linkerd-identity.deployment.$(K8S_NS).linkerd-managed.Namespace.svc.cluster.local
         image: gcr.io/linkerd-io/proxy:dev-undefined
         imagePullPolicy: IfNotPresent
         livenessProbe:
@@ -255,9 +256,6 @@ spec:
       - name: identity-issuer
         secret:
           secretName: linkerd-identity-issuer
-      - emptyDir:
-          medium: Memory
-        name: identity-end-entity
 status: {}
 ---
 ###
@@ -352,6 +350,7 @@ spec:
       annotations:
         CreatedByAnnotation: CliVersion
         linkerd.io/created-by: linkerd/cli dev-undefined
+        linkerd.io/identity-mode: disabled
         linkerd.io/proxy-version: dev-undefined
       creationTimestamp: null
       labels:
@@ -456,7 +455,7 @@ spec:
           value: tcp://0.0.0.0:4143
         - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
           value: .
-        - name: LINKERD2_PROXY_POD_NAMESPACE
+        - name: K8S_NS
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
@@ -465,7 +464,7 @@ spec:
         - name: LINKERD2_PROXY_OUTBOUND_CONNECT_KEEPALIVE
           value: 10000ms
         - name: LINKERD2_PROXY_ID
-          value: linkerd-controller.deployment.$LINKERD2_PROXY_POD_NAMESPACE.linkerd-managed.Namespace.svc.cluster.local
+          value: linkerd-controller.deployment.$(K8S_NS).linkerd-managed.Namespace.svc.cluster.local
         image: gcr.io/linkerd-io/proxy:dev-undefined
         imagePullPolicy: IfNotPresent
         livenessProbe:
@@ -684,6 +683,7 @@ spec:
       annotations:
         CreatedByAnnotation: CliVersion
         linkerd.io/created-by: linkerd/cli dev-undefined
+        linkerd.io/identity-mode: disabled
         linkerd.io/proxy-version: dev-undefined
       creationTimestamp: null
       labels:
@@ -735,7 +735,7 @@ spec:
           value: tcp://0.0.0.0:4143
         - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
           value: .
-        - name: LINKERD2_PROXY_POD_NAMESPACE
+        - name: K8S_NS
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
@@ -744,7 +744,7 @@ spec:
         - name: LINKERD2_PROXY_OUTBOUND_CONNECT_KEEPALIVE
           value: 10000ms
         - name: LINKERD2_PROXY_ID
-          value: linkerd-web.deployment.$LINKERD2_PROXY_POD_NAMESPACE.linkerd-managed.Namespace.svc.cluster.local
+          value: linkerd-web.deployment.$(K8S_NS).linkerd-managed.Namespace.svc.cluster.local
         image: gcr.io/linkerd-io/proxy:dev-undefined
         imagePullPolicy: IfNotPresent
         livenessProbe:
@@ -860,6 +860,7 @@ spec:
       annotations:
         CreatedByAnnotation: CliVersion
         linkerd.io/created-by: linkerd/cli dev-undefined
+        linkerd.io/identity-mode: disabled
         linkerd.io/proxy-version: dev-undefined
       creationTimestamp: null
       labels:
@@ -914,7 +915,7 @@ spec:
           value: tcp://0.0.0.0:4143
         - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
           value: .
-        - name: LINKERD2_PROXY_POD_NAMESPACE
+        - name: K8S_NS
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
@@ -923,7 +924,7 @@ spec:
         - name: LINKERD2_PROXY_OUTBOUND_CONNECT_KEEPALIVE
           value: 10000ms
         - name: LINKERD2_PROXY_ID
-          value: linkerd-prometheus.deployment.$LINKERD2_PROXY_POD_NAMESPACE.linkerd-managed.Namespace.svc.cluster.local
+          value: linkerd-prometheus.deployment.$(K8S_NS).linkerd-managed.Namespace.svc.cluster.local
         - name: LINKERD2_PROXY_OUTBOUND_ROUTER_CAPACITY
           value: "10000"
         image: gcr.io/linkerd-io/proxy:dev-undefined
@@ -1113,6 +1114,7 @@ spec:
       annotations:
         CreatedByAnnotation: CliVersion
         linkerd.io/created-by: linkerd/cli dev-undefined
+        linkerd.io/identity-mode: disabled
         linkerd.io/proxy-version: dev-undefined
       creationTimestamp: null
       labels:
@@ -1163,7 +1165,7 @@ spec:
           value: tcp://0.0.0.0:4143
         - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
           value: .
-        - name: LINKERD2_PROXY_POD_NAMESPACE
+        - name: K8S_NS
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
@@ -1172,7 +1174,7 @@ spec:
         - name: LINKERD2_PROXY_OUTBOUND_CONNECT_KEEPALIVE
           value: 10000ms
         - name: LINKERD2_PROXY_ID
-          value: linkerd-grafana.deployment.$LINKERD2_PROXY_POD_NAMESPACE.linkerd-managed.Namespace.svc.cluster.local
+          value: linkerd-grafana.deployment.$(K8S_NS).linkerd-managed.Namespace.svc.cluster.local
         image: gcr.io/linkerd-io/proxy:dev-undefined
         imagePullPolicy: IfNotPresent
         livenessProbe:
@@ -1315,6 +1317,7 @@ spec:
       annotations:
         CreatedByAnnotation: CliVersion
         linkerd.io/created-by: linkerd/cli dev-undefined
+        linkerd.io/identity-mode: disabled
         linkerd.io/proxy-version: dev-undefined
       creationTimestamp: null
       labels:
@@ -1365,7 +1368,7 @@ spec:
           value: tcp://0.0.0.0:4143
         - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
           value: .
-        - name: LINKERD2_PROXY_POD_NAMESPACE
+        - name: K8S_NS
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
@@ -1374,7 +1377,7 @@ spec:
         - name: LINKERD2_PROXY_OUTBOUND_CONNECT_KEEPALIVE
           value: 10000ms
         - name: LINKERD2_PROXY_ID
-          value: linkerd-proxy-injector.deployment.$LINKERD2_PROXY_POD_NAMESPACE.linkerd-managed.Namespace.svc.cluster.local
+          value: linkerd-proxy-injector.deployment.$(K8S_NS).linkerd-managed.Namespace.svc.cluster.local
         image: gcr.io/linkerd-io/proxy:dev-undefined
         imagePullPolicy: IfNotPresent
         livenessProbe:
@@ -1525,15 +1528,23 @@ data:
       value: tcp://0.0.0.0:4143
     - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
       value: suffix.
-    - name: LINKERD2_PROXY_POD_NAMESPACE
-      valueFrom:
-        fieldRef:
-          fieldPath: metadata.namespace
     - name: LINKERD2_PROXY_INBOUND_ACCEPT_KEEPALIVE
       value: 10000ms
     - name: LINKERD2_PROXY_OUTBOUND_CONNECT_KEEPALIVE
       value: 10000ms
     - name: LINKERD2_PROXY_ID
+      value: "" # this value will be computed by the webhook
+    - name: LINKERD2_PROXY_TLS_TRUST_ANCHORS
+      value: /var/linkerd-io/trust-anchors/
+    - name: LINKERD2_PROXY_TLS_CERT
+      value: /var/linkerd-io/identity/
+    - name: LINKERD2_PROXY_TLS_PRIVATE_KEY
+      value: /var/linkerd-io/identity/
+    - name: LINKERD2_PROXY_TLS_LOCAL_IDENTITY
+      value: "" # this value will be computed by the webhook
+    - name: LINKERD2_PROXY_CONTROLLER_NAMESPACE
+      value: Namespace
+    - name: LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY
       value: "" # this value will be computed by the webhook
     image: ProxyImage
     imagePullPolicy: IfNotPresent

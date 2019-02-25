@@ -20,7 +20,9 @@ import (
 )
 
 const (
-	envVarKeyProxyID = "LINKERD2_PROXY_ID"
+	envVarKeyProxyTLSPodIdentity        = "LINKERD2_PROXY_TLS_LOCAL_IDENTITY"
+	envVarKeyProxyTLSControllerIdentity = "LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY"
+	envVarKeyProxyID                    = "LINKERD2_PROXY_ID"
 )
 
 // Webhook is a Kubernetes mutating admission webhook that mutates pods admission
@@ -32,6 +34,7 @@ type Webhook struct {
 	controllerNamespace string
 	resources           *WebhookResources
 	noInitContainer     bool
+	//volumeSpecc
 }
 
 // NewWebhook returns a new instance of Webhook.
@@ -148,6 +151,28 @@ func (w *Webhook) inject(request *admissionv1beta1.AdmissionRequest) (*admission
 		}
 		patch.addInitContainer(proxyInit)
 	}
+
+	// if w.tlsEnabled {
+	// 	caBundle, tlsSecrets, err := w.volumesSpec(identity)
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+	// 	log.Debugf("ca bundle volume: %+v", caBundle)
+	// 	log.Debugf("tls secrets volume: %+v", tlsSecrets)
+	//
+	// 	if len(deployment.Spec.Template.Spec.Volumes) == 0 {
+	// 		patch.addVolumeRoot()
+	// 	}
+	// 	patch.addVolume(caBundle)
+	// 	patch.addVolume(tlsSecrets)
+	// 	patch.addPodAnnotations(map[string]string{
+	// 		k8sPkg.IdentityModeAnnotation: k8sPkg.IdentityModeOptional,
+	// 	})
+	// } else {
+	patch.addPodAnnotations(map[string]string{
+		k8sPkg.IdentityModeAnnotation: k8sPkg.IdentityModeDisabled,
+	})
+	// }
 
 	if deployment.Spec.Template.Labels == nil {
 		deployment.Spec.Template.Labels = map[string]string{}
