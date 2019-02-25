@@ -433,7 +433,7 @@ func (hc *HealthChecker) allCategories() []category {
 					},
 				},
 				{
-					description:   "can query the control plane API",
+					description:   "control plane self-check",
 					hintAnchor:    "l5d-api-control-api",
 					fatal:         true,
 					retryDeadline: hc.RetryDeadline,
@@ -636,6 +636,7 @@ func (hc *HealthChecker) RunChecks(observer checkObserver) bool {
 	for _, c := range hc.categories {
 		if c.enabled {
 			for _, checker := range c.checkers {
+				checker := checker // pin
 				if checker.check != nil {
 					if !hc.runCheck(c.id, &checker, observer) {
 						if !checker.warning {
@@ -699,6 +700,7 @@ func (hc *HealthChecker) runCheckRPC(categoryID CategoryID, c *checker, observer
 	observer(&CheckResult{
 		Category:    categoryID,
 		Description: c.description,
+		HintAnchor:  c.hintAnchor,
 		Warning:     c.warning,
 		Err:         err,
 	})
