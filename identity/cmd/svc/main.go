@@ -11,8 +11,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/linkerd/linkerd2/controller/identity"
 	"github.com/linkerd/linkerd2/controller/k8s"
+	"github.com/linkerd/linkerd2/identity"
 	"github.com/linkerd/linkerd2/pkg/admin"
 	"github.com/linkerd/linkerd2/pkg/flags"
 	"github.com/linkerd/linkerd2/pkg/tls"

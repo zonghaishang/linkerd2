@@ -159,6 +159,7 @@ func TestUninjectAndInject(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
+		tc := tc // pin
 		verbose = true
 		t.Run(fmt.Sprintf("%d: %s --verbose", i, tc.inputFileName), func(t *testing.T) {
 			testUninjectAndInject(t, tc)
@@ -222,6 +223,7 @@ func TestRunInjectCmd(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
+		tc := tc // pin
 		verbose = true
 		t.Run(fmt.Sprintf("%d: %s --verbose", i, tc.inputFileName), func(t *testing.T) {
 			testInjectCmd(t, tc)
@@ -305,6 +307,7 @@ func TestInjectFilePath(t *testing.T) {
 		}
 
 		for i, testCase := range testCases {
+			testCase := testCase // pin
 			verbose = true
 			t.Run(fmt.Sprintf("%d %s", i, testCase.resource), func(t *testing.T) {
 				testInjectFilePath(t, testCase)

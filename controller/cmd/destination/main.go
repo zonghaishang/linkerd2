@@ -10,6 +10,7 @@ import (
 	"github.com/linkerd/linkerd2/controller/api/destination"
 	spclient "github.com/linkerd/linkerd2/controller/gen/client/clientset/versioned"
 	"github.com/linkerd/linkerd2/controller/k8s"
+	"github.com/linkerd/linkerd2/controller/sp"
 	"github.com/linkerd/linkerd2/pkg/admin"
 	"github.com/linkerd/linkerd2/pkg/flags"
 	log "github.com/sirupsen/logrus"
@@ -40,7 +41,7 @@ func main() {
 	if *singleNamespace {
 		restrictToNamespace = *controllerNamespace
 	} else {
-		spClient, err = k8s.NewSpClientSet(*kubeConfigPath)
+		spClient, err = sp.NewSpClientSet(*kubeConfigPath)
 		if err != nil {
 			log.Fatal(err.Error())
 		}

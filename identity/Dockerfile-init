@@ -1,13 +1,15 @@
 ## compile controller services
 FROM gcr.io/linkerd-io/go-deps:b9049684 as golang
 WORKDIR /go/src/github.com/linkerd/linkerd2
-ENV CGO_ENABLED=0 GOOD=linux
+ENV CGO_ENABLED=0 GOOS=linux
 
-COPY pkg pkg
+COPY pkg/flags pkg/flags
+COPY pkg/tls pkg/tls
+COPY pkg/version pkg/version
 RUN go build ./pkg/...
 
 COPY identity identity
-RUN go install ./identity/cmd/init
+RUN CGO_ENABLED=0 GOOS=linux go install ./identity/cmd/init
 
 ## package runtime
 FROM scratch

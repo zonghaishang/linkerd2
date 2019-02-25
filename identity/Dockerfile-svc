@@ -1,9 +1,18 @@
 ## compile controller services
 FROM gcr.io/linkerd-io/go-deps:b9049684 as golang
 WORKDIR /go/src/github.com/linkerd/linkerd2
+ENV CGO_ENABLED=0 GOOS=linux
 
-COPY pkg pkg
-RUN CGO_ENABLED=0 GOOS=linux go build ./pkg/...
+COPY pkg/admin pkg/admin
+COPY pkg/flags pkg/flags
+COPY pkg/k8s pkg/k8s
+COPY pkg/prometheus pkg/prometheus
+COPY pkg/tls pkg/tls
+COPY pkg/version pkg/version
+RUN go build ./pkg/...
+
+COPY controller/k8s controller/k8s
+RUN CGO_ENABLED=0 GOOS=linux go build ./controller/...
 
 COPY identity identity
 RUN CGO_ENABLED=0 GOOS=linux go install ./identity/cmd/svc
@@ -11,7 +20,7 @@ RUN CGO_ENABLED=0 GOOS=linux go install ./identity/cmd/svc
 ## package runtime
 FROM scratch
 COPY LICENSE /linkerd/LICENSE
-COPY --from=golang /go/bin/service /bin/identity-svc
+COPY --from=golang /go/bin/svc /bin/identity-svc
 ARG LINKERD_VERSION
 ENV LINKERD_CONTAINER_VERSION_OVERRIDE=${LINKERD_VERSION}
 ENTRYPOINT ["/bin/identity-svc"]

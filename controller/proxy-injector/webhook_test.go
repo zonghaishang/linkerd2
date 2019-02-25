@@ -69,6 +69,7 @@ func TestShouldInject(t *testing.T) {
 		}
 
 		for id, testCase := range testCases {
+			testCase := testCase // pin
 			t.Run(fmt.Sprintf("%d", id), func(t *testing.T) {
 				deployment, err := factory.Deployment(testCase.filename)
 				if err != nil {
@@ -143,38 +144,38 @@ func TestContainersSpec(t *testing.T) {
 
 // func TestVolumesSpec(t *testing.T) {
 // 	fakeClient := fake.NewClient("")
-//
-// 	webhook, err := NewWebhook(fakeClient, testWebhookResources, fake.DefaultControllerNamespace, fake.DefaultNoInitContainer, fake.DefaultTLSEnabled)
+
+// 	webhook, err := NewWebhook(fakeClient, testWebhookResources, fake.DefaultControllerNamespace, fake.DefaultNoInitContainer)
 // 	if err != nil {
 // 		t.Fatal("Unexpected error: ", err)
 // 	}
-//
+
 // 	expectedTrustAnchors, err := factory.Volume("inject-trust-anchors-volume-spec.yaml")
 // 	if err != nil {
 // 		t.Fatal("Unexpected error: ", err)
 // 	}
-//
+
 // 	expectedLinkerdSecrets, err := factory.Volume("inject-linkerd-secrets-volume-spec.yaml")
 // 	if err != nil {
 // 		t.Fatal("Unexpected error: ", err)
 // 	}
-//
+
 // 	identity := &k8s.TLSIdentity{
 // 		Name:                "nginx",
 // 		Kind:                "deployment",
 // 		Namespace:           fake.DefaultNamespace,
 // 		ControllerNamespace: fake.DefaultControllerNamespace,
 // 	}
-//
+
 // 	actualTrustAnchors, actualLinkerdSecrets, err := webhook.volumesSpec(identity)
 // 	if err != nil {
 // 		t.Fatal("Unexpected error: ", err)
 // 	}
-//
+
 // 	if !reflect.DeepEqual(expectedTrustAnchors, actualTrustAnchors) {
 // 		t.Errorf("Content mismatch\nExpected: %+v\nActual: %+v", expectedTrustAnchors, actualTrustAnchors)
 // 	}
-//
+
 // 	if !reflect.DeepEqual(expectedLinkerdSecrets, actualLinkerdSecrets) {
 // 		t.Errorf("Content mismatch\nExpected: %+v\nActual: %+v", expectedLinkerdSecrets, actualLinkerdSecrets)
 // 	}
