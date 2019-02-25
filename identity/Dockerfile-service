@@ -1,0 +1,17 @@
+## compile controller services
+FROM gcr.io/linkerd-io/go-deps:b9049684 as golang
+WORKDIR /go/src/github.com/linkerd/linkerd2
+
+COPY pkg pkg
+RUN CGO_ENABLED=0 GOOS=linux go build ./pkg/...
+
+COPY identity identity
+RUN CGO_ENABLED=0 GOOS=linux go install ./identity/cmd/svc
+
+## package runtime
+FROM scratch
+COPY LICENSE /linkerd/LICENSE
+COPY --from=golang /go/bin/service /bin/identity-svc
+ARG LINKERD_VERSION
+ENV LINKERD_CONTAINER_VERSION_OVERRIDE=${LINKERD_VERSION}
+ENTRYPOINT ["/bin/identity-svc"]
