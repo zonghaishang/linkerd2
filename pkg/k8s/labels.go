@@ -83,6 +83,10 @@ const (
 	// in service identity.
 	IdentityModeAnnotation = "linkerd.io/identity-mode"
 
+	// IdentityModeDefault is assigned to IdentityModeAnnotation to
+	// use the control plane's default identity scheme.
+	IdentityModeDefault = "default"
+
 	// IdentityModeDisabled is assigned to IdentityModeAnnotation to
 	// disable the proxy from participating in automatic identity.
 	IdentityModeDisabled = "disabled"
@@ -90,7 +94,7 @@ const (
 	// IdentityModeOptional is assigned to IdentityModeAnnotation to
 	// optionally configure the proxy to participate in automatic identity.
 	//
-	// Will be deprecated soon.
+	// Deprecated.
 	IdentityModeOptional = "optional"
 
 	/*

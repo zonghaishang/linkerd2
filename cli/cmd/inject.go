@@ -141,8 +141,9 @@ func injectObjectMeta(t *metaV1.ObjectMeta, k8sLabels map[string]string, options
 		t.Labels[k] = v
 	}
 
-	// t.Annotations[k8s.IdentityModeAnnotation] = k8s.IdentityModeOptional
-	t.Annotations[k8s.IdentityModeAnnotation] = k8s.IdentityModeDisabled
+	if t.Annotations[k8s.IdentityModeAnnotation] == "" {
+		t.Annotations[k8s.IdentityModeAnnotation] = k8s.IdentityModeDefault
+	}
 
 	return true
 }
