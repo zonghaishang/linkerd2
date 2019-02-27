@@ -20,8 +20,7 @@ func TestRender(t *testing.T) {
 	}
 
 	defaultConfig.UUID = "deaab91a-f4ab-448a-b7d1-c832a2fa0a60"
-
-	mockIdentityConfig := &installIdentityConfig{
+	defaultConfig.Identity := &installIdentityConfig{
 		TrustDomain:     "cluster.local",
 		TrustAnchorsPEM: "zyx",
 		Issuer: &issuerConfig{
@@ -78,7 +77,7 @@ func TestRender(t *testing.T) {
 		ProfileSuffixes:            "suffix.",
 		EnableH2Upgrade:            true,
 		NoInitContainer:            false,
-		Identity:                   mockIdentityConfig,
+		Identity:                   defaultConfig.Identity,
 		GlobalConfig:               "GlobalConfig",
 		ProxyConfig:                "ProxyConfig",
 	}
@@ -107,7 +106,7 @@ func TestRender(t *testing.T) {
 		SingleNamespace:            true,
 		EnableH2Upgrade:            true,
 		NoInitContainer:            false,
-		Identity:                   mockIdentityConfig,
+		Identity:                   defaultConfig.Identity,
 		GlobalConfig:               "GlobalConfig",
 		ProxyConfig:                "ProxyConfig",
 	}
@@ -115,8 +114,8 @@ func TestRender(t *testing.T) {
 	haOptions := newInstallOptions()
 	haOptions.highAvailability = true
 	haConfig, _ := validateAndBuildConfig(haOptions)
-	haConfig.UUID = "deaab91a-f4ab-448a-b7d1-c832a2fa0a60"
-	haConfig.Identity = mockIdentityConfig
+	haConfig.UUID = defaultConfig.UUID
+	haConfig.Identity = defaultConfig.Identity
 
 	haWithOverridesOptions := newInstallOptions()
 	haWithOverridesOptions.highAvailability = true
@@ -124,21 +123,21 @@ func TestRender(t *testing.T) {
 	haWithOverridesOptions.proxyCPURequest = "400m"
 	haWithOverridesOptions.proxyMemoryRequest = "300Mi"
 	haWithOverridesConfig, _ := validateAndBuildConfig(haWithOverridesOptions)
-	haWithOverridesConfig.UUID = "deaab91a-f4ab-448a-b7d1-c832a2fa0a60"
-	haWithOverridesConfig.Identity = mockIdentityConfig
+	haWithOverridesConfig.UUID = defaultConfig.UUID
+	haWithOverridesConfig.Identity = defaultConfig.Identity
 
 	noInitContainerOptions := newInstallOptions()
 	noInitContainerOptions.noInitContainer = true
 	noInitContainerConfig, _ := validateAndBuildConfig(noInitContainerOptions)
-	noInitContainerConfig.UUID = "deaab91a-f4ab-448a-b7d1-c832a2fa0a60"
-	noInitContainerConfig.Identity = mockIdentityConfig
+	noInitContainerConfig.UUID = defaultConfig.UUID
+	noInitContainerConfig.Identity = defaultConfig.Identity
 
 	noInitContainerWithProxyAutoInjectOptions := newInstallOptions()
 	noInitContainerWithProxyAutoInjectOptions.noInitContainer = true
 	noInitContainerWithProxyAutoInjectOptions.proxyAutoInject = true
 	noInitContainerWithProxyAutoInjectConfig, _ := validateAndBuildConfig(noInitContainerWithProxyAutoInjectOptions)
-	noInitContainerWithProxyAutoInjectConfig.UUID = "deaab91a-f4ab-448a-b7d1-c832a2fa0a60"
-	noInitContainerWithProxyAutoInjectConfig.Identity = mockIdentityConfig
+	noInitContainerWithProxyAutoInjectConfig.UUID = defaultConfig.UUID
+	noInitContainerWithProxyAutoInjectConfig.Identity = defaultConfig.Identity
 
 	testCases := []struct {
 		config                installConfig
