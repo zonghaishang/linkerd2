@@ -218,7 +218,7 @@ func (l *endpointListener) toWeightedAddr(address *updateAddress) *pb.WeightedAd
 }
 
 func (l *endpointListener) getAddrMetadata(pod *corev1.Pod) (map[string]string, *pb.ProtocolHint, *pb.TlsIdentity) {
-	controllerNs := pod.Labels[pkgK8s.ControllerNSLabel]
+	controllerNS := pod.Labels[pkgK8s.ControllerNSLabel]
 	ownerKind, ownerName := l.ownerKindAndName(pod)
 	labels := pkgK8s.GetPodLabels(ownerKind, ownerName, pod)
 
@@ -228,7 +228,7 @@ func (l *endpointListener) getAddrMetadata(pod *corev1.Pod) (map[string]string, 
 	// where the destination service is running; all pods injected for all control
 	// planes are considered valid for providing the H2 hint.
 	var hint *pb.ProtocolHint
-	if l.enableH2Upgrade && controllerNs != "" {
+	if l.enableH2Upgrade && controllerNS != "" {
 		hint = &pb.ProtocolHint{
 			Protocol: &pb.ProtocolHint_H2_{
 				H2: &pb.ProtocolHint_H2{},
@@ -242,7 +242,7 @@ func (l *endpointListener) getAddrMetadata(pod *corev1.Pod) (map[string]string, 
 			Name:                ownerName,
 			Kind:                ownerKind,
 			Namespace:           pod.Namespace,
-			ControllerNamespace: controllerNs,
+			ControllerNamespace: controllerNS,
 		}.ToDNSName()
 
 		identity = &pb.TlsIdentity{
