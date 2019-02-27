@@ -40,12 +40,12 @@ type server struct {
 // API.
 func NewServer(
 	addr, k8sDNSZone string,
-	controllerNamespace string,
+	controllerNS string,
 	enableTLS, enableH2Upgrade bool,
 	k8sAPI *k8s.API,
 	done chan struct{},
 ) (*grpc.Server, error) {
-	resolver, err := buildResolver(k8sDNSZone, controllerNamespace, k8sAPI)
+	resolver, err := buildResolver(k8sDNSZone, controllerNS, k8sAPI)
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +152,7 @@ func (s *server) Endpoints(ctx context.Context, params *discoveryPb.EndpointsPar
 }
 
 func (s *server) streamResolution(host string, port int, stream pb.Destination_GetServer) error {
-	listener := newEndpointListener(stream, s.k8sAPI.GetOwnerKindAndName, s.enableTLS, s.enableH2Upgrade)
+	listener := newEndpointListener(stream, s.k8sAPI.GetOwnerKindAndName, s.enableTLS, s.enableH2Upgrade, s.controllerNS)
 
 	resolverCanResolve, err := s.resolver.canResolve(host, port)
 	if err != nil {
@@ -191,7 +191,7 @@ func getHostAndPort(dest *pb.GetDestination) (string, int, error) {
 }
 
 func buildResolver(
-	k8sDNSZone, controllerNamespace string,
+	k8sDNSZone, controllerNS string,
 	k8sAPI *k8s.API,
 ) (streamingDestinationResolver, error) {
 	var k8sDNSZoneLabels []string
@@ -214,7 +214,7 @@ func buildResolver(
 		pw = newProfileWatcher(k8sAPI)
 	}
 
-	k8sResolver := newK8sResolver(k8sDNSZoneLabels, controllerNamespace, newEndpointsWatcher(k8sAPI), pw)
+	k8sResolver := newK8sResolver(k8sDNSZoneLabels, controllerNS, newEndpointsWatcher(k8sAPI), pw)
 
 	log.Infof("Built k8s name resolver")
 

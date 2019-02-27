@@ -227,6 +227,7 @@ func TestEndpointListener(t *testing.T) {
 			ownerKindAndName,
 			true,
 			false,
+			expectedControllerNamespace,
 		)
 
 		add := []*updateAddress{
@@ -275,6 +276,7 @@ func TestEndpointListener(t *testing.T) {
 			ownerKindAndName,
 			false,
 			false,
+			expectedControllerNamespace,
 		)
 
 		add := []*updateAddress{

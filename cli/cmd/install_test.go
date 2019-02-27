@@ -20,7 +20,7 @@ func TestRender(t *testing.T) {
 	}
 
 	defaultConfig.UUID = "deaab91a-f4ab-448a-b7d1-c832a2fa0a60"
-	defaultConfig.Identity := &installIdentityConfig{
+	defaultConfig.Identity = &installIdentityConfig{
 		TrustDomain:     "cluster.local",
 		TrustAnchorsPEM: "zyx",
 		Issuer: &issuerConfig{
@@ -32,7 +32,6 @@ func TestRender(t *testing.T) {
 			Crt:    "def",
 		},
 	}
-	defaultConfig.Identity = mockIdentityConfig
 
 	// A configuration that shows that all config setting strings are honored
 	// by `render()`. Note that `SingleNamespace` is tested in a separate
