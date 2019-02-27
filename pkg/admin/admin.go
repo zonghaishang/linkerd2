@@ -2,6 +2,7 @@ package admin
 
 import (
 	"net/http"
+	_ "net/http/pprof"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -24,7 +25,7 @@ func StartServer(addr string) {
 		Addr:         addr,
 		Handler:      h,
 		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		WriteTimeout: 60 * time.Second,
 	}
 
 	log.Fatal(s.ListenAndServe())
