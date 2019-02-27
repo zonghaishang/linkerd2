@@ -13,7 +13,7 @@ import (
 	healthcheckPb "github.com/linkerd/linkerd2/controller/gen/common/healthcheck"
 	pb "github.com/linkerd/linkerd2/controller/gen/public"
 	"github.com/linkerd/linkerd2/controller/k8s"
-	"github.com/prometheus/client_golang/api/prometheus/v1"
+	promv1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
 	"google.golang.org/grpc"
 )
@@ -120,7 +120,7 @@ func (m *mockProm) Query(ctx context.Context, query string, ts time.Time) (model
 	m.QueriesExecuted = append(m.QueriesExecuted, query)
 	return m.Res, nil
 }
-func (m *mockProm) QueryRange(ctx context.Context, query string, r v1.Range) (model.Value, error) {
+func (m *mockProm) QueryRange(ctx context.Context, query string, r promv1.Range) (model.Value, error) {
 	m.rwLock.Lock()
 	defer m.rwLock.Unlock()
 	m.QueriesExecuted = append(m.QueriesExecuted, query)
@@ -135,7 +135,7 @@ func (m *mockProm) Series(ctx context.Context, matches []string, startTime time.
 
 // GenStatSummaryResponse generates a mock Public API StatSummaryResponse
 // object.
-func GenStatSummaryResponse(resName, resType string, resNs []string, counts *PodCounts, basicStats bool) pb.StatSummaryResponse {
+func GenStatSummaryResponse(resName, resType string, resNs []string, counts *PodCounts, basicStats bool, tcpStats bool) pb.StatSummaryResponse {
 	rows := []*pb.StatTable_PodGroup_Row{}
 	for _, ns := range resNs {
 		statTableRow := &pb.StatTable_PodGroup_Row{
@@ -155,6 +155,14 @@ func GenStatSummaryResponse(resName, resType string, resNs []string, counts *Pod
 				LatencyMsP95:    123,
 				LatencyMsP99:    123,
 				TlsRequestCount: 123,
+			}
+		}
+
+		if tcpStats {
+			statTableRow.TcpStats = &pb.TcpStats{
+				OpenConnections: 123,
+				ReadBytesTotal:  123,
+				WriteBytesTotal: 123,
 			}
 		}
 
@@ -261,7 +269,6 @@ func newMockGrpcServer(exp expectedStatRPC) (*mockProm, *grpcServer, error) {
 		k8sAPI,
 		"linkerd",
 		[]string{},
-		false,
 	)
 
 	k8sAPI.Sync()
