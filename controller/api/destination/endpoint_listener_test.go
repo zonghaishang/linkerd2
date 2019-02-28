@@ -10,10 +10,15 @@ import (
 	pkgAddr "github.com/linkerd/linkerd2/pkg/addr"
 	pkgK8s "github.com/linkerd/linkerd2/pkg/k8s"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const thisNS = "this-namespace"
+const (
+	deploymentKind = "deployment"
+	podDeployment  = "pod-deployment"
+	thisNS         = "this-namespace"
+)
 
 var (
 	addedAddress1 = &net.TcpAddress{
@@ -65,7 +70,9 @@ func TestEndpointListener(t *testing.T) {
 		listener := newEndpointListener(
 			mockGetServer,
 			defaultOwnerKindAndName,
-			false, false,
+			false,
+			false,
+			"linkerd",
 		)
 
 		listener.Update(add, remove)
@@ -82,7 +89,9 @@ func TestEndpointListener(t *testing.T) {
 		listener := newEndpointListener(
 			mockGetServer,
 			defaultOwnerKindAndName,
-			false, false,
+			false,
+			false,
+			"linkerd",
 		)
 
 		listener.Update(add, remove)
@@ -122,7 +131,9 @@ func TestEndpointListener(t *testing.T) {
 		listener := newEndpointListener(
 			mockGetServer,
 			defaultOwnerKindAndName,
-			false, false,
+			false,
+			false,
+			"linkerd",
 		)
 
 		completed := make(chan bool)
@@ -164,7 +175,9 @@ func TestEndpointListener(t *testing.T) {
 		listener := newEndpointListener(
 			mockGetServer,
 			ownerKindAndName,
-			false, false,
+			false,
+			false,
+			"linkerd",
 		)
 		listener.labels = map[string]string{
 			"service":   expectedServiceName,
@@ -197,7 +210,7 @@ func TestEndpointListener(t *testing.T) {
 		expectedPodName := pod1.Name
 		expectedPodNamespace := thisNS
 		expectedControllerNamespace := "linkerd-namespace"
-		expectedPodDeployment := "pod-deployment"
+		expectedPodDeployment := podDeployment
 		expectedTLSIdentity := &pb.TlsIdentity_K8SPodIdentity{
 			PodIdentity:  "pod-deployment.deployment.this-namespace.linkerd-managed.linkerd-namespace.svc.cluster.local",
 			ControllerNs: "linkerd-namespace",
@@ -207,6 +220,9 @@ func TestEndpointListener(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      expectedPodName,
 				Namespace: expectedPodNamespace,
+				Annotations: map[string]string{
+					pkgK8s.IdentityModeAnnotation: pkgK8s.IdentityModeOptional,
+				},
 				Labels: map[string]string{
 					pkgK8s.ControllerNSLabel:    expectedControllerNamespace,
 					pkgK8s.ProxyDeploymentLabel: expectedPodDeployment,
@@ -218,7 +234,7 @@ func TestEndpointListener(t *testing.T) {
 		}
 
 		ownerKindAndName := func(pod *corev1.Pod) (string, string) {
-			return "deployment", expectedPodDeployment
+			return deploymentKind, expectedPodDeployment
 		}
 
 		mockGetServer := &mockDestinationGetServer{updatesReceived: []*pb.Update{}}
@@ -227,6 +243,7 @@ func TestEndpointListener(t *testing.T) {
 			ownerKindAndName,
 			true,
 			false,
+			expectedControllerNamespace,
 		)
 
 		add := []*updateAddress{
@@ -245,11 +262,62 @@ func TestEndpointListener(t *testing.T) {
 		}
 	})
 
+	t.Run("Does not send TlsIdentity for other meshes", func(t *testing.T) {
+		expectedPodName := "pod1"
+		expectedPodNamespace := thisNS
+		expectedControllerNamespace := "other-linkerd-namespace"
+		expectedPodDeployment := podDeployment
+
+		podForAddedAddress1 := &v1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      expectedPodName,
+				Namespace: expectedPodNamespace,
+				Annotations: map[string]string{
+					pkgK8s.IdentityModeAnnotation: pkgK8s.IdentityModeOptional,
+				},
+				Labels: map[string]string{
+					pkgK8s.ControllerNSLabel:    expectedControllerNamespace,
+					pkgK8s.ProxyDeploymentLabel: expectedPodDeployment,
+				},
+			},
+			Status: v1.PodStatus{
+				Phase: v1.PodRunning,
+			},
+		}
+
+		ownerKindAndName := func(pod *v1.Pod) (string, string) {
+			return deploymentKind, expectedPodDeployment
+		}
+
+		mockGetServer := &mockDestinationGetServer{updatesReceived: []*pb.Update{}}
+		listener := newEndpointListener(
+			mockGetServer,
+			ownerKindAndName,
+			true,
+			false,
+			"linkerd-namespace",
+		)
+
+		add := []*updateAddress{
+			{address: addedAddress1, pod: podForAddedAddress1},
+		}
+		listener.Update(add, nil)
+
+		addrs := mockGetServer.updatesReceived[0].GetAdd().GetAddrs()
+		if len(addrs) != 1 {
+			t.Fatalf("Expected [1] address returned, got %v", addrs)
+		}
+
+		if addrs[0].TlsIdentity != nil {
+			t.Fatalf("Expected no TlsIdentity to be sent, but got [%v]", addrs[0].TlsIdentity)
+		}
+	})
+
 	t.Run("Does not send TlsIdentity when not enabled", func(t *testing.T) {
 		expectedPodName := pod1.Name
 		expectedPodNamespace := thisNS
 		expectedControllerNamespace := "linkerd-namespace"
-		expectedPodDeployment := "pod-deployment"
+		expectedPodDeployment := podDeployment
 
 		podForAddedAddress1 := &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
@@ -266,7 +334,7 @@ func TestEndpointListener(t *testing.T) {
 		}
 
 		ownerKindAndName := func(pod *corev1.Pod) (string, string) {
-			return "deployment", expectedPodDeployment
+			return deploymentKind, expectedPodDeployment
 		}
 
 		mockGetServer := &mockDestinationGetServer{updatesReceived: []*pb.Update{}}
@@ -275,6 +343,7 @@ func TestEndpointListener(t *testing.T) {
 			ownerKindAndName,
 			false,
 			false,
+			"linkerd",
 		)
 
 		add := []*updateAddress{
