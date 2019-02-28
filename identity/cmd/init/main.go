@@ -30,28 +30,41 @@ func main() {
 	dir := flag.String("dir", "", "directory under which credentials are written")
 	flags.ConfigureAndParse()
 
-	keyPath := filepath.Join(*dir, "key")
-	csrPath := filepath.Join(*dir, "csr")
-	crtPath := filepath.Join(*dir, "crt.pem")
-
-	if *name == "" {
-		log.Fatalf("-name must be specified")
-	}
-	if *dir == "" {
-		log.Fatalf("-dir must be specified")
-	}
 	if *tokenPath == "" {
 		log.Fatalf("-token must be specified")
 	}
+
+	// Read the trust root cert pool from a PEM file.
 	if *trustAnchorsPath == "" {
 		log.Fatalf("-strust-anchors must be specified")
 	}
-
 	rootsb, err := ioutil.ReadFile(*trustAnchorsPath)
 	if err != nil {
 		log.Fatalf("Failed to read trust anchors: %s: %s", *trustAnchorsPath, err)
 	}
+	roots, err := tls.DecodePEMCertPool(string(rootsb))
+	if err != nil {
+		log.Fatalf("Failed to read trust anchors: %s: %s", *trustAnchorsPath, err)
+	}
 
+	if *dir == "" {
+		log.Fatalf("-dir must be specified")
+	}
+	dirStat, err := os.Stat(*dir)
+	if err != nil {
+		log.Fatalf("Cannot access directory: %s", err)
+	}
+	if !dirStat.IsDir() {
+		log.Fatalf("Not a directory: %s", *dir)
+	}
+	if dirStat.Mode().Perm() == 0700 {
+		log.Fatalf("Must have permissions 0700: %s; got %s", *dir, dirStat.Mode().Perm())
+	}
+	keyPath := filepath.Join(*dir, "key")
+	csrPath := filepath.Join(*dir, "csr")
+	crtPath := filepath.Join(*dir, "crt.pem")
+
+	// Generate a private key and store it read-only (i.e. mostly for debugging).
 	key, err := tls.GenerateKey()
 	if err != nil {
 		log.Fatalf("Failed to generate a key: %s", err)
@@ -60,6 +73,9 @@ func main() {
 		log.Errorf("Failed to write Key: %s", err)
 	}
 
+	if *name == "" {
+		log.Fatalf("-name must be specified")
+	}
 	csr := x509.CertificateRequest{DNSNames: []string{*name}}
 	csrb, err := x509.CreateCertificateRequest(rand.Reader, &csr, key)
 	if err != nil {
@@ -67,11 +83,6 @@ func main() {
 	}
 	if err = ioutil.WriteFile(csrPath, csrb, 0400); err != nil {
 		log.Errorf("Failed to write CSR: %s", err)
-	}
-
-	roots, err := tls.DecodePEMCertPool(string(rootsb))
-	if err != nil {
-		log.Fatalf("Failed to read trust anchors: %s: %s", *trustAnchorsPath, err)
 	}
 
 	conn, err := grpc.Dial(*addr, grpc.WithInsecure())

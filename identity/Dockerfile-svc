@@ -3,19 +3,18 @@ FROM gcr.io/linkerd-io/go-deps:eda4c910 as golang
 WORKDIR /go/src/github.com/linkerd/linkerd2
 ENV CGO_ENABLED=0 GOOS=linux
 
+COPY controller/gen controller/gen
+COPY controller/k8s controller/k8s
 COPY pkg/admin pkg/admin
 COPY pkg/flags pkg/flags
 COPY pkg/k8s pkg/k8s
 COPY pkg/prometheus pkg/prometheus
 COPY pkg/tls pkg/tls
 COPY pkg/version pkg/version
-RUN go build ./pkg/...
-
-COPY controller/k8s controller/k8s
-RUN CGO_ENABLED=0 GOOS=linux go build ./controller/...
+RUN go build ./pkg/... ./controller/...
 
 COPY identity identity
-RUN CGO_ENABLED=0 GOOS=linux go install ./identity/cmd/svc
+RUN go install ./identity/cmd/svc
 
 ## package runtime
 FROM scratch
