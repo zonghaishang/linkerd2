@@ -54,16 +54,24 @@ spec:
           value: tcp://0.0.0.0:4143
         - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
           value: .
-        - name: K8S_NS
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.namespace
         - name: LINKERD2_PROXY_INBOUND_ACCEPT_KEEPALIVE
           value: 10000ms
         - name: LINKERD2_PROXY_OUTBOUND_CONNECT_KEEPALIVE
           value: 10000ms
+        - name: K8S_SA
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.serviceAccountName
+        - name: K8S_NS
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: L5D_NS
+          value: linkerd
+        - name: L5D_TRUST_DOMAIN
+          value: cluster.local
         - name: LINKERD2_PROXY_ID
-          value: web.deployment.$(K8S_NS).linkerd-managed.linkerd.svc.cluster.local
+          value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
         image: gcr.io/linkerd-io/proxy:testinjectversion
         imagePullPolicy: IfNotPresent
         livenessProbe:

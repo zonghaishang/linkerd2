@@ -250,65 +250,23 @@ func injectPodSpec(t *corev1.PodSpec, identity k8s.TLSIdentity, controlPlaneDNSN
 			{Name: "LINKERD2_PROXY_OUTBOUND_LISTENER", Value: fmt.Sprintf("tcp://127.0.0.1:%d", options.outboundPort)},
 			{Name: "LINKERD2_PROXY_INBOUND_LISTENER", Value: fmt.Sprintf("tcp://0.0.0.0:%d", options.inboundPort)},
 			{Name: "LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES", Value: profileSuffixes},
-			{
-				Name:      PodNamespaceEnvVarName,
-				ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.namespace"}},
-			},
 			{Name: "LINKERD2_PROXY_INBOUND_ACCEPT_KEEPALIVE", Value: fmt.Sprintf("%dms", defaultKeepaliveMs)},
 			{Name: "LINKERD2_PROXY_OUTBOUND_CONNECT_KEEPALIVE", Value: fmt.Sprintf("%dms", defaultKeepaliveMs)},
-			{Name: "LINKERD2_PROXY_ID", Value: identity.ToDNSName()},
+			{
+				Name:      "K8S_SA",
+				ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{FieldPath: "spec.serviceAccountName"}},
+			},
+			{
+				Name:      "K8S_NS",
+				ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.namespace"}},
+			},
+			{Name: "L5D_NS", Value: controlPlaneNamespace},
+			{Name: "L5D_TRUST_DOMAIN", Value: "cluster.local"},
+			{Name: "LINKERD2_PROXY_ID", Value: fmt.Sprintf("$(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)")},
 		},
 		LivenessProbe:  &proxyProbe,
 		ReadinessProbe: &proxyProbe,
 	}
-
-	// - name: identity-client
-	//   ports:
-	// 	 - name: grpc
-	// 	   containerPort: 8080
-	// 	 - name: admin-http
-	// 	   containerPort: 9990
-	// 	 image: {{.ControllerImage}}
-	// 	 imagePullPolicy: {{.ImagePullPolicy}}
-	// 	 args:
-	// 	 - "identity-client"
-	// 	 - "-addr=localhost:8080"
-	// 	 - "-log-level=DEBUG"
-	// 	 - "-name=linkerd-identity.{{.Namespace}}.serviceaccount.identity.{{.Namespace}}.{{.Identity.TrustDomain}}"
-	// 	 - "-trust-anchors=/var/run/linkerd/identity/trust-anchors/trust-anchors.pem"
-	// 	 - "-dir=/var/run/linkerd/identity/end-entity"
-	// 	 - "-token=/var/run/secrets/kubernetes.io/serviceaccount/token"
-	// 	 volumeMounts:
-	// 	 - mountPath: /var/run/linkerd/identity/trust-anchors
-	// 	   name: identity-trust-anchors
-	// 	 - mountPath: /var/run/linkerd/identity/end-entity
-	// 	   name: identity-end-entity
-	// 	 livenessProbe:
-	// 	   httpGet:
-	// 	 	 path: /ping
-	// 	 	 port: 9990
-	// 	   initialDelaySeconds: 10
-	// 	 readinessProbe:
-	// 	   httpGet:
-	// 		 path: /ready
-	// 		 port: 9990
-	// 	   failureThreshold: 7
-	// 	 {{- if .EnableHA }}
-	// 	 resources:
-	// 	   requests:
-	// 		 cpu: 10m
-	// 		 memory: 50Mi
-	// 	 {{- end }}
-	// 	 securityContext:
-	// 	   runAsUser: {{.ControllerUID}}
-
-	// volumes:
-	// - name: identity-end-entity
-	//   emptyDir:
-	//     medium: Memory
-	// - name: identity-end-entity
-	//   emptyDir:
-	//     medium: Memory
 
 	// Special case if the caller specifies that
 	// LINKERD2_PROXY_OUTBOUND_ROUTER_CAPACITY be set on the pod.
@@ -328,51 +286,36 @@ func injectPodSpec(t *corev1.PodSpec, identity k8s.TLSIdentity, controlPlaneDNSN
 		}
 	}
 
-	// if options.enableTLS() {
-	// 	yes := true
+	if options.enableTLS() {
+		base := "/var/run/linkerd/identity"
+		anchors := base + "/trust-anchors/trust-anchors.pem"
+		endEntity := base + "/end-entity"
+		tlsEnvVars := []corev1.EnvVar{
+			{Name: "LINKERD2_PROXY_TLS_TRUST_ANCHORS", Value: anchors},
+			{Name: "LINKERD2_PROXY_TLS_END_ENTITY_DIR", Value: endEntity},
+			{Name: "LINKERD2_PROXY_TLS_POD_IDENTITY", Value: "$(LINKERD2_PROXY_ID)"},
+			{Name: "LINKERD2_PROXY_CONTROLLER_NAMESPACE", Value: controlPlaneNamespace},
+			{
+				Name: "LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY",
+				// FIXME
+				Value: fmt.Sprintf("linkerd-controller.%s.serviceaccount.identity.%s.cluster.local", controlPlaneNamespace, controlPlaneNamespace),
+			},
+		}
+		sidecar.Env = append(sidecar.Env, tlsEnvVars...)
 
-	// 	configMapVolume := corev1.Volume{
-	// 		Name: k8s.TLSTrustAnchorVolumeName,
-	// 		VolumeSource: corev1.VolumeSource{
-	// 			ConfigMap: &corev1.ConfigMapVolumeSource{
-	// 				LocalObjectReference: corev1.LocalObjectReference{Name: k8s.TLSTrustAnchorConfigMapName},
-	// 				Optional:             &yes,
-	// 			},
-	// 		},
-	// 	}
-	// 	secretVolume := corev1.Volume{
-	// 		Name: k8s.TLSSecretsVolumeName,
-	// 		VolumeSource: corev1.VolumeSource{
-	// 			Secret: &corev1.SecretVolumeSource{
-	// 				SecretName: identity.ToSecretName(),
-	// 				Optional:   &yes,
-	// 			},
-	// 		},
-	// 	}
-
-	// 	base := "/var/linkerd-io"
-	// 	configMapBase := base + "/trust-anchors"
-	// 	secretBase := base + "/identity"
-	// 	tlsEnvVars := []corev1.EnvVar{
-	// 		{Name: "LINKERD2_PROXY_TLS_TRUST_ANCHORS", Value: configMapBase + "/" + k8s.TLSTrustAnchorFileName},
-	// 		{Name: "LINKERD2_PROXY_TLS_CERT", Value: secretBase + "/" + k8s.TLSCertFileName},
-	// 		{Name: "LINKERD2_PROXY_TLS_PRIVATE_KEY", Value: secretBase + "/" + k8s.TLSPrivateKeyFileName},
-	// 		{
-	// 			Name:  "LINKERD2_PROXY_TLS_POD_IDENTITY",
-	// 			Value: identity.ToDNSName(),
-	// 		},
-	// 		{Name: "LINKERD2_PROXY_CONTROLLER_NAMESPACE", Value: controlPlaneNamespace},
-	// 		{Name: "LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY", Value: identity.ToControllerIdentity().ToDNSName()},
-	// 	}
-
-	// 	sidecar.Env = append(sidecar.Env, tlsEnvVars...)
-	// 	sidecar.VolumeMounts = []corev1.VolumeMount{
-	// 		{Name: configMapVolume.Name, MountPath: configMapBase, ReadOnly: true},
-	// 		{Name: secretVolume.Name, MountPath: secretBase, ReadOnly: true},
-	// 	}
-
-	// 	t.Volumes = append(t.Volumes, configMapVolume, secretVolume)
-	// }
+		volume := corev1.Volume{
+			Name: "linkerd-identity-end-entity",
+			VolumeSource: corev1.VolumeSource{
+				EmptyDir: &corev1.EmptyDirVolumeSource{
+					Medium: "Memory",
+				},
+			},
+		}
+		sidecar.VolumeMounts = []corev1.VolumeMount{
+			{Name: volume.Name, MountPath: endEntity, ReadOnly: true},
+		}
+		t.Volumes = append(t.Volumes, volume)
+	}
 
 	t.Containers = append(t.Containers, sidecar)
 	if !options.noInitContainer {
