@@ -53,6 +53,7 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
+	// Read the token at least once.
 	if *tokenPath == "" {
 		log.Fatalf("-token must be specified")
 	}
@@ -61,6 +62,7 @@ func main() {
 		log.Fatalf("Failed to read token: %s", err)
 	}
 
+	// Build the request ahead-of-time. It will be re-used.
 	certifyReq := pb.CertifyRequest{
 		Identity:                  *name,
 		CertificateSigningRequest: csrb,
@@ -102,7 +104,7 @@ func main() {
 			refreshIn = beforeExpiry(crt.NotAfter)
 			log.Infof("id=%s; fp=%s; expiry=%s; refresh=%s", *name, fp(crt), crt.NotAfter, refreshIn)
 		} else {
-			refreshIn = MIN_REFRESH_TIME
+			refreshIn = minRefresh
 			log.Infof("NO CERTIFICATE; refresh=%s", refreshIn)
 		}
 
@@ -139,10 +141,10 @@ func loadVerifier(path string) (verify x509.VerifyOptions, err error) {
 // suitable to write key material to, returning the Key, CSR, and Crt paths.
 //
 // If the directory does not exist or if it has incorrect permissions, we assume
-// that the wrong directory was specified instead of trying to create or repair
-// the directory. In practice, this directory should be tmpfs so that
-// credentials are not written to disk, so we want to be extra sensitive to
-// incorrectly specified paths.4
+// that the wrong directory was specified incorrectly, instead of trying to
+// create or repair the directory. In practice, this directory should be tmpfs
+// so that credentials are not written to disk, so we want to be extra sensitive
+// to an incorrectly specified path.
 //
 // If the key, CSR, and/or Crt paths refer to existing files, it is assumed that
 // multiple instances of this process are running, and an error is returned.
@@ -158,8 +160,8 @@ func checkEndEntityDir(dir string) (string, string, string, error) {
 	if !s.IsDir() {
 		return "", "", "", fmt.Errorf("Not a directory: %s", dir)
 	}
-	if s.Mode().Perm() == 0700 {
-		return "", "", "", fmt.Errorf("Must have permissions 0700: %s; got %s", dir, s.Mode().Perm())
+	if s.Mode().Perm()&0002 != 0000 {
+		return "", "", "", fmt.Errorf("Must not be world-writeable: %s; got %s", dir, s.Mode().Perm())
 	}
 
 	keyPath := filepath.Join(dir, "key")
@@ -237,7 +239,6 @@ func validateAndStoreCrt(rsp *pb.CertifyResponse, crtPath string, verify x509.Ve
 		if err != nil {
 			return nil, err
 		}
-
 		verify.Intermediates.AddCert(c)
 	}
 
@@ -259,18 +260,20 @@ func fp(crt *x509.Certificate) string {
 	return strings.ToLower(hex.EncodeToString(sum[:]))
 }
 
-const MIN_REFRESH_TIME = 1 * time.Second
-const MAX_REFRESH_TIME = 24 * time.Hour
+const (
+	minRefresh = 1 * time.Second
+	maxRefresh = 24 * time.Hour
+)
 
 func beforeExpiry(t time.Time) time.Duration {
 	expiry := time.Until(t)
-	if expiry < MIN_REFRESH_TIME {
-		return MIN_REFRESH_TIME
+	if expiry < minRefresh {
+		return minRefresh
 	}
 
 	r := (expiry / time.Second) * (800 * time.Millisecond)
-	if r > MAX_REFRESH_TIME {
-		return MAX_REFRESH_TIME
+	if r > maxRefresh {
+		return maxRefresh
 	}
 
 	return r
