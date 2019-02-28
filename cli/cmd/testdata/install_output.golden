@@ -21,8 +21,8 @@ apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
   name: linkerd-Namespace-identity
 rules:
-- apiGroups: ["extensions", "authentication"]
-  resources: ["tokenreview"]
+- apiGroups: ["authentication.k8s.io"]
+  resources: ["tokenreviews"]
   verbs: ["create"]
 ---
 kind: ClusterRoleBinding

@@ -13,7 +13,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	kauthnApi "k8s.io/api/authentication/v1"
+	kauthzApi "k8s.io/api/authorization/v1"
+	k8s "k8s.io/client-go/kubernetes"
 	kauthn "k8s.io/client-go/kubernetes/typed/authentication/v1"
+	kauthz "k8s.io/client-go/kubernetes/typed/authorization/v1"
 
 	pb "github.com/linkerd/linkerd2-proxy-api/go/identity"
 	"github.com/linkerd/linkerd2/pkg/tls"
@@ -28,11 +31,38 @@ type Service struct {
 
 // NewService creates a new identity service.
 func NewService(
-	authn kauthn.AuthenticationV1Interface,
+	k8s k8s.Interface,
 	domain *TrustDomain,
 	ca *tls.CA,
-) *Service {
-	return &Service{authn, domain, ca}
+) (*Service, error) {
+	if err := checkAccess(k8s.AuthorizationV1()); err != nil {
+		return nil, err
+	}
+
+	authn := k8s.AuthenticationV1()
+	return &Service{authn, domain, ca}, nil
+}
+
+func checkAccess(authz kauthz.AuthorizationV1Interface) error {
+	rvw, err := authz.SelfSubjectAccessReviews().Create(
+		&kauthzApi.SelfSubjectAccessReview{
+			Spec: kauthzApi.SelfSubjectAccessReviewSpec{
+				ResourceAttributes: &kauthzApi.ResourceAttributes{
+					Group:    "authentication.k8s.io",
+					Version:  "v1",
+					Resource: "tokenreviews",
+					Verb:     "create",
+				},
+			},
+		})
+	if err != nil {
+		return err
+	}
+	if !rvw.Status.Allowed {
+		return fmt.Errorf("This serviceaccount is unable to create token reviews in the kubernetes API: %s", rvw.Status.Reason)
+	}
+
+	return nil
 }
 
 // Register registers an identity service implementation in the provided gRPC

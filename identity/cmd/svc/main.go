@@ -78,7 +78,10 @@ func main() {
 		log.Fatalf("Failed to load kubeconfig: %s: %s", *kubeConfigPath, err)
 	}
 
-	svc := identity.NewService(k8s.Authentication(), dom, ca)
+	svc, err := identity.NewService(k8s, dom, ca)
+	if err != nil {
+		log.Fatalf("Failed to initialize identity service: %s", err)
+	}
 
 	go admin.StartServer(*adminAddr)
 	lis, err := net.Listen("tcp", *addr)

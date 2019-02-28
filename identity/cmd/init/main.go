@@ -164,6 +164,8 @@ func checkEndEntityDir(dir string) (string, string, string, error) {
 		return "", "", "", fmt.Errorf("Must not be world-writeable: %s; got %s", dir, s.Mode().Perm())
 	}
 
+	// TODO remove fails if they exist?
+
 	keyPath := filepath.Join(dir, "key")
 	if err = checkNotExists(keyPath); err != nil {
 		return "", "", "", err
