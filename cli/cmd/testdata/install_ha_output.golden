@@ -242,6 +242,8 @@ spec:
         - "2102"
         - --inbound-ports-to-ignore
         - 4190,4191
+        - --outbound-ports-to-ignore
+        - "443"
         image: gcr.io/linkerd-io/proxy-init:dev-undefined
         imagePullPolicy: IfNotPresent
         name: linkerd-init
@@ -511,6 +513,8 @@ spec:
         - "2102"
         - --inbound-ports-to-ignore
         - 4190,4191
+        - --outbound-ports-to-ignore
+        - "443"
         image: gcr.io/linkerd-io/proxy-init:dev-undefined
         imagePullPolicy: IfNotPresent
         name: linkerd-init
@@ -550,7 +554,6 @@ apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
   name: serviceprofiles.linkerd.io
-  namespace: linkerd
   annotations:
     linkerd.io/created-by: linkerd/cli dev-undefined
 spec:
@@ -795,6 +798,8 @@ spec:
         - "2102"
         - --inbound-ports-to-ignore
         - 4190,4191
+        - --outbound-ports-to-ignore
+        - "443"
         image: gcr.io/linkerd-io/proxy-init:dev-undefined
         imagePullPolicy: IfNotPresent
         name: linkerd-init
@@ -982,6 +987,8 @@ spec:
         - "2102"
         - --inbound-ports-to-ignore
         - 4190,4191
+        - --outbound-ports-to-ignore
+        - "443"
         image: gcr.io/linkerd-io/proxy-init:dev-undefined
         imagePullPolicy: IfNotPresent
         name: linkerd-init
@@ -1235,6 +1242,8 @@ spec:
         - "2102"
         - --inbound-ports-to-ignore
         - 4190,4191
+        - --outbound-ports-to-ignore
+        - "443"
         image: gcr.io/linkerd-io/proxy-init:dev-undefined
         imagePullPolicy: IfNotPresent
         name: linkerd-init

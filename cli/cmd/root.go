@@ -355,6 +355,9 @@ func (options *proxyConfigOptions) validate() error {
 			}
 		}
 	}
+	if options.tls != "" && options.tls != optionalTLS {
+		return fmt.Errorf("--tls must be blank or set to \"%s\"", optionalTLS)
+	}
 
 	if options.tls != "" && options.tls != optionalTLS {
 		return fmt.Errorf("--tls must be blank or set to \"%s\"", optionalTLS)
