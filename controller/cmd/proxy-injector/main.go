@@ -19,9 +19,10 @@ func main() {
 	metricsAddr := flag.String("metrics-addr", ":9995", "address to serve scrapable metrics on")
 	addr := flag.String("addr", ":8443", "address to serve on")
 	kubeconfig := flag.String("kubeconfig", "", "path to kubeconfig")
-	controllerNamespace := flag.String("controller-namespace", "linkerd", "namespace in which Linkerd is installed")
+	controllerNS := flag.String("controller-namespace", "linkerd", "namespace in which Linkerd is installed")
 	webhookServiceName := flag.String("webhook-service", "linkerd-proxy-injector.linkerd.io", "name of the admission webhook")
 	noInitContainer := flag.Bool("no-init-container", false, "whether to use an init container or the linkerd-cni plugin")
+	tlsEnabled := flag.Bool("tls-enabled", false, "whether the control plane was installed with TLS enabled")
 	flags.ConfigureAndParse()
 
 	stop := make(chan os.Signal, 1)
@@ -38,7 +39,7 @@ func main() {
 		log.Fatalf("failed to create root CA: %s", err)
 	}
 
-	webhookConfig, err := injector.NewWebhookConfig(k8sClient, *controllerNamespace, *webhookServiceName, rootCA)
+	webhookConfig, err := injector.NewWebhookConfig(k8sClient, *controllerNS, *webhookServiceName, rootCA)
 	if err != nil {
 		log.Fatalf("failed to read the trust anchor file: %s", err)
 	}
@@ -54,7 +55,7 @@ func main() {
 		FileProxyInitSpec: k8sPkg.MountPathConfigProxyInitSpec,
 	}
 
-	s, err := injector.NewWebhookServer(k8sClient, resources, *addr, *controllerNamespace, *noInitContainer, rootCA)
+	s, err := injector.NewWebhookServer(k8sClient, resources, *addr, *controllerNS, *noInitContainer, *tlsEnabled, rootCA)
 	if err != nil {
 		log.Fatalf("failed to initialize the webhook server: %s", err)
 	}

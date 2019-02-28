@@ -96,12 +96,12 @@ func diffUpdateAddresses(oldAddrs, newAddrs []*updateAddress) ([]*updateAddress,
 type endpointListener struct {
 	enableTLS,
 	enableH2Upgrade bool
-	controllerNS string
-	labels       map[string]string
-	stream       pb.Destination_GetServer
-	stopCh       chan struct{}
-
+	controllerNS     string
 	ownerKindAndName ownerKindAndNameFn
+
+	labels map[string]string
+	stream pb.Destination_GetServer
+	stopCh chan struct{}
 
 	log *log.Entry
 }
@@ -237,7 +237,8 @@ func (l *endpointListener) getAddrMetadata(pod *corev1.Pod) (map[string]string, 
 	}
 
 	var identity *pb.TlsIdentity
-	if false {
+	if l.enableTLS && controllerNS == l.controllerNS &&
+		pod.Annotations[pkgK8s.IdentityModeAnnotation] == pkgK8s.IdentityModeOptional {
 		name := pkgK8s.TLSIdentity{
 			Name:                ownerName,
 			Kind:                ownerKind,
@@ -247,7 +248,10 @@ func (l *endpointListener) getAddrMetadata(pod *corev1.Pod) (map[string]string, 
 
 		identity = &pb.TlsIdentity{
 			Strategy: &pb.TlsIdentity_K8SPodIdentity_{
-				K8SPodIdentity: &pb.TlsIdentity_K8SPodIdentity{PodIdentity: name},
+				K8SPodIdentity: &pb.TlsIdentity_K8SPodIdentity{
+					PodIdentity:  name,
+					ControllerNs: controllerNS,
+				},
 			},
 		}
 	}

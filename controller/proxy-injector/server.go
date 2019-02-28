@@ -21,7 +21,7 @@ type WebhookServer struct {
 }
 
 // NewWebhookServer returns a new instance of the WebhookServer.
-func NewWebhookServer(client kubernetes.Interface, resources *WebhookResources, addr, controllerNamespace string, noInitContainer bool, rootCA *pkgTls.CA) (*WebhookServer, error) {
+func NewWebhookServer(client kubernetes.Interface, resources *WebhookResources, addr, controllerNamespace string, noInitContainer, tlsEnabled bool, rootCA *pkgTls.CA) (*WebhookServer, error) {
 	c, err := tlsConfig(rootCA, controllerNamespace)
 	if err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func NewWebhookServer(client kubernetes.Interface, resources *WebhookResources, 
 		TLSConfig: c,
 	}
 
-	webhook, err := NewWebhook(client, resources, controllerNamespace, noInitContainer)
+	webhook, err := NewWebhook(client, resources, controllerNamespace, noInitContainer, tlsEnabled)
 	if err != nil {
 		return nil, err
 	}
@@ -77,12 +77,12 @@ func (w *WebhookServer) Shutdown() error {
 	return w.Server.Shutdown(context.Background())
 }
 
-func tlsConfig(ca *pkgTls.CA, controllerNamespace string) (*tls.Config, error) {
+func tlsConfig(ca *pkgTls.CA, controllerNS string) (*tls.Config, error) {
 	tlsIdentity := k8s.TLSIdentity{
 		Name:                "linkerd-proxy-injector",
 		Kind:                k8s.Service,
-		Namespace:           controllerNamespace,
-		ControllerNamespace: controllerNamespace,
+		Namespace:           controllerNS,
+		ControllerNamespace: controllerNS,
 	}
 	dnsName := tlsIdentity.ToDNSName()
 	cred, err := ca.GenerateEndEntityCred(dnsName)

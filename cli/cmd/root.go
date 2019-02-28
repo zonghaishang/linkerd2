@@ -262,6 +262,7 @@ type proxyConfigOptions struct {
 	proxyMemoryRequest      string
 	proxyCPULimit           string
 	proxyMemoryLimit        string
+	tls                     string
 	disableExternalProfiles bool
 	noInitContainer         bool
 
@@ -272,6 +273,7 @@ type proxyConfigOptions struct {
 }
 
 const (
+	optionalTLS           = "optional"
 	defaultDockerRegistry = "gcr.io/linkerd-io"
 	defaultKeepaliveMs    = 10000
 )
@@ -296,6 +298,7 @@ func newProxyConfigOptions() *proxyConfigOptions {
 		proxyMemoryRequest:      "",
 		proxyCPULimit:           "",
 		proxyMemoryLimit:        "",
+		tls:                     "",
 		disableExternalProfiles: false,
 		noInitContainer:         false,
 		proxyOutboundCapacity:   map[string]uint{},
@@ -353,12 +356,20 @@ func (options *proxyConfigOptions) validate() error {
 		}
 	}
 
+	if options.tls != "" && options.tls != optionalTLS {
+		return fmt.Errorf("--tls must be blank or set to \"%s\"", optionalTLS)
+	}
+
 	if !validProxyLogLevel.MatchString(options.proxyLogLevel) {
 		return fmt.Errorf("\"%s\" is not a valid proxy log level - for allowed syntax check https://docs.rs/env_logger/0.6.0/env_logger/#enabling-logging",
 			options.proxyLogLevel)
 	}
 
 	return nil
+}
+
+func (options *proxyConfigOptions) enableTLS() bool {
+	return options.tls == optionalTLS
 }
 
 func (options *proxyConfigOptions) taggedProxyImage() string {

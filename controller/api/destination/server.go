@@ -54,6 +54,7 @@ func NewServer(
 		k8sAPI:          k8sAPI,
 		resolver:        resolver,
 		enableH2Upgrade: enableH2Upgrade,
+		enableTLS:       enableTLS,
 		controllerNS:    controllerNS,
 		log: log.WithFields(log.Fields{
 			"addr":      addr,

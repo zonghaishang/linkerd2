@@ -212,6 +212,9 @@ func TestEndpointListener(t *testing.T) {
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      expectedPodName,
 				Namespace: expectedPodNamespace,
+				Annotations: map[string]string{
+					pkgK8s.IdentityModeAnnotation: pkgK8s.IdentityModeOptional,
+				},
 				Labels: map[string]string{
 					pkgK8s.ControllerNSLabel:    expectedControllerNamespace,
 					pkgK8s.ProxyDeploymentLabel: expectedPodDeployment,
@@ -251,7 +254,7 @@ func TestEndpointListener(t *testing.T) {
 		}
 	})
 
-	t.Run("Does not send TlsIdentity to for other meshes", func(t *testing.T) {
+	t.Run("Does not send TlsIdentity for other meshes", func(t *testing.T) {
 		expectedPodName := "pod1"
 		expectedPodNamespace := thisNS
 		expectedControllerNamespace := "other-linkerd-namespace"

@@ -18,6 +18,7 @@ const (
 	FileProxyTLSDisabledSpec   = "fake/data/config-proxy-tls-disabled.yaml"
 	FileProxyInitSpec          = "fake/data/config-proxy-init.yaml"
 	DefaultNoInitContainer     = false
+	DefaultTLSEnabled          = true
 )
 
 // Factory is a factory that can convert in-file YAML content into Kubernetes

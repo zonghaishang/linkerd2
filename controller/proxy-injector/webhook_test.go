@@ -25,7 +25,7 @@ func TestShouldInject(t *testing.T) {
 	}
 	fakeClient := fake.NewClient("", nsEnabled, nsDisabled)
 
-	webhook, err := NewWebhook(fakeClient, testWebhookResources, fake.DefaultControllerNamespace, fake.DefaultNoInitContainer)
+	webhook, err := NewWebhook(fakeClient, testWebhookResources, fake.DefaultControllerNamespace, fake.DefaultNoInitContainer, fake.DefaultTLSEnabled)
 	if err != nil {
 		t.Fatalf("Unexpected error: %s", err)
 	}
@@ -106,7 +106,7 @@ func TestShouldInject(t *testing.T) {
 func TestContainersSpec(t *testing.T) {
 	fakeClient := fake.NewClient("")
 
-	webhook, err := NewWebhook(fakeClient, testWebhookResources, fake.DefaultControllerNamespace, fake.DefaultNoInitContainer)
+	webhook, err := NewWebhook(fakeClient, testWebhookResources, fake.DefaultControllerNamespace, fake.DefaultNoInitContainer, fake.DefaultTLSEnabled)
 	if err != nil {
 		t.Fatal("Unexpected error: ", err)
 	}

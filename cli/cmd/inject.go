@@ -133,8 +133,14 @@ func injectObjectMeta(t *metav1.ObjectMeta, k8sLabels map[string]string, options
 		t.Labels[k] = v
 	}
 
-	if t.Annotations[k8s.IdentityModeAnnotation] == "" {
+	if t.Annotations[k8s.IdentityModeAnnotation] == k8s.IdentityModeOptional {
 		t.Annotations[k8s.IdentityModeAnnotation] = k8s.IdentityModeDefault
+	}
+
+	if t.Annotations[k8s.IdentityModeAnnotation] == "" || options.enableTLS() {
+		t.Annotations[k8s.IdentityModeAnnotation] = k8s.IdentityModeDefault
+	} else {
+		t.Annotations[k8s.IdentityModeAnnotation] = k8s.IdentityModeDisabled
 	}
 }
 
