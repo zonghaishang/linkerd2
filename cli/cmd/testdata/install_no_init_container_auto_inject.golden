@@ -177,6 +177,66 @@ spec:
           value: cluster.local
         - name: LINKERD2_PROXY_ID
           value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
+        - name: LINKERD2_PROXY_TLS_TRUST_ANCHORS
+          value: /var/run/linkerd/identity/trust-anchors/trust-anchors.pem
+        - name: LINKERD2_PROXY_TLS_END_ENTITY_DIR
+          value: /var/run/linkerd/identity/end-entity
+        - name: LINKERD2_PROXY_TLS_POD_IDENTITY
+          value: $(LINKERD2_PROXY_ID)
+        - name: LINKERD2_PROXY_CONTROLLER_NAMESPACE
+          value: linkerd
+        - name: LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY
+          value: linkerd-controller.$(L5D_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
+        image: gcr.io/linkerd-io/proxy-identity-init:dev-undefined
+        imagePullPolicy: IfNotPresent
+        name: linkerd-proxy-identity
+        resources: {}
+        securityContext:
+          runAsUser: 2102
+        terminationMessagePolicy: FallbackToLogsOnError
+      - env:
+        - name: LINKERD2_PROXY_LOG
+          value: warn,linkerd2_proxy=info
+        - name: LINKERD2_PROXY_CONTROL_URL
+          value: tcp://linkerd-destination.linkerd.svc.cluster.local:8086
+        - name: LINKERD2_PROXY_CONTROL_LISTENER
+          value: tcp://0.0.0.0:4190
+        - name: LINKERD2_PROXY_METRICS_LISTENER
+          value: tcp://0.0.0.0:4191
+        - name: LINKERD2_PROXY_OUTBOUND_LISTENER
+          value: tcp://127.0.0.1:4140
+        - name: LINKERD2_PROXY_INBOUND_LISTENER
+          value: tcp://0.0.0.0:4143
+        - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
+          value: .
+        - name: LINKERD2_PROXY_INBOUND_ACCEPT_KEEPALIVE
+          value: 10000ms
+        - name: LINKERD2_PROXY_OUTBOUND_CONNECT_KEEPALIVE
+          value: 10000ms
+        - name: K8S_SA
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.serviceAccountName
+        - name: K8S_NS
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: L5D_NS
+          value: linkerd
+        - name: L5D_TRUST_DOMAIN
+          value: cluster.local
+        - name: LINKERD2_PROXY_ID
+          value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
+        - name: LINKERD2_PROXY_TLS_TRUST_ANCHORS
+          value: /var/run/linkerd/identity/trust-anchors/trust-anchors.pem
+        - name: LINKERD2_PROXY_TLS_END_ENTITY_DIR
+          value: /var/run/linkerd/identity/end-entity
+        - name: LINKERD2_PROXY_TLS_POD_IDENTITY
+          value: $(LINKERD2_PROXY_ID)
+        - name: LINKERD2_PROXY_CONTROLLER_NAMESPACE
+          value: linkerd
+        - name: LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY
+          value: linkerd-controller.$(L5D_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
         image: gcr.io/linkerd-io/proxy:dev-undefined
         imagePullPolicy: IfNotPresent
         livenessProbe:
@@ -199,7 +259,15 @@ spec:
         securityContext:
           runAsUser: 2102
         terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        - mountPath: /var/run/linkerd/identity/end-entity
+          name: linkerd-identity-end-entity
+          readOnly: true
       serviceAccountName: linkerd-identity
+      volumes:
+      - emptyDir:
+          medium: Memory
+        name: linkerd-identity-end-entity
 status: {}
 ---
 ###
@@ -413,6 +481,66 @@ spec:
           value: cluster.local
         - name: LINKERD2_PROXY_ID
           value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
+        - name: LINKERD2_PROXY_TLS_TRUST_ANCHORS
+          value: /var/run/linkerd/identity/trust-anchors/trust-anchors.pem
+        - name: LINKERD2_PROXY_TLS_END_ENTITY_DIR
+          value: /var/run/linkerd/identity/end-entity
+        - name: LINKERD2_PROXY_TLS_POD_IDENTITY
+          value: $(LINKERD2_PROXY_ID)
+        - name: LINKERD2_PROXY_CONTROLLER_NAMESPACE
+          value: linkerd
+        - name: LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY
+          value: linkerd-controller.$(L5D_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
+        image: gcr.io/linkerd-io/proxy-identity-init:dev-undefined
+        imagePullPolicy: IfNotPresent
+        name: linkerd-proxy-identity
+        resources: {}
+        securityContext:
+          runAsUser: 2102
+        terminationMessagePolicy: FallbackToLogsOnError
+      - env:
+        - name: LINKERD2_PROXY_LOG
+          value: warn,linkerd2_proxy=info
+        - name: LINKERD2_PROXY_CONTROL_URL
+          value: tcp://localhost.:8086
+        - name: LINKERD2_PROXY_CONTROL_LISTENER
+          value: tcp://0.0.0.0:4190
+        - name: LINKERD2_PROXY_METRICS_LISTENER
+          value: tcp://0.0.0.0:4191
+        - name: LINKERD2_PROXY_OUTBOUND_LISTENER
+          value: tcp://127.0.0.1:4140
+        - name: LINKERD2_PROXY_INBOUND_LISTENER
+          value: tcp://0.0.0.0:4143
+        - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
+          value: .
+        - name: LINKERD2_PROXY_INBOUND_ACCEPT_KEEPALIVE
+          value: 10000ms
+        - name: LINKERD2_PROXY_OUTBOUND_CONNECT_KEEPALIVE
+          value: 10000ms
+        - name: K8S_SA
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.serviceAccountName
+        - name: K8S_NS
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: L5D_NS
+          value: linkerd
+        - name: L5D_TRUST_DOMAIN
+          value: cluster.local
+        - name: LINKERD2_PROXY_ID
+          value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
+        - name: LINKERD2_PROXY_TLS_TRUST_ANCHORS
+          value: /var/run/linkerd/identity/trust-anchors/trust-anchors.pem
+        - name: LINKERD2_PROXY_TLS_END_ENTITY_DIR
+          value: /var/run/linkerd/identity/end-entity
+        - name: LINKERD2_PROXY_TLS_POD_IDENTITY
+          value: $(LINKERD2_PROXY_ID)
+        - name: LINKERD2_PROXY_CONTROLLER_NAMESPACE
+          value: linkerd
+        - name: LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY
+          value: linkerd-controller.$(L5D_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
         image: gcr.io/linkerd-io/proxy:dev-undefined
         imagePullPolicy: IfNotPresent
         livenessProbe:
@@ -435,7 +563,15 @@ spec:
         securityContext:
           runAsUser: 2102
         terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        - mountPath: /var/run/linkerd/identity/end-entity
+          name: linkerd-identity-end-entity
+          readOnly: true
       serviceAccountName: linkerd-controller
+      volumes:
+      - emptyDir:
+          medium: Memory
+        name: linkerd-identity-end-entity
 status: {}
 ---
 kind: ConfigMap
@@ -676,6 +812,66 @@ spec:
           value: cluster.local
         - name: LINKERD2_PROXY_ID
           value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
+        - name: LINKERD2_PROXY_TLS_TRUST_ANCHORS
+          value: /var/run/linkerd/identity/trust-anchors/trust-anchors.pem
+        - name: LINKERD2_PROXY_TLS_END_ENTITY_DIR
+          value: /var/run/linkerd/identity/end-entity
+        - name: LINKERD2_PROXY_TLS_POD_IDENTITY
+          value: $(LINKERD2_PROXY_ID)
+        - name: LINKERD2_PROXY_CONTROLLER_NAMESPACE
+          value: linkerd
+        - name: LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY
+          value: linkerd-controller.$(L5D_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
+        image: gcr.io/linkerd-io/proxy-identity-init:dev-undefined
+        imagePullPolicy: IfNotPresent
+        name: linkerd-proxy-identity
+        resources: {}
+        securityContext:
+          runAsUser: 2102
+        terminationMessagePolicy: FallbackToLogsOnError
+      - env:
+        - name: LINKERD2_PROXY_LOG
+          value: warn,linkerd2_proxy=info
+        - name: LINKERD2_PROXY_CONTROL_URL
+          value: tcp://linkerd-destination.linkerd.svc.cluster.local:8086
+        - name: LINKERD2_PROXY_CONTROL_LISTENER
+          value: tcp://0.0.0.0:4190
+        - name: LINKERD2_PROXY_METRICS_LISTENER
+          value: tcp://0.0.0.0:4191
+        - name: LINKERD2_PROXY_OUTBOUND_LISTENER
+          value: tcp://127.0.0.1:4140
+        - name: LINKERD2_PROXY_INBOUND_LISTENER
+          value: tcp://0.0.0.0:4143
+        - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
+          value: .
+        - name: LINKERD2_PROXY_INBOUND_ACCEPT_KEEPALIVE
+          value: 10000ms
+        - name: LINKERD2_PROXY_OUTBOUND_CONNECT_KEEPALIVE
+          value: 10000ms
+        - name: K8S_SA
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.serviceAccountName
+        - name: K8S_NS
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: L5D_NS
+          value: linkerd
+        - name: L5D_TRUST_DOMAIN
+          value: cluster.local
+        - name: LINKERD2_PROXY_ID
+          value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
+        - name: LINKERD2_PROXY_TLS_TRUST_ANCHORS
+          value: /var/run/linkerd/identity/trust-anchors/trust-anchors.pem
+        - name: LINKERD2_PROXY_TLS_END_ENTITY_DIR
+          value: /var/run/linkerd/identity/end-entity
+        - name: LINKERD2_PROXY_TLS_POD_IDENTITY
+          value: $(LINKERD2_PROXY_ID)
+        - name: LINKERD2_PROXY_CONTROLLER_NAMESPACE
+          value: linkerd
+        - name: LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY
+          value: linkerd-controller.$(L5D_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
         image: gcr.io/linkerd-io/proxy:dev-undefined
         imagePullPolicy: IfNotPresent
         livenessProbe:
@@ -698,7 +894,15 @@ spec:
         securityContext:
           runAsUser: 2102
         terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        - mountPath: /var/run/linkerd/identity/end-entity
+          name: linkerd-identity-end-entity
+          readOnly: true
       serviceAccountName: linkerd-web
+      volumes:
+      - emptyDir:
+          medium: Memory
+        name: linkerd-identity-end-entity
 status: {}
 ---
 ###
@@ -843,6 +1047,68 @@ spec:
           value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
         - name: LINKERD2_PROXY_OUTBOUND_ROUTER_CAPACITY
           value: "10000"
+        - name: LINKERD2_PROXY_TLS_TRUST_ANCHORS
+          value: /var/run/linkerd/identity/trust-anchors/trust-anchors.pem
+        - name: LINKERD2_PROXY_TLS_END_ENTITY_DIR
+          value: /var/run/linkerd/identity/end-entity
+        - name: LINKERD2_PROXY_TLS_POD_IDENTITY
+          value: $(LINKERD2_PROXY_ID)
+        - name: LINKERD2_PROXY_CONTROLLER_NAMESPACE
+          value: linkerd
+        - name: LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY
+          value: linkerd-controller.$(L5D_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
+        image: gcr.io/linkerd-io/proxy-identity-init:dev-undefined
+        imagePullPolicy: IfNotPresent
+        name: linkerd-proxy-identity
+        resources: {}
+        securityContext:
+          runAsUser: 2102
+        terminationMessagePolicy: FallbackToLogsOnError
+      - env:
+        - name: LINKERD2_PROXY_LOG
+          value: warn,linkerd2_proxy=info
+        - name: LINKERD2_PROXY_CONTROL_URL
+          value: tcp://linkerd-destination.linkerd.svc.cluster.local:8086
+        - name: LINKERD2_PROXY_CONTROL_LISTENER
+          value: tcp://0.0.0.0:4190
+        - name: LINKERD2_PROXY_METRICS_LISTENER
+          value: tcp://0.0.0.0:4191
+        - name: LINKERD2_PROXY_OUTBOUND_LISTENER
+          value: tcp://127.0.0.1:4140
+        - name: LINKERD2_PROXY_INBOUND_LISTENER
+          value: tcp://0.0.0.0:4143
+        - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
+          value: .
+        - name: LINKERD2_PROXY_INBOUND_ACCEPT_KEEPALIVE
+          value: 10000ms
+        - name: LINKERD2_PROXY_OUTBOUND_CONNECT_KEEPALIVE
+          value: 10000ms
+        - name: K8S_SA
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.serviceAccountName
+        - name: K8S_NS
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: L5D_NS
+          value: linkerd
+        - name: L5D_TRUST_DOMAIN
+          value: cluster.local
+        - name: LINKERD2_PROXY_ID
+          value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
+        - name: LINKERD2_PROXY_OUTBOUND_ROUTER_CAPACITY
+          value: "10000"
+        - name: LINKERD2_PROXY_TLS_TRUST_ANCHORS
+          value: /var/run/linkerd/identity/trust-anchors/trust-anchors.pem
+        - name: LINKERD2_PROXY_TLS_END_ENTITY_DIR
+          value: /var/run/linkerd/identity/end-entity
+        - name: LINKERD2_PROXY_TLS_POD_IDENTITY
+          value: $(LINKERD2_PROXY_ID)
+        - name: LINKERD2_PROXY_CONTROLLER_NAMESPACE
+          value: linkerd
+        - name: LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY
+          value: linkerd-controller.$(L5D_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
         image: gcr.io/linkerd-io/proxy:dev-undefined
         imagePullPolicy: IfNotPresent
         livenessProbe:
@@ -865,6 +1131,10 @@ spec:
         securityContext:
           runAsUser: 2102
         terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        - mountPath: /var/run/linkerd/identity/end-entity
+          name: linkerd-identity-end-entity
+          readOnly: true
       serviceAccountName: linkerd-prometheus
       volumes:
       - emptyDir: {}
@@ -872,6 +1142,9 @@ spec:
       - configMap:
           name: linkerd-prometheus-config
         name: prometheus-config
+      - emptyDir:
+          medium: Memory
+        name: linkerd-identity-end-entity
 status: {}
 ---
 kind: ConfigMap
@@ -1076,6 +1349,66 @@ spec:
           value: cluster.local
         - name: LINKERD2_PROXY_ID
           value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
+        - name: LINKERD2_PROXY_TLS_TRUST_ANCHORS
+          value: /var/run/linkerd/identity/trust-anchors/trust-anchors.pem
+        - name: LINKERD2_PROXY_TLS_END_ENTITY_DIR
+          value: /var/run/linkerd/identity/end-entity
+        - name: LINKERD2_PROXY_TLS_POD_IDENTITY
+          value: $(LINKERD2_PROXY_ID)
+        - name: LINKERD2_PROXY_CONTROLLER_NAMESPACE
+          value: linkerd
+        - name: LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY
+          value: linkerd-controller.$(L5D_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
+        image: gcr.io/linkerd-io/proxy-identity-init:dev-undefined
+        imagePullPolicy: IfNotPresent
+        name: linkerd-proxy-identity
+        resources: {}
+        securityContext:
+          runAsUser: 2102
+        terminationMessagePolicy: FallbackToLogsOnError
+      - env:
+        - name: LINKERD2_PROXY_LOG
+          value: warn,linkerd2_proxy=info
+        - name: LINKERD2_PROXY_CONTROL_URL
+          value: tcp://linkerd-destination.linkerd.svc.cluster.local:8086
+        - name: LINKERD2_PROXY_CONTROL_LISTENER
+          value: tcp://0.0.0.0:4190
+        - name: LINKERD2_PROXY_METRICS_LISTENER
+          value: tcp://0.0.0.0:4191
+        - name: LINKERD2_PROXY_OUTBOUND_LISTENER
+          value: tcp://127.0.0.1:4140
+        - name: LINKERD2_PROXY_INBOUND_LISTENER
+          value: tcp://0.0.0.0:4143
+        - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
+          value: .
+        - name: LINKERD2_PROXY_INBOUND_ACCEPT_KEEPALIVE
+          value: 10000ms
+        - name: LINKERD2_PROXY_OUTBOUND_CONNECT_KEEPALIVE
+          value: 10000ms
+        - name: K8S_SA
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.serviceAccountName
+        - name: K8S_NS
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: L5D_NS
+          value: linkerd
+        - name: L5D_TRUST_DOMAIN
+          value: cluster.local
+        - name: LINKERD2_PROXY_ID
+          value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
+        - name: LINKERD2_PROXY_TLS_TRUST_ANCHORS
+          value: /var/run/linkerd/identity/trust-anchors/trust-anchors.pem
+        - name: LINKERD2_PROXY_TLS_END_ENTITY_DIR
+          value: /var/run/linkerd/identity/end-entity
+        - name: LINKERD2_PROXY_TLS_POD_IDENTITY
+          value: $(LINKERD2_PROXY_ID)
+        - name: LINKERD2_PROXY_CONTROLLER_NAMESPACE
+          value: linkerd
+        - name: LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY
+          value: linkerd-controller.$(L5D_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
         image: gcr.io/linkerd-io/proxy:dev-undefined
         imagePullPolicy: IfNotPresent
         livenessProbe:
@@ -1098,6 +1431,10 @@ spec:
         securityContext:
           runAsUser: 2102
         terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        - mountPath: /var/run/linkerd/identity/end-entity
+          name: linkerd-identity-end-entity
+          readOnly: true
       serviceAccountName: linkerd-grafana
       volumes:
       - emptyDir: {}
@@ -1112,6 +1449,9 @@ spec:
             path: provisioning/dashboards/dashboards.yaml
           name: linkerd-grafana-config
         name: grafana-config
+      - emptyDir:
+          medium: Memory
+        name: linkerd-identity-end-entity
 status: {}
 ---
 kind: ConfigMap
@@ -1264,6 +1604,66 @@ spec:
           value: cluster.local
         - name: LINKERD2_PROXY_ID
           value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
+        - name: LINKERD2_PROXY_TLS_TRUST_ANCHORS
+          value: /var/run/linkerd/identity/trust-anchors/trust-anchors.pem
+        - name: LINKERD2_PROXY_TLS_END_ENTITY_DIR
+          value: /var/run/linkerd/identity/end-entity
+        - name: LINKERD2_PROXY_TLS_POD_IDENTITY
+          value: $(LINKERD2_PROXY_ID)
+        - name: LINKERD2_PROXY_CONTROLLER_NAMESPACE
+          value: linkerd
+        - name: LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY
+          value: linkerd-controller.$(L5D_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
+        image: gcr.io/linkerd-io/proxy-identity-init:dev-undefined
+        imagePullPolicy: IfNotPresent
+        name: linkerd-proxy-identity
+        resources: {}
+        securityContext:
+          runAsUser: 2102
+        terminationMessagePolicy: FallbackToLogsOnError
+      - env:
+        - name: LINKERD2_PROXY_LOG
+          value: warn,linkerd2_proxy=info
+        - name: LINKERD2_PROXY_CONTROL_URL
+          value: tcp://linkerd-destination.linkerd.svc.cluster.local:8086
+        - name: LINKERD2_PROXY_CONTROL_LISTENER
+          value: tcp://0.0.0.0:4190
+        - name: LINKERD2_PROXY_METRICS_LISTENER
+          value: tcp://0.0.0.0:4191
+        - name: LINKERD2_PROXY_OUTBOUND_LISTENER
+          value: tcp://127.0.0.1:4140
+        - name: LINKERD2_PROXY_INBOUND_LISTENER
+          value: tcp://0.0.0.0:4143
+        - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
+          value: .
+        - name: LINKERD2_PROXY_INBOUND_ACCEPT_KEEPALIVE
+          value: 10000ms
+        - name: LINKERD2_PROXY_OUTBOUND_CONNECT_KEEPALIVE
+          value: 10000ms
+        - name: K8S_SA
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.serviceAccountName
+        - name: K8S_NS
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: L5D_NS
+          value: linkerd
+        - name: L5D_TRUST_DOMAIN
+          value: cluster.local
+        - name: LINKERD2_PROXY_ID
+          value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
+        - name: LINKERD2_PROXY_TLS_TRUST_ANCHORS
+          value: /var/run/linkerd/identity/trust-anchors/trust-anchors.pem
+        - name: LINKERD2_PROXY_TLS_END_ENTITY_DIR
+          value: /var/run/linkerd/identity/end-entity
+        - name: LINKERD2_PROXY_TLS_POD_IDENTITY
+          value: $(LINKERD2_PROXY_ID)
+        - name: LINKERD2_PROXY_CONTROLLER_NAMESPACE
+          value: linkerd
+        - name: LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY
+          value: linkerd-controller.$(L5D_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
         image: gcr.io/linkerd-io/proxy:dev-undefined
         imagePullPolicy: IfNotPresent
         livenessProbe:
@@ -1286,11 +1686,18 @@ spec:
         securityContext:
           runAsUser: 2102
         terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        - mountPath: /var/run/linkerd/identity/end-entity
+          name: linkerd-identity-end-entity
+          readOnly: true
       serviceAccountName: linkerd-proxy-injector
       volumes:
       - configMap:
           name: linkerd-proxy-injector-sidecar-config
         name: proxy-spec
+      - emptyDir:
+          medium: Memory
+        name: linkerd-identity-end-entity
 status: {}
 ---
 kind: ServiceAccount
