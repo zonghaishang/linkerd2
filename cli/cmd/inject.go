@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -293,9 +294,11 @@ func injectPodSpec(t *corev1.PodSpec, identity k8s.TLSIdentity, controlPlaneDNSN
 		endEntity := base + "/end-entity"
 		tlsEnvVars := []corev1.EnvVar{
 			{Name: "LINKERD2_PROXY_TLS_TRUST_ANCHORS", Value: anchors},
+			{Name: "LINKERD2_PROXY_TLS_PRIVATE_KEY", Value: filepath.Join(endEntity, "key.p8")},
+			{Name: "LINKERD2_PROXY_TLS_CERT", Value: filepath.Join(endEntity, "crt")},
 			{Name: "LINKERD2_PROXY_TLS_END_ENTITY_DIR", Value: endEntity},
 			{Name: "LINKERD2_PROXY_TLS_POD_IDENTITY", Value: "$(LINKERD2_PROXY_ID)"},
-			{Name: "LINKERD2_PROXY_CONTROLLER_NAMESPACE", Value: controlPlaneNamespace},
+			{Name: "LINKERD2_PROXY_CONTROLLER_NAMESPACE", Value: "$(L5D_NS)"},
 			{
 				Name:  "LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY",
 				Value: "linkerd-controller.$(L5D_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)",
@@ -317,9 +320,14 @@ func injectPodSpec(t *corev1.PodSpec, identity k8s.TLSIdentity, controlPlaneDNSN
 		t.Volumes = append(t.Volumes, volume)
 
 		t.Containers = append(t.Containers, corev1.Container{
-			Image: options.taggedProxyIdentityInitImage(),
-			Name:  "linkerd-proxy-identity",
-			Env:   sidecar.Env,
+			Image:   options.taggedProxyIdentityInitImage(),
+			Name:    "linkerd-proxy-identity",
+			Env:     sidecar.Env,
+			Command: []string{"identity-init"},
+			Args: []string{
+				"-addr=linkerd-identity.$(L5D_NS).svc.cluster.local",
+				"-trust-anchors=$(LINKERD2_PROXY_TLS_TRUST_ANCHORS)",
+			},
 
 			ImagePullPolicy: corev1.PullPolicy(options.imagePullPolicy),
 			SecurityContext: &corev1.SecurityContext{RunAsUser: &options.proxyUID},
