@@ -53,6 +53,11 @@ type (
 		// more than this allowance in either direction.
 		ClockSkewAllowance time.Duration
 	}
+
+	// Issuer implementors signs certificate requests.
+	Issuer interface {
+		IssueEndEntityCrt(*x509.CertificateRequest) (Crt, error)
+	}
 )
 
 const (
@@ -148,7 +153,7 @@ func (ca *CA) GenerateCA(name string, validity Validity, maxPathLen int) (*CA, e
 		return nil, err
 	}
 
-	return NewCA(validCredOrPanic(key, *crt), ca.Validity), nil
+	return NewCA(validCredOrPanic(key, crt), ca.Validity), nil
 }
 
 // GenerateEndEntityCred creates a new certificate that is valid for the
@@ -164,21 +169,21 @@ func (ca *CA) GenerateEndEntityCred(dnsName string) (*Cred, error) {
 		DNSNames:  []string{dnsName},
 		PublicKey: &key.PublicKey,
 	}
-	crt, err := ca.SignEndEntityCrt(&csr)
+	crt, err := ca.IssueEndEntityCrt(&csr)
 	if err != nil {
 		return nil, err
 	}
 
-	c := validCredOrPanic(key, *crt)
+	c := validCredOrPanic(key, crt)
 	return &c, nil
 }
 
-// SignEndEntityCrt creates a new certificate that is valid for the
+// IssueEndEntityCrt creates a new certificate that is valid for the
 // given DNS name, generating a new keypair for it.
-func (ca *CA) SignEndEntityCrt(csr *x509.CertificateRequest) (*Crt, error) {
+func (ca *CA) IssueEndEntityCrt(csr *x509.CertificateRequest) (Crt, error) {
 	pubkey, ok := csr.PublicKey.(*ecdsa.PublicKey)
 	if !ok {
-		return nil, fmt.Errorf("CSR must contain an ECDSA public key: %+v", csr.PublicKey)
+		return Crt{}, fmt.Errorf("CSR must contain an ECDSA public key: %+v", csr.PublicKey)
 	}
 
 	t := ca.createTemplate(pubkey)

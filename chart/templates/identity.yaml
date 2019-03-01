@@ -74,12 +74,12 @@ metadata:
     {{.ControllerComponentLabel}}: identity
   annotations:
     {{.CreatedByAnnotation}}: {{.CliVersion}}
-    {{- if .Identity.Issuer.ExpiryAnnotation}}
-    {{.Identity.Issuer.ExpiryAnnotation}}: {{.Identity.Issuer.Expiry}}
+    {{- if .Identity.Issuer.CrtExpiryAnnotation}}
+    {{.Identity.Issuer.CrtExpiryAnnotation}}: {{.Identity.Issuer.CrtExpiry}}
     {{- end}}
 data:
-  crt.pem: {{b64enc .Identity.Issuer.Crt}}
-  key.pem: {{b64enc .Identity.Issuer.Key}}
+  crt.pem: {{b64enc .Identity.Issuer.CrtPEM}}
+  key.pem: {{b64enc .Identity.Issuer.KeyPEM}}
 {{- end}}
 ---
 kind: Deployment
@@ -143,51 +143,5 @@ spec:
         {{- end }}
         securityContext:
           runAsUser: {{.ControllerUID}}
-      - name: identity-client
-        ports:
-        - name: grpc
-          containerPort: 8080
-        - name: admin-http
-          containerPort: 9990
-        image: {{.ControllerImage}}
-        imagePullPolicy: {{.ImagePullPolicy}}
-        args:
-        - "identity-client"
-        - "-addr=localhost:8080"
-        - "-log-level=DEBUG"
-        - "-name=linkerd-identity.{{.Namespace}}.serviceaccount.identity.{{.Namespace}}.{{.Identity.TrustDomain}}"
-        - "-trust-anchors=/var/run/linkerd/identity/trust-anchors/trust-anchors.pem"
-        - "-dir=/var/run/linkerd/identity/end-entity"
-        - "-token=/var/run/secrets/kubernetes.io/serviceaccount/token"
-        volumeMounts:
-        - mountPath: /var/run/linkerd/identity/trust-anchors
-          name: identity-trust-anchors
-        - mountPath: /var/run/linkerd/identity/end-entity
-          name: identity-end-entity
-        livenessProbe:
-          httpGet:
-            path: /ping
-            port: 9990
-          initialDelaySeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 9990
-          failureThreshold: 7
-        {{- if .EnableHA }}
-        resources:
-          requests:
-            cpu: 10m
-            memory: 50Mi
-        {{- end }}
-        securityContext:
-          runAsUser: {{.ControllerUID}}
-      volumes:
-      - name: identity-trust-anchors
-        configMap:
-          name: linkerd-identity-trust-anchors
-      - name: identity-issuer
-        secret:
-          secretName: linkerd-identity-issuer
 {{end -}}
 {{end -}}

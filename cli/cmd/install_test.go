@@ -24,12 +24,13 @@ func TestRender(t *testing.T) {
 		TrustDomain:     "cluster.local",
 		TrustAnchorsPEM: "zyx",
 		Issuer: &issuerConfig{
-			ExpiryAnnotation: k8s.IdentityIssuerExpiryAnnotation,
-			IssuanceLifetime: "24h",
+			CrtExpiryAnnotation: k8s.IdentityIssuerExpiryAnnotation,
+			IssuanceLifetime:    "24h",
 
-			Expiry: time.Date(2030, time.February, 12, 0, 0, 0, 0, time.UTC),
-			Key:    "abc",
-			Crt:    "def",
+			KeyPEM: "abc",
+			CrtPEM: "def",
+
+			CrtExpiry: time.Date(2030, time.February, 12, 0, 0, 0, 0, time.UTC),
 		},
 	}
 

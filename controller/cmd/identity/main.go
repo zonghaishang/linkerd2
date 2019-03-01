@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	idctl "github.com/linkerd/linkerd2/controller/identity"
 	"github.com/linkerd/linkerd2/controller/k8s"
 	"github.com/linkerd/linkerd2/identity"
 	"github.com/linkerd/linkerd2/pkg/admin"
@@ -42,7 +43,7 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
-	dom, err := identity.NewTrustDomain(*controllerNS, *trustDomain)
+	dom, err := idctl.NewTrustDomain(*controllerNS, *trustDomain)
 	if err != nil {
 		log.Fatalf("Invalid trust domain: %s", err.Error())
 	}
@@ -77,11 +78,12 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to load kubeconfig: %s: %s", *kubeConfigPath, err)
 	}
-
-	svc, err := identity.NewService(k8s, dom, ca)
+	v, err := idctl.NewValidator(k8s, dom)
 	if err != nil {
 		log.Fatalf("Failed to initialize identity service: %s", err)
 	}
+
+	svc := identity.NewService(v, ca)
 
 	go admin.StartServer(*adminAddr)
 	lis, err := net.Listen("tcp", *addr)

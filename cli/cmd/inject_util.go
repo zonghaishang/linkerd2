@@ -216,7 +216,7 @@ func (conf *resourceConfig) parse(bytes []byte, options *injectOptions, rt resou
 			return nil, nil, err
 		}
 
-		if deployment.Name == ControlPlanePodName && deployment.Namespace == controlPlaneNamespace {
+		if deployment.Name == controlPlanePodName && deployment.Namespace == controlPlaneNamespace {
 			conf.dnsNameOverride = LocalhostDNSNameOverride
 		}
 

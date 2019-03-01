@@ -5,64 +5,34 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"strings"
 
+	"github.com/cloudflare/cfssl/log"
 	"github.com/golang/protobuf/ptypes"
-	log "github.com/sirupsen/logrus"
+	"github.com/linkerd/linkerd2/pkg/tls"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	kauthnApi "k8s.io/api/authentication/v1"
-	kauthzApi "k8s.io/api/authorization/v1"
-	k8s "k8s.io/client-go/kubernetes"
-	kauthn "k8s.io/client-go/kubernetes/typed/authentication/v1"
-	kauthz "k8s.io/client-go/kubernetes/typed/authorization/v1"
 
 	pb "github.com/linkerd/linkerd2-proxy-api/go/identity"
-	"github.com/linkerd/linkerd2/pkg/tls"
 )
 
-// Service certifies identities over gRPC.
-type Service struct {
-	authn  kauthn.AuthenticationV1Interface
-	domain *TrustDomain
-	ca     *tls.CA
-}
+type (
+	// Service implements the gRPC service in terms of a Validator and Issuer.
+	Service struct {
+		v Validator
+		i tls.Issuer
+	}
+
+	// Validator implementors accept a bearer token, validates it, and returns a
+	// DNS-form identity.
+	Validator interface {
+		Validate([]byte) (string, error)
+	}
+)
 
 // NewService creates a new identity service.
-func NewService(
-	k8s k8s.Interface,
-	domain *TrustDomain,
-	ca *tls.CA,
-) (*Service, error) {
-	if err := checkAccess(k8s.AuthorizationV1()); err != nil {
-		return nil, err
-	}
-
-	authn := k8s.AuthenticationV1()
-	return &Service{authn, domain, ca}, nil
-}
-
-func checkAccess(authz kauthz.AuthorizationV1Interface) error {
-	rvw, err := authz.SelfSubjectAccessReviews().Create(
-		&kauthzApi.SelfSubjectAccessReview{
-			Spec: kauthzApi.SelfSubjectAccessReviewSpec{
-				ResourceAttributes: &kauthzApi.ResourceAttributes{
-					Group:    "authentication.k8s.io",
-					Version:  "v1",
-					Resource: "tokenreviews",
-					Verb:     "create",
-				},
-			},
-		})
-	if err != nil {
-		return err
-	}
-	if !rvw.Status.Allowed {
-		return fmt.Errorf("This serviceaccount is unable to create token reviews in the kubernetes API: %s", rvw.Status.Reason)
-	}
-
-	return nil
+func NewService(v Validator, i tls.Issuer) Service {
+	return Service{v, i}
 }
 
 // Register registers an identity service implementation in the provided gRPC
@@ -84,16 +54,10 @@ func (s *Service) Certify(ctx context.Context, req *pb.CertifyRequest) (*pb.Cert
 	}
 
 	// Authenticate the provided token against the Kubernetes API.
-	log.Debugf("requesting token review to certify %s", reqIdentity)
-	rvw, err := s.authenticateToken(tok)
+	log.Debugf("Validating token for %s", reqIdentity)
+	tokIdentity, err := s.v.Validate(tok)
 	if err != nil {
-		return nil, err // status set/logged within authenticateToken
-	}
-
-	// Determine the identity associated with the token's userinfo.
-	tokIdentity, err := getIdentity(rvw.User.Username, s.domain)
-	if err != nil {
-		msg := fmt.Sprintf("TokenReview returned unexpected user: %s: %s", rvw.User.Username, err)
+		msg := fmt.Sprintf("Failed to validate token: %s", err)
 		log.Error(msg)
 		return nil, status.Error(codes.Internal, msg)
 	}
@@ -107,11 +71,10 @@ func (s *Service) Certify(ctx context.Context, req *pb.CertifyRequest) (*pb.Cert
 	}
 
 	// Create a certificate
-	crt, err := s.ca.SignEndEntityCrt(csr)
+	crt, err := s.i.IssueEndEntityCrt(csr)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-
 	crts := crt.ExtractRaw()
 	if len(crts) == 0 {
 		panic("We seem to have lost the certificate while signing it?")
@@ -119,76 +82,43 @@ func (s *Service) Certify(ctx context.Context, req *pb.CertifyRequest) (*pb.Cert
 
 	// Bundle issuer crt with certificate so the trust path to the root can be verified.
 	log.Infof("certifying %s until %s", tokIdentity, crt.Certificate.NotAfter)
-	v, err := ptypes.TimestampProto(crt.Certificate.NotAfter)
+	validUntil, err := ptypes.TimestampProto(crt.Certificate.NotAfter)
 	if err != nil {
 		log.Errorf("Invalid expiry time: %s", err)
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
 	rsp := &pb.CertifyResponse{
 		LeafCertificate:          crts[0],
 		IntermediateCertificates: crts[1:],
-		ValidUntil:               v,
+
+		ValidUntil: validUntil,
 	}
 	return rsp, nil
 }
 
-func (s *Service) authenticateToken(tok []byte) (*kauthnApi.TokenReviewStatus, error) {
-	// TODO: Set/check `audience`
-	tr := kauthnApi.TokenReview{Spec: kauthnApi.TokenReviewSpec{Token: string(tok)}}
-	rvw, err := s.authn.TokenReviews().Create(&tr)
-	if err != nil {
-		log.Errorf("TokenReview failed: %s", err)
-		return nil, status.Error(codes.Internal, "TokenReview failed")
-	}
-
-	if rvw.Status.Error != "" {
-		log.Warnf("TokenReview failed: %s", rvw.Status.Error)
-		msg := fmt.Sprintf("TokenReview failed: %s", rvw.Status.Error)
-		return nil, status.Error(codes.InvalidArgument, msg)
-	}
-	if !rvw.Status.Authenticated {
-		log.Infof("TokenReview authentication failed: %s", rvw.Status.User.Username)
-		return nil, status.Error(codes.FailedPrecondition, "token could not be authenticated")
-	}
-
-	return &rvw.Status, nil
-}
-
-func checkRequest(req *pb.CertifyRequest) (reqIdentity string, tok []byte, csr *x509.CertificateRequest, err error) {
-	reqIdentity = req.GetIdentity()
+func checkRequest(req *pb.CertifyRequest) (string, []byte, *x509.CertificateRequest, error) {
+	reqIdentity := req.GetIdentity()
 	if reqIdentity == "" {
-		err = errors.New("missing identity")
-		return
+		return "", nil, nil, errors.New("missing identity")
 	}
 
-	tok = req.GetToken()
+	tok := req.GetToken()
 	if len(tok) == 0 {
-		err = errors.New("missing token")
-		return
+		return "", nil, nil, errors.New("missing token")
 	}
 
 	der := req.GetCertificateSigningRequest()
 	if len(der) == 0 {
-		err = errors.New("missing certificate signing request")
-		return
+		return "", nil, nil,
+			errors.New("missing certificate signing request")
 	}
-	csr, err = x509.ParseCertificateRequest(der)
-	return
-}
-
-func getIdentity(uname string, d *TrustDomain) (string, error) {
-	uns := strings.Split(uname, ":")
-	if len(uns) != 4 || uns[0] != "system" {
-		return "", fmt.Errorf("Username must be in form system:TYPE:NS:SA: %s", uname)
-	}
-	uns = uns[1:]
-	for _, l := range uns {
-		if !isLabel(l) {
-			return "", fmt.Errorf("Not a label: %s", l)
-		}
+	csr, err := x509.ParseCertificateRequest(der)
+	if err != nil {
+		return "", nil, nil, err
 	}
 
-	return d.Identity(uns[0], uns[2], uns[1])
+	return reqIdentity, tok, csr, nil
 }
 
 func checkCSR(csr *x509.CertificateRequest, identity string) error {

@@ -22,9 +22,9 @@ const (
 	// LocalhostDNSNameOverride allows override of the controlPlaneDNS. This
 	// must be in absolute form for the proxy to special-case it.
 	LocalhostDNSNameOverride = "localhost."
-	// ControlPlanePodName default control plane pod name.
-	ControlPlanePodName    = "linkerd-controller"
-	PodNamespaceEnvVarName = "K8S_NS"
+
+	controlPlanePodName    = "linkerd-controller"
+	podNamespaceEnvVarName = "K8S_NS"
 
 	// for inject reports
 
@@ -219,7 +219,7 @@ func injectPodSpec(t *corev1.PodSpec, identity k8s.TLSIdentity, controlPlaneDNSN
 	if options.disableExternalProfiles {
 		profileSuffixes = "svc.cluster.local."
 	}
-	identity.Namespace = fmt.Sprintf("$(%s)", PodNamespaceEnvVarName)
+	identity.Namespace = fmt.Sprintf("$(%s)", podNamespaceEnvVarName)
 	sidecar := corev1.Container{
 		Name:                     k8s.ProxyContainerName,
 		Image:                    options.taggedProxyImage(),

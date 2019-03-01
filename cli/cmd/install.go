@@ -86,11 +86,11 @@ type issuerConfig struct {
 	ClockSkewAllowance string
 	IssuanceLifetime   string
 
-	ExpiryAnnotation string
-	Expiry           time.Time
+	KeyPEM, CrtPEM string
 
-	Key string
-	Crt string
+	CrtExpiry time.Time
+
+	CrtExpiryAnnotation string
 }
 
 // installOptions holds values for command line flags that apply to the install
@@ -229,18 +229,19 @@ func validateAndBuildConfig(options *installOptions) (*installConfig, error) {
 			return nil, fmt.Errorf("Failed to create issuer certificate for identity: %s", err)
 		}
 
-		// TODO preserve the root key (generate and display a password)
+		// TODO accept a root key
 
 		identity = &installIdentityConfig{
 			TrustDomain:     trustDomain,
 			TrustAnchorsPEM: root.Cred.Crt.EncodeCertificatePEM(),
 			Issuer: &issuerConfig{
-				ClockSkewAllowance: options.identityOptions.clockSkewAllowance.String(),
-				IssuanceLifetime:   options.identityOptions.issuanceLifetime.String(),
-				Crt:                issuer.Cred.Crt.EncodeCertificatePEM(),
-				Key:                issuer.Cred.EncodePrivateKeyPEM(),
-				ExpiryAnnotation:   k8s.IdentityIssuerExpiryAnnotation,
-				Expiry:             issuer.Cred.Crt.Certificate.NotAfter,
+				ClockSkewAllowance:  options.identityOptions.clockSkewAllowance.String(),
+				IssuanceLifetime:    options.identityOptions.issuanceLifetime.String(),
+				CrtExpiryAnnotation: k8s.IdentityIssuerExpiryAnnotation,
+
+				KeyPEM:    issuer.Cred.EncodePrivateKeyPEM(),
+				CrtPEM:    issuer.Cred.Crt.EncodeCertificatePEM(),
+				CrtExpiry: issuer.Cred.Crt.Certificate.NotAfter,
 			},
 		}
 	}
