@@ -26,8 +26,24 @@ type (
 	// Validator implementors accept a bearer token, validates it, and returns a
 	// DNS-form identity.
 	Validator interface {
-		Validate([]byte) (string, error)
+		// Validate takes an opaque authentication token, attempts to validate its
+		// authenticity, and produces a DNS-like identifier.
+		//
+		// An InvalidToken error should be returned if the provided token was not in a
+		// correct form.
+		//
+		// A NotAuthenticated error should be returned if the authenticity of the
+		// token cannot be validated.
+		Validate(context.Context, []byte) (string, error)
 	}
+
+	// InvalidToken is an error type returned by Validators to indicate that the
+	// provided authentication token was not valid.
+	InvalidToken struct{ Reason string }
+
+	// NotAuthenticated is an error type returned by Validators to indicate that the
+	// provided authentication token could not be authenticated.
+	NotAuthenticated struct{}
 )
 
 // NewService creates a new identity service.
@@ -55,11 +71,20 @@ func (s *Service) Certify(ctx context.Context, req *pb.CertifyRequest) (*pb.Cert
 
 	// Authenticate the provided token against the Kubernetes API.
 	log.Debugf("Validating token for %s", reqIdentity)
-	tokIdentity, err := s.v.Validate(tok)
+	tokIdentity, err := s.v.Validate(ctx, tok)
 	if err != nil {
-		msg := fmt.Sprintf("Failed to validate token: %s", err)
-		log.Error(msg)
-		return nil, status.Error(codes.Internal, msg)
+		switch e := err.(type) {
+		case NotAuthenticated:
+			log.Infof("Authentication failed for %s: %s", reqIdentity, e)
+			return nil, status.Error(codes.FailedPrecondition, e.Error())
+		case InvalidToken:
+			log.Debugf("Invalid token provided for %s: %s", reqIdentity, e)
+			return nil, status.Error(codes.InvalidArgument, e.Error())
+		default:
+			msg := fmt.Sprintf("Error validating token for %s: %s", reqIdentity, e)
+			log.Error(msg)
+			return nil, status.Error(codes.Internal, msg)
+		}
 	}
 
 	// Ensure the requested identity matches the token's identity.
@@ -143,4 +168,13 @@ func checkCSR(csr *x509.CertificateRequest, identity string) error {
 	}
 
 	return nil
+}
+
+func (e NotAuthenticated) Error() string {
+	_ = e // satisfy linter
+	return "Authentication token could not be authenticated"
+}
+
+func (e InvalidToken) Error() string {
+	return e.Reason
 }

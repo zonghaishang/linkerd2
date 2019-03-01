@@ -81,7 +81,7 @@ func main() {
 
 	var crt *x509.Certificate
 	for {
-		// Attempt to reload the token, in case it changed.
+		// Attempt to reload the token in case it changed.
 		tokenb, err := ioutil.ReadFile(*tokenPath)
 		if err != nil {
 			log.Errorf("Failed to reload token: %s", err)

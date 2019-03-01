@@ -11,17 +11,19 @@ import (
 	"syscall"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
+
 	idctl "github.com/linkerd/linkerd2/controller/identity"
 	"github.com/linkerd/linkerd2/controller/k8s"
 	"github.com/linkerd/linkerd2/identity"
 	"github.com/linkerd/linkerd2/pkg/admin"
 	"github.com/linkerd/linkerd2/pkg/flags"
 	"github.com/linkerd/linkerd2/pkg/tls"
-	log "github.com/sirupsen/logrus"
-
-	"google.golang.org/grpc"
 )
 
+// TODO watch trustAnchorsPath for changes
+// TODO watch issuerPath for changes
 func main() {
 	addr := flag.String("addr", ":8083", "address to serve on")
 	adminAddr := flag.String("admin-addr", ":9996", "address of HTTP admin server")
@@ -48,7 +50,6 @@ func main() {
 		log.Fatalf("Invalid trust domain: %s", err.Error())
 	}
 
-	// TODO watch trustAnchorsPath for changes
 	tab, err := ioutil.ReadFile(*trustAnchorsPath)
 	if err != nil {
 		log.Fatalf("Failed to read trust anchors from %s: %s", *trustAnchorsPath, err)
@@ -58,7 +59,6 @@ func main() {
 		log.Fatalf("Failed to read trust anchors from %s: %s", *trustAnchorsPath, err)
 	}
 
-	// TODO watch issuerPath for changes
 	creds, err := tls.ReadPEMCreds(filepath.Join(*issuerPath, "key.pem"), filepath.Join(*issuerPath, "crt.pem"))
 	if err != nil {
 		log.Fatalf("Failed to read CA from %s: %s", *issuerPath, err)

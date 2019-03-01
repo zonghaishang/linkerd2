@@ -1,13 +1,11 @@
 package identity
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/linkerd/linkerd2/identity"
-	log "github.com/sirupsen/logrus"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	kauthnApi "k8s.io/api/authentication/v1"
 	kauthzApi "k8s.io/api/authorization/v1"
 	k8s "k8s.io/client-go/kubernetes"
@@ -15,13 +13,19 @@ import (
 	kauthz "k8s.io/client-go/kubernetes/typed/authorization/v1"
 )
 
-// K8sTokenValidator implements Validator for Kubernetes.
+// K8sTokenValidator implements Validator for Kubernetes bearer tokens.
 type K8sTokenValidator struct {
 	authn  kauthn.AuthenticationV1Interface
 	domain *TrustDomain
 }
 
-func NewValidator(
+// NewK8sTokenValidator takes a kubernetes client and trust domain to create a
+// K8sTokenValidator.
+//
+// The kubernetes client is used immediately to validate that the client has
+// sufficient privileges to perform token reviews. An error is returned if this
+// access check fails.
+func NewK8sTokenValidator(
 	k8s k8s.Interface,
 	domain *TrustDomain,
 ) (*K8sTokenValidator, error) {
@@ -38,34 +42,31 @@ func init() {
 }
 
 // Validate accepts kubernetes bearer tokens and returns a DNS-form linkerd ID.
-func (k *K8sTokenValidator) Validate(tok []byte) (string, error) {
+func (k *K8sTokenValidator) Validate(_ context.Context, tok []byte) (string, error) {
 	// TODO: Set/check `audience`
 	tr := kauthnApi.TokenReview{Spec: kauthnApi.TokenReviewSpec{Token: string(tok)}}
 	rvw, err := k.authn.TokenReviews().Create(&tr)
 	if err != nil {
-		log.Errorf("TokenReview failed: %s", err)
-		return "", status.Error(codes.Internal, "Failed to contact kubernetes")
+		return "", err
 	}
 
 	if rvw.Status.Error != "" {
-		log.Warnf("TokenReview failed: %s", rvw.Status.Error)
-		msg := fmt.Sprintf("TokenReview failed: %s", rvw.Status.Error)
-		return "", status.Error(codes.InvalidArgument, msg)
+		return "", identity.InvalidToken{Reason: rvw.Status.Error}
 	}
 	if !rvw.Status.Authenticated {
-		log.Infof("TokenReview authentication failed: %s", rvw.Status.User.Username)
-		return "", status.Error(codes.FailedPrecondition, "token could not be authenticated")
+		return "", identity.NotAuthenticated{}
 	}
 
 	// Determine the identity associated with the token's userinfo.
 	uns := strings.Split(rvw.Status.User.Username, ":")
 	if len(uns) != 4 || uns[0] != "system" {
-		return "", fmt.Errorf("Username must be in form system:TYPE:NS:SA: %s", rvw.Status.User.Username)
+		msg := fmt.Sprintf("Username must be in form system:TYPE:NS:SA: %s", rvw.Status.User.Username)
+		return "", identity.InvalidToken{Reason: msg}
 	}
 	uns = uns[1:]
 	for _, l := range uns {
 		if !isLabel(l) {
-			return "", fmt.Errorf("Not a label: %s", l)
+			return "", identity.InvalidToken{Reason: fmt.Sprintf("Not a label: %s", l)}
 		}
 	}
 
