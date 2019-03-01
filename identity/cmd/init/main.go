@@ -160,11 +160,11 @@ func checkEndEntityDir(dir string) (string, string, string, error) {
 	if !s.IsDir() {
 		return "", "", "", fmt.Errorf("Not a directory: %s", dir)
 	}
-	if s.Mode().Perm()&0002 != 0000 {
+	if s.Mode().Perm()&0002 == 0002 {
 		return "", "", "", fmt.Errorf("Must not be world-writeable: %s; got %s", dir, s.Mode().Perm())
 	}
 
-	// TODO remove fails if they exist?
+	// TODO remove files if they exist?
 
 	keyPath := filepath.Join(dir, "key")
 	if err = checkNotExists(keyPath); err != nil {
@@ -254,7 +254,11 @@ func validateAndStoreCrt(rsp *pb.CertifyResponse, crtPath string, verify x509.Ve
 		return nil, errors.New("Received a certificate that has expired")
 	}
 
-	return crt, ioutil.WriteFile(crtPath, crtb, 0600)
+	if err := ioutil.WriteFile(crtPath, crtb, 0600); err != nil {
+		return nil, err
+	}
+
+	return crt, nil
 }
 
 func fp(crt *x509.Certificate) string {

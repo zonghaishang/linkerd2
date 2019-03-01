@@ -247,6 +247,7 @@ type proxyConfigOptions struct {
 	linkerdVersion          string
 	proxyImage              string
 	initImage               string
+	identityInitImage       string
 	dockerRegistry          string
 	imagePullPolicy         string
 	inboundPort             uint
@@ -283,6 +284,7 @@ func newProxyConfigOptions() *proxyConfigOptions {
 		linkerdVersion:          version.Version,
 		proxyImage:              defaultDockerRegistry + "/proxy",
 		initImage:               defaultDockerRegistry + "/proxy-init",
+		identityInitImage:       defaultDockerRegistry + "/proxy-identity-init",
 		dockerRegistry:          defaultDockerRegistry,
 		imagePullPolicy:         "IfNotPresent",
 		inboundPort:             4143,
@@ -377,6 +379,11 @@ func (options *proxyConfigOptions) enableTLS() bool {
 
 func (options *proxyConfigOptions) taggedProxyImage() string {
 	image := strings.Replace(options.proxyImage, defaultDockerRegistry, options.dockerRegistry, 1)
+	return fmt.Sprintf("%s:%s", image, options.linkerdVersion)
+}
+
+func (options *proxyConfigOptions) taggedProxyIdentityInitImage() string {
+	image := strings.Replace(options.identityInitImage, defaultDockerRegistry, options.dockerRegistry, 1)
 	return fmt.Sprintf("%s:%s", image, options.linkerdVersion)
 }
 

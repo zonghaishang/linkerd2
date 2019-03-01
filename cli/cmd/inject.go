@@ -220,6 +220,7 @@ func injectPodSpec(t *corev1.PodSpec, identity k8s.TLSIdentity, controlPlaneDNSN
 		profileSuffixes = "svc.cluster.local."
 	}
 	identity.Namespace = fmt.Sprintf("$(%s)", podNamespaceEnvVarName)
+
 	sidecar := corev1.Container{
 		Name:                     k8s.ProxyContainerName,
 		Image:                    options.taggedProxyImage(),
@@ -261,8 +262,8 @@ func injectPodSpec(t *corev1.PodSpec, identity k8s.TLSIdentity, controlPlaneDNSN
 				ValueFrom: &corev1.EnvVarSource{FieldRef: &corev1.ObjectFieldSelector{FieldPath: "metadata.namespace"}},
 			},
 			{Name: "L5D_NS", Value: controlPlaneNamespace},
-			{Name: "L5D_TRUST_DOMAIN", Value: "cluster.local"},
-			{Name: "LINKERD2_PROXY_ID", Value: fmt.Sprintf("$(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)")},
+			{Name: "L5D_TRUST_DOMAIN", Value: "cluster.local"}, // FIXME
+			{Name: "LINKERD2_PROXY_ID", Value: "$(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)"},
 		},
 		LivenessProbe:  &proxyProbe,
 		ReadinessProbe: &proxyProbe,
@@ -296,9 +297,8 @@ func injectPodSpec(t *corev1.PodSpec, identity k8s.TLSIdentity, controlPlaneDNSN
 			{Name: "LINKERD2_PROXY_TLS_POD_IDENTITY", Value: "$(LINKERD2_PROXY_ID)"},
 			{Name: "LINKERD2_PROXY_CONTROLLER_NAMESPACE", Value: controlPlaneNamespace},
 			{
-				Name: "LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY",
-				// FIXME
-				Value: fmt.Sprintf("linkerd-controller.%s.serviceaccount.identity.%s.cluster.local", controlPlaneNamespace, controlPlaneNamespace),
+				Name:  "LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY",
+				Value: "linkerd-controller.$(L5D_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)",
 			},
 		}
 		sidecar.Env = append(sidecar.Env, tlsEnvVars...)
@@ -315,6 +315,17 @@ func injectPodSpec(t *corev1.PodSpec, identity k8s.TLSIdentity, controlPlaneDNSN
 			{Name: volume.Name, MountPath: endEntity, ReadOnly: true},
 		}
 		t.Volumes = append(t.Volumes, volume)
+
+		t.Containers = append(t.Containers, corev1.Container{
+			Image: options.taggedProxyIdentityInitImage(),
+			Name:  "linkerd-proxy-identity",
+			Env:   sidecar.Env,
+
+			ImagePullPolicy: corev1.PullPolicy(options.imagePullPolicy),
+			SecurityContext: &corev1.SecurityContext{RunAsUser: &options.proxyUID},
+
+			TerminationMessagePolicy: corev1.TerminationMessageFallbackToLogsOnError,
+		})
 	}
 
 	t.Containers = append(t.Containers, sidecar)

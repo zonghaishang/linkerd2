@@ -78,7 +78,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to load kubeconfig: %s: %s", *kubeConfigPath, err)
 	}
-	v, err := idctl.NewValidator(k8s, dom)
+	v, err := idctl.NewK8sTokenValidator(k8s, dom)
 	if err != nil {
 		log.Fatalf("Failed to initialize identity service: %s", err)
 	}
