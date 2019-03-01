@@ -31,13 +31,13 @@ type (
 )
 
 // NewService creates a new identity service.
-func NewService(v Validator, i tls.Issuer) Service {
-	return Service{v, i}
+func NewService(v Validator, i tls.Issuer) *Service {
+	return &Service{v, i}
 }
 
 // Register registers an identity service implementation in the provided gRPC
 // server.
-func (s *Service) Register(g *grpc.Server) {
+func Register(g *grpc.Server, s *Service) {
 	pb.RegisterIdentityServer(g, s)
 }
 

@@ -92,7 +92,7 @@ func main() {
 	}
 
 	srv := grpc.NewServer()
-	svc.Register(srv)
+	identity.Register(srv, svc)
 	go func() {
 		log.Infof("starting gRPC server on %s", *addr)
 		srv.Serve(lis)
