@@ -298,12 +298,6 @@ func validateAndBuildConfig(state clusterState, options *installOptions) (*insta
 				return nil, fmt.Errorf("Failed to create root certificate for identity: %s", err)
 			}
 
-			subdomain := fmt.Sprintf("identity.%s.%s", controlPlaneNamespace, trustDomain)
-			issuer, err := root.GenerateCA(subdomain, tls.Validity{}, -1)
-			if err != nil {
-				return nil, fmt.Errorf("Failed to create issuer certificate for identity: %s", err)
-			}
-
 			identity = &installIdentityConfig{
 				TrustDomain:     trustDomain,
 				TrustAnchorsPEM: root.Cred.Crt.EncodeCertificatePEM(),
@@ -312,9 +306,9 @@ func validateAndBuildConfig(state clusterState, options *installOptions) (*insta
 					IssuanceLifetime:    options.identityOptions.issuanceLifetime.String(),
 					CrtExpiryAnnotation: k8s.IdentityIssuerExpiryAnnotation,
 
-					KeyPEM:    issuer.Cred.EncodePrivateKeyPEM(),
-					CrtPEM:    issuer.Cred.Crt.EncodeCertificatePEM(),
-					CrtExpiry: issuer.Cred.Crt.Certificate.NotAfter,
+					KeyPEM:    root.Cred.EncodePrivateKeyPEM(),
+					CrtPEM:    root.Cred.Crt.EncodeCertificatePEM(),
+					CrtExpiry: root.Cred.Crt.Certificate.NotAfter,
 				},
 			}
 		}
