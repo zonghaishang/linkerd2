@@ -124,15 +124,11 @@ func loadVerifier(path string) (verify x509.VerifyOptions, err error) {
 
 	pemb, err := ioutil.ReadFile(path)
 	if err != nil {
-		log.Fatalf("Failed to read trust anchors: %s", err)
-	}
-
-	anchors, err := tls.DecodePEMCertPool(string(pemb))
-	if err != nil {
 		return
 	}
+	pem := string(pemb)
 
-	verify.Roots = anchors
+	verify.Roots, err = tls.DecodePEMCertPool(pem)
 	return
 }
 

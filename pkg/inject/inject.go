@@ -516,7 +516,7 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 			Command: []string{"/bin/sh", "-c"},
 			Args: []string{`
 				set -eux
-				echo "$TRUST_ANCHORS_PEM" >$LINKERD2_PROXY_TLS_TRUST_ANCHORS
+				/bin/echo -n "$TRUST_ANCHORS_PEM" >$LINKERD2_PROXY_TLS_TRUST_ANCHORS
 				/bin/proxy-identity -addr=$ID_ADDR \
 					-dir=$LINKERD2_PROXY_END_ENTITY_DIR \
 					-name=$LINKERD2_PROXY_TLS_POD_IDENTITY \

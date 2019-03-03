@@ -83,6 +83,10 @@ func DecodePEMCertPool(txt string) (pool *x509.CertPool, err error) {
 	if err != nil {
 		return
 	}
+	if len(certs) == 0 {
+		err = errors.New("No certficiates found")
+		return
+	}
 
 	pool = x509.NewCertPool()
 	for _, c := range certs {
@@ -95,7 +99,7 @@ func DecodePEMCertPool(txt string) (pool *x509.CertPool, err error) {
 func decodeCertificatePEM(crtb []byte) (*x509.Certificate, []byte, error) {
 	block, crtb := pem.Decode(crtb)
 	if block == nil {
-		return nil, nil, errors.New("Failed to decode PEM certificate")
+		return nil, crtb, nil
 	}
 	if block.Type != "CERTIFICATE" {
 		return nil, nil, nil
