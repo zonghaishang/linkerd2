@@ -128,7 +128,7 @@ func newVerifier(path, pem string) (verify x509.VerifyOptions, err error) {
 		return
 	}
 
-	if err = ioutil.WriteFile(path, []byte(pem), 0400); err != nil {
+	if err = ioutil.WriteFile(path, []byte(pem), 0600); err != nil {
 		err = fmt.Errorf("Failed to write trust anchors: %s", err)
 		return
 	}
@@ -204,7 +204,7 @@ func generateAndStoreKey(p string) (key *ecdsa.PrivateKey, err error) {
 		return
 	}
 
-	err = ioutil.WriteFile(p, tls.EncodePrivateKeyP8(key), 0400)
+	err = ioutil.WriteFile(p, tls.EncodePrivateKeyP8(key), 0600)
 	return
 }
 
@@ -220,7 +220,7 @@ func generateAndStoreCSR(p, id string, key *ecdsa.PrivateKey) ([]byte, error) {
 		return nil, fmt.Errorf("Failed to create CSR: %s", err)
 	}
 
-	if err = ioutil.WriteFile(p, csrb, 0400); err != nil {
+	if err = ioutil.WriteFile(p, csrb, 0600); err != nil {
 		return nil, fmt.Errorf("Failed to write CSR: %s", err)
 	}
 
