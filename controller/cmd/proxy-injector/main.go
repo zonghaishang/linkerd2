@@ -49,7 +49,7 @@ func main() {
 	}
 	log.Infof("created or updated mutating webhook configuration: %s", mwc.ObjectMeta.SelfLink)
 
-	s, err := injector.NewWebhookServer(k8sClient, *addr, *controllerNamespace, *noInitContainer, *tlsEnabled, rootCA)
+	s, err := injector.NewWebhookServer(k8sClient, *addr, *controllerNS, *noInitContainer, *tlsEnabled, rootCA)
 	if err != nil {
 		log.Fatalf("failed to initialize the webhook server: %s", err)
 	}

@@ -109,6 +109,14 @@
   version = "v0.1.0"
 
 [[projects]]
+  digest = "1:99623ed4706e473a4b4c8486cb0d5b4aaf2538a4fa8fb4530b07f98eb39ddd0a"
+  name = "github.com/cloudflare/cfssl"
+  packages = ["log"]
+  pruneopts = ""
+  revision = "5d63dbd981b5c408effbb58c442d54761ff94fbd"
+  version = "1.3.2"
+
+[[projects]]
   digest = "1:0c93b97f9166ce4302eacf73de5e80e6380c4391954518db99835f2796513206"
   name = "github.com/containernetworking/cni"
   packages = [
@@ -1244,6 +1252,7 @@
   analyzer-version = 1
   input-imports = [
     "github.com/briandowns/spinner",
+    "github.com/cloudflare/cfssl/log",
     "github.com/containernetworking/cni/pkg/skel",
     "github.com/containernetworking/cni/pkg/types",
     "github.com/containernetworking/cni/pkg/types/current",
@@ -1323,6 +1332,8 @@
     "k8s.io/client-go/kubernetes/fake",
     "k8s.io/client-go/kubernetes/scheme",
     "k8s.io/client-go/kubernetes/typed/authentication/v1",
+    "k8s.io/client-go/kubernetes/typed/authorization/v1",
+    "k8s.io/client-go/kubernetes/typed/core/v1",
     "k8s.io/client-go/listers/core/v1",
     "k8s.io/client-go/plugin/pkg/client/auth",
     "k8s.io/client-go/plugin/pkg/client/auth/gcp",
