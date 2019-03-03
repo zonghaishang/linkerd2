@@ -509,10 +509,10 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 		patch.addContainer(&v1.Container{
 			Image: fmt.Sprintf("gcr.io/linkerd-io/proxy-identity:%s", conf.globalConfig.GetVersion()),
 			Name:  "linkerd-proxy-identity",
-			Env: []v1.EnvVar{
-				{Name: "TRUST_ANCHORS_PEM", Value: idctx.GetTrustAnchorsPem()},
-				{Name: "ID_ADDR", Value: fmt.Sprintf("%s:8080", identityDNS)},
-			},
+			Env: append(env,
+				v1.EnvVar{Name: "TRUST_ANCHORS_PEM", Value: idctx.GetTrustAnchorsPem()},
+				v1.EnvVar{Name: "ID_ADDR", Value: fmt.Sprintf("%s:8080", identityDNS)},
+			),
 			Command: []string{"/bin/sh", "-c"},
 			Args: []string{`
 				set -eu
