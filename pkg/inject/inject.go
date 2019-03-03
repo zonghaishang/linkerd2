@@ -480,9 +480,9 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 		if len(conf.podSpec.Volumes) == 0 {
 			patch.addVolumeRoot()
 		}
-		const vn = "linkerd-identity-end-entity"
+		const endEntityVolName = "linkerd-identity-end-entity"
 		patch.addVolume(&v1.Volume{
-			Name: vn,
+			Name: endEntityVolName,
 			VolumeSource: v1.VolumeSource{
 				EmptyDir: &v1.EmptyDirVolumeSource{
 					Medium: "Memory",
@@ -490,7 +490,7 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 			},
 		})
 		sidecar.VolumeMounts = append(sidecar.VolumeMounts, v1.VolumeMount{
-			Name:      vn,
+			Name:      endEntityVolName,
 			MountPath: endEntityDir,
 			ReadOnly:  true,
 		})
@@ -506,7 +506,14 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 				"-dir", endEntityDir,
 				"-name=$(LINKERD2_PROXY_TLS_POD_IDENTITY)",
 				"-token=/var/run/secrets/kubernetes.io/serviceaccount",
-				"-trust-anchors=$(LINKERD2_PROXY_TLS_TRUST_ANCHORS)",
+				"-trust-anchors-data", idctx.GetTrustAnchorsPem(),
+			},
+			VolumeMounts: []v1.VolumeMount{
+				{
+					Name:      endEntityVolName,
+					MountPath: endEntityDir,
+					ReadOnly:  false,
+				},
 			},
 
 			ImagePullPolicy: v1.PullPolicy(conf.proxyConfig.GetProxyImage().GetPullPolicy()),

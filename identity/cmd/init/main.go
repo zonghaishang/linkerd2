@@ -27,13 +27,13 @@ import (
 
 func main() {
 	addr := flag.String("addr", "localhost:8083", "address of identity service")
-	trustAnchorsPath := flag.String("trust-anchors", "", "path to PEM-encoded trust anchors")
+	trustAnchors := flag.String("trust-anchors-data", "", "PEM-encoded trust anchors text")
 	tokenPath := flag.String("token", "", "path to serviceaccount token")
 	name := flag.String("name", "", "identity name")
 	dir := flag.String("dir", "", "directory under which credentials are written")
 	flags.ConfigureAndParse()
 
-	verify, err := loadVerifier(*trustAnchorsPath)
+	verify, err := newVerifier(*trustAnchors)
 	if err != nil {
 		log.Fatalf("Failed to load trust anchors: %s", err)
 	}
@@ -117,18 +117,13 @@ func main() {
 	}
 }
 
-func loadVerifier(path string) (verify x509.VerifyOptions, err error) {
-	if path == "" {
+func newVerifier(pem string) (verify x509.VerifyOptions, err error) {
+	if pem == "" {
 		err = errors.New("No trust anchors specified")
 		return
 	}
 
-	b, err := ioutil.ReadFile(path)
-	if err != nil {
-		return
-	}
-
-	anchors, err := tls.DecodePEMCertPool(string(b))
+	anchors, err := tls.DecodePEMCertPool(pem)
 	if err != nil {
 		return
 	}

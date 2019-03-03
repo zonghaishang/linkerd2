@@ -160,7 +160,18 @@ spec:
         - /var/run/linkerd/identity/end-entity
         - -name=$(LINKERD2_PROXY_TLS_POD_IDENTITY)
         - -token=/var/run/secrets/kubernetes.io/serviceaccount
-        - -trust-anchors=$(LINKERD2_PROXY_TLS_TRUST_ANCHORS)
+        - -trust-anchors-data
+        - |-
+          -----BEGIN CERTIFICATE-----
+          MIIBYDCCAQegAwIBAgIBATAKBggqhkjOPQQDAjAYMRYwFAYDVQQDEw1jbHVzdGVy
+          LmxvY2FsMB4XDTE5MDMwMzAxNTk1MloXDTI5MDIyODAyMDM1MlowGDEWMBQGA1UE
+          AxMNY2x1c3Rlci5sb2NhbDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABAChpAt0
+          xtgO9qbVtEtDK80N6iCL2Htyf2kIv2m5QkJ1y0TFQi5hTVe3wtspJ8YpZF0pl364
+          6TiYeXB8tOOhIACjQjBAMA4GA1UdDwEB/wQEAwIBBjAdBgNVHSUEFjAUBggrBgEF
+          BQcDAQYIKwYBBQUHAwIwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNHADBE
+          AiBQ/AAwF8kG8VOmRSUTPakSSa/N4mqK2HsZuhQXCmiZHwIgZEzI5DCkpU7w3SIv
+          OLO4Zsk1XrGZHGsmyiEyvYF9lpY=
+           -----END CERTIFICATE-----
         command:
         - proxy-identity
         image: gcr.io/linkerd-io/proxy-identity:dev-undefined
@@ -170,6 +181,10 @@ spec:
         securityContext:
           runAsUser: 2102
         terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        - mountPath: /var/run/linkerd/identity/end-entity
+          name: linkerd-identity-end-entity
+          readOnly: true
       - env:
         - name: LINKERD2_PROXY_LOG
           value: warn,linkerd2_proxy=info
@@ -468,7 +483,18 @@ spec:
         - /var/run/linkerd/identity/end-entity
         - -name=$(LINKERD2_PROXY_TLS_POD_IDENTITY)
         - -token=/var/run/secrets/kubernetes.io/serviceaccount
-        - -trust-anchors=$(LINKERD2_PROXY_TLS_TRUST_ANCHORS)
+        - -trust-anchors-data
+        - |-
+          -----BEGIN CERTIFICATE-----
+          MIIBYDCCAQegAwIBAgIBATAKBggqhkjOPQQDAjAYMRYwFAYDVQQDEw1jbHVzdGVy
+          LmxvY2FsMB4XDTE5MDMwMzAxNTk1MloXDTI5MDIyODAyMDM1MlowGDEWMBQGA1UE
+          AxMNY2x1c3Rlci5sb2NhbDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABAChpAt0
+          xtgO9qbVtEtDK80N6iCL2Htyf2kIv2m5QkJ1y0TFQi5hTVe3wtspJ8YpZF0pl364
+          6TiYeXB8tOOhIACjQjBAMA4GA1UdDwEB/wQEAwIBBjAdBgNVHSUEFjAUBggrBgEF
+          BQcDAQYIKwYBBQUHAwIwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNHADBE
+          AiBQ/AAwF8kG8VOmRSUTPakSSa/N4mqK2HsZuhQXCmiZHwIgZEzI5DCkpU7w3SIv
+          OLO4Zsk1XrGZHGsmyiEyvYF9lpY=
+           -----END CERTIFICATE-----
         command:
         - proxy-identity
         image: gcr.io/linkerd-io/proxy-identity:dev-undefined
@@ -478,6 +504,10 @@ spec:
         securityContext:
           runAsUser: 2102
         terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        - mountPath: /var/run/linkerd/identity/end-entity
+          name: linkerd-identity-end-entity
+          readOnly: true
       - env:
         - name: LINKERD2_PROXY_LOG
           value: warn,linkerd2_proxy=info
@@ -797,7 +827,18 @@ spec:
         - /var/run/linkerd/identity/end-entity
         - -name=$(LINKERD2_PROXY_TLS_POD_IDENTITY)
         - -token=/var/run/secrets/kubernetes.io/serviceaccount
-        - -trust-anchors=$(LINKERD2_PROXY_TLS_TRUST_ANCHORS)
+        - -trust-anchors-data
+        - |-
+          -----BEGIN CERTIFICATE-----
+          MIIBYDCCAQegAwIBAgIBATAKBggqhkjOPQQDAjAYMRYwFAYDVQQDEw1jbHVzdGVy
+          LmxvY2FsMB4XDTE5MDMwMzAxNTk1MloXDTI5MDIyODAyMDM1MlowGDEWMBQGA1UE
+          AxMNY2x1c3Rlci5sb2NhbDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABAChpAt0
+          xtgO9qbVtEtDK80N6iCL2Htyf2kIv2m5QkJ1y0TFQi5hTVe3wtspJ8YpZF0pl364
+          6TiYeXB8tOOhIACjQjBAMA4GA1UdDwEB/wQEAwIBBjAdBgNVHSUEFjAUBggrBgEF
+          BQcDAQYIKwYBBQUHAwIwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNHADBE
+          AiBQ/AAwF8kG8VOmRSUTPakSSa/N4mqK2HsZuhQXCmiZHwIgZEzI5DCkpU7w3SIv
+          OLO4Zsk1XrGZHGsmyiEyvYF9lpY=
+           -----END CERTIFICATE-----
         command:
         - proxy-identity
         image: gcr.io/linkerd-io/proxy-identity:dev-undefined
@@ -807,6 +848,10 @@ spec:
         securityContext:
           runAsUser: 2102
         terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        - mountPath: /var/run/linkerd/identity/end-entity
+          name: linkerd-identity-end-entity
+          readOnly: true
       - env:
         - name: LINKERD2_PROXY_LOG
           value: warn,linkerd2_proxy=info
@@ -1028,7 +1073,18 @@ spec:
         - /var/run/linkerd/identity/end-entity
         - -name=$(LINKERD2_PROXY_TLS_POD_IDENTITY)
         - -token=/var/run/secrets/kubernetes.io/serviceaccount
-        - -trust-anchors=$(LINKERD2_PROXY_TLS_TRUST_ANCHORS)
+        - -trust-anchors-data
+        - |-
+          -----BEGIN CERTIFICATE-----
+          MIIBYDCCAQegAwIBAgIBATAKBggqhkjOPQQDAjAYMRYwFAYDVQQDEw1jbHVzdGVy
+          LmxvY2FsMB4XDTE5MDMwMzAxNTk1MloXDTI5MDIyODAyMDM1MlowGDEWMBQGA1UE
+          AxMNY2x1c3Rlci5sb2NhbDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABAChpAt0
+          xtgO9qbVtEtDK80N6iCL2Htyf2kIv2m5QkJ1y0TFQi5hTVe3wtspJ8YpZF0pl364
+          6TiYeXB8tOOhIACjQjBAMA4GA1UdDwEB/wQEAwIBBjAdBgNVHSUEFjAUBggrBgEF
+          BQcDAQYIKwYBBQUHAwIwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNHADBE
+          AiBQ/AAwF8kG8VOmRSUTPakSSa/N4mqK2HsZuhQXCmiZHwIgZEzI5DCkpU7w3SIv
+          OLO4Zsk1XrGZHGsmyiEyvYF9lpY=
+           -----END CERTIFICATE-----
         command:
         - proxy-identity
         image: gcr.io/linkerd-io/proxy-identity:dev-undefined
@@ -1038,6 +1094,10 @@ spec:
         securityContext:
           runAsUser: 2102
         terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        - mountPath: /var/run/linkerd/identity/end-entity
+          name: linkerd-identity-end-entity
+          readOnly: true
       - env:
         - name: LINKERD2_PROXY_LOG
           value: warn,linkerd2_proxy=info
@@ -1328,7 +1388,18 @@ spec:
         - /var/run/linkerd/identity/end-entity
         - -name=$(LINKERD2_PROXY_TLS_POD_IDENTITY)
         - -token=/var/run/secrets/kubernetes.io/serviceaccount
-        - -trust-anchors=$(LINKERD2_PROXY_TLS_TRUST_ANCHORS)
+        - -trust-anchors-data
+        - |-
+          -----BEGIN CERTIFICATE-----
+          MIIBYDCCAQegAwIBAgIBATAKBggqhkjOPQQDAjAYMRYwFAYDVQQDEw1jbHVzdGVy
+          LmxvY2FsMB4XDTE5MDMwMzAxNTk1MloXDTI5MDIyODAyMDM1MlowGDEWMBQGA1UE
+          AxMNY2x1c3Rlci5sb2NhbDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABAChpAt0
+          xtgO9qbVtEtDK80N6iCL2Htyf2kIv2m5QkJ1y0TFQi5hTVe3wtspJ8YpZF0pl364
+          6TiYeXB8tOOhIACjQjBAMA4GA1UdDwEB/wQEAwIBBjAdBgNVHSUEFjAUBggrBgEF
+          BQcDAQYIKwYBBQUHAwIwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNHADBE
+          AiBQ/AAwF8kG8VOmRSUTPakSSa/N4mqK2HsZuhQXCmiZHwIgZEzI5DCkpU7w3SIv
+          OLO4Zsk1XrGZHGsmyiEyvYF9lpY=
+           -----END CERTIFICATE-----
         command:
         - proxy-identity
         image: gcr.io/linkerd-io/proxy-identity:dev-undefined
@@ -1338,6 +1409,10 @@ spec:
         securityContext:
           runAsUser: 2102
         terminationMessagePolicy: FallbackToLogsOnError
+        volumeMounts:
+        - mountPath: /var/run/linkerd/identity/end-entity
+          name: linkerd-identity-end-entity
+          readOnly: true
       - env:
         - name: LINKERD2_PROXY_LOG
           value: warn,linkerd2_proxy=info
