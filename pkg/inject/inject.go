@@ -26,8 +26,10 @@ const (
 	// localhostDNSNameOverride allows override of the destinationDNS. This
 	// must be in absolute form for the proxy to special-case it.
 	localhostDNSNameOverride = "localhost."
-	// controlPlanePodName default control plane pod name.
-	controlPlanePodName = "linkerd-controller"
+
+	controllerDeployName = "linkerd-controller"
+	identityDeployName   = "linkerd-identity"
+
 	// defaultKeepaliveMs is used in the proxy configuration for remote connections
 	defaultKeepaliveMs = 10000
 )
@@ -49,16 +51,17 @@ type objMeta struct {
 
 // ResourceConfig contains the parsed information for a given workload
 type ResourceConfig struct {
-	globalConfig          *config.Global
-	proxyConfig           *config.Proxy
-	nsAnnotations         map[string]string
-	meta                  metav1.TypeMeta
-	obj                   runtime.Object
-	objMeta               objMeta
-	podLabels             map[string]string
-	podSpec               *v1.PodSpec
-	dnsNameOverride       string
-	proxyOutboundCapacity map[string]uint
+	globalConfig              *config.Global
+	proxyConfig               *config.Proxy
+	nsAnnotations             map[string]string
+	meta                      metav1.TypeMeta
+	obj                       runtime.Object
+	objMeta                   objMeta
+	podLabels                 map[string]string
+	podSpec                   *v1.PodSpec
+	controllerDnsNameOverride string
+	identityDnsNameOverride   string
+	proxyOutboundCapacity     map[string]uint
 }
 
 // NewResourceConfig creates and initializes a ResourceConfig
@@ -235,8 +238,11 @@ func (conf *ResourceConfig) parse(bytes []byte) error {
 			return err
 		}
 
-		if v.Name == controlPlanePodName && v.Namespace == conf.globalConfig.GetLinkerdNamespace() {
-			conf.dnsNameOverride = localhostDNSNameOverride
+		if v.Name == controllerDeployName && v.Namespace == conf.globalConfig.GetLinkerdNamespace() {
+			conf.controllerDnsNameOverride = localhostDNSNameOverride
+		}
+		if v.Name == identityDeployName && v.Namespace == conf.globalConfig.GetLinkerdNamespace() {
+			conf.identityDnsNameOverride = localhostDNSNameOverride
 		}
 
 		conf.obj = v
@@ -337,13 +343,13 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 	}
 
 	destinationDNS := fmt.Sprintf("linkerd-destination.%s.svc.cluster.local", conf.globalConfig.GetLinkerdNamespace())
-	if conf.dnsNameOverride != "" {
-		destinationDNS = conf.dnsNameOverride
+	if conf.controllerDnsNameOverride != "" {
+		destinationDNS = conf.controllerDnsNameOverride
 	}
 
 	identityDNS := fmt.Sprintf("linkerd-identity.%s.svc.cluster.local", conf.globalConfig.GetLinkerdNamespace())
-	if conf.dnsNameOverride != "" {
-		identityDNS = conf.dnsNameOverride
+	if conf.identityDnsNameOverride != "" {
+		identityDNS = conf.identityDnsNameOverride
 	}
 
 	metricsPort := intstr.IntOrString{
