@@ -39,6 +39,8 @@ func main() {
 		"path to directoring containing issuer credentials")
 	issuanceLifetime := flag.Duration("issuance-lifetime", 24*time.Hour,
 		"The amount of time for which a signed certificate is valid")
+	clockSkewAllowance := flag.Duration("clock-skew-allowance", 0,
+		"The amount of time to allow for clock skew between nodes")
 	// TODO flag.String("audience", "linkerd.io/identity", "Token audience")
 	flags.ConfigureAndParse()
 
@@ -69,7 +71,10 @@ func main() {
 		log.Fatalf("Failed to verify issuer credentials for '%s' with trust anchors: %s", expectedName, err)
 	}
 
-	ca := tls.NewCA(*creds, tls.Validity{Lifetime: *issuanceLifetime})
+	ca := tls.NewCA(*creds, tls.Validity{
+		ClockSkewAllowance: *clockSkewAllowance,
+		Lifetime:           *issuanceLifetime,
+	})
 	if err != nil {
 		log.Fatalf("Failed to read issuer credentials from %s: %s", *issuerPath, err)
 	}

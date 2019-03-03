@@ -119,7 +119,12 @@ spec:
         - "-trust-domain={{.Identity.TrustDomain}}"
         - "-trust-anchors=/var/run/linkerd/identity/trust-anchors/trust-anchors.pem"
         - "-issuer=/var/run/linkerd/identity/issuer"
-        - "-issuance-lifetime={{.Identity.IssuanceLifetime}}"
+        {{- if .Identity.Issuer.ClockSkewAllowance }}
+        - "-issuance-lifetime={{.Identity.Issuer.ClockSkewAllowance}}"
+        {{- end}}
+        {{- if .Identity.Issuer.IssuanceLifetime }}
+        - "-issuance-lifetime={{.Identity.Issuer.IssuanceLifetime}}"
+        {{- end }}
         volumeMounts:
         - mountPath: /var/run/linkerd/identity/trust-anchors
           name: identity-trust-anchors

@@ -488,9 +488,21 @@ func readIntoBytes(filename string) ([]byte, error) {
 func globalConfig(options *installOptions, id *installIdentityConfig) *pb.Global {
 	var identityContext *pb.IdentityContext
 	if id != nil {
+		il, err := time.ParseDuration(id.Issuer.IssuanceLifetime)
+		if err != nil {
+			il = defaultIdentityIssuanceLifetime
+		}
+
+		csa, err := time.ParseDuration(id.Issuer.ClockSkewAllowance)
+		if err != nil {
+			csa = defaultIdentityClockSkewAllowance
+		}
+
 		identityContext = &pb.IdentityContext{
-			TrustDomain:     id.TrustDomain,
-			TrustAnchorsPem: id.TrustAnchorsPEM,
+			TrustDomain:        id.TrustDomain,
+			TrustAnchorsPem:    id.TrustAnchorsPEM,
+			IssuanceLifetime:   ptypes.DurationProto(il),
+			ClockSkewAllowance: ptypes.DurationProto(csa),
 		}
 	}
 
