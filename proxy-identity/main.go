@@ -200,17 +200,12 @@ func checkExists(p string) (err error) {
 func generateAndStoreKey(p string) (key *ecdsa.PrivateKey, err error) {
 	// Generate a private key and store it read-only (i.e. mostly for debugging). Because the file is read-only
 	key, err = tls.GenerateKey()
-	if err == nil {
+	if err != nil {
 		return
 	}
 
 	pemb := tls.EncodePrivateKeyP8(key)
 	err = ioutil.WriteFile(p, pemb, 0600)
-	if err == nil {
-		log.Infof("Wrote %dB ecdsa key to %s", len(pemb), p)
-	} else {
-		log.Errorf("Failed to write %dB ecdsa key: %s", len(pemb), err)
-	}
 	return
 }
 
