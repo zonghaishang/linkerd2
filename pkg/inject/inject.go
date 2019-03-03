@@ -461,9 +461,10 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 				Name:  "LINKERD2_PROXY_TLS_POD_IDENTITY",
 				Value: "$(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)",
 			},
-		}
-
-		sidecar.Env = append(append(sidecar.Env, env...),
+			v1.EnvVar{
+				Name:  "LINKERD2_PROXY_END_ENTITY_DIR",
+				Value: endEntityDir,
+			},
 			v1.EnvVar{
 				Name:  "LINKERD2_PROXY_TLS_TRUST_ANCHORS",
 				Value: filepath.Join(endEntityDir, "trust-anchors.pem"),
@@ -476,6 +477,9 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 				Name:  "LINKERD2_PROXY_TLS_CERT",
 				Value: filepath.Join(endEntityDir, "crt.pem"),
 			},
+		}
+
+		sidecar.Env = append(append(sidecar.Env, env...),
 			v1.EnvVar{Name: "LINKERD2_PROXY_CONTROLLER_NAMESPACE", Value: "$(L5D_NS)"},
 			v1.EnvVar{
 				Name:  "LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY",
@@ -503,16 +507,22 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 		// XXX temporary
 		// TODO specify identity so client can be secured.
 		patch.addContainer(&v1.Container{
-			Image:   fmt.Sprintf("gcr.io/linkerd-io/proxy-identity:%s", conf.globalConfig.GetVersion()),
-			Name:    "linkerd-proxy-identity",
-			Command: []string{"proxy-identity"},
-			Args: []string{
-				"-addr", fmt.Sprintf("%s:8080", identityDNS),
-				"-dir", endEntityDir,
-				"-name=$(LINKERD2_PROXY_TLS_POD_IDENTITY)",
-				"-token=/var/run/secrets/kubernetes.io/serviceaccount/token",
-				"-trust-anchors-data", idctx.GetTrustAnchorsPem(),
+			Image: fmt.Sprintf("gcr.io/linkerd-io/proxy-identity:%s", conf.globalConfig.GetVersion()),
+			Name:  "linkerd-proxy-identity",
+			Env: []v1.EnvVar{
+				{Name: "TRUST_ANCHORS_PEM", Value: idctx.GetTrustAnchorsPem()},
+				{Name: "ID_ADDR", Value: fmt.Sprintf("%s:8080", identityDNS)},
 			},
+			Command: []string{"/bin/sh", "-c"},
+			Args: []string{`
+				set -eu
+				chmod 700 $LINKERD2_PROXY_END_ENTITY_DIR
+				echo "$TRUST_ANCHORS_PEM" >$LINKERD2_PROXY_TLS_TRUST_ANCHORS
+				/bin/proxy-identity -addr=$ID_ADDR \
+					-dir=$LINKERD2_PROXY_END_ENTITY_DIR \
+					-name=$(LINKERD2_PROXY_TLS_POD_IDENTITY) \
+					-token=/var/run/secrets/kubernetes.io/serviceaccount/token
+			`},
 			VolumeMounts: []v1.VolumeMount{{
 				Name:      k8s.IdentityEndEntityVolumeName,
 				MountPath: endEntityDir,

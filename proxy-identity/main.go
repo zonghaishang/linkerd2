@@ -27,7 +27,6 @@ import (
 
 func main() {
 	addr := flag.String("addr", "localhost:8083", "address of identity service")
-	trustAnchors := flag.String("trust-anchors-data", "", "PEM-encoded trust anchors text")
 	tokenPath := flag.String("token", "", "path to serviceaccount token")
 	name := flag.String("name", "", "identity name")
 	dir := flag.String("dir", "", "directory under which credentials are written")
@@ -38,7 +37,7 @@ func main() {
 		log.Fatalf("Invalid end-entity directory: %s", err)
 	}
 
-	verify, err := newVerifier(trustPath, *trustAnchors)
+	verify, err := loadVerifier(trustPath)
 	if err != nil {
 		log.Fatalf("Failed to load trust anchors: %s", err)
 	}
@@ -117,19 +116,19 @@ func main() {
 	}
 }
 
-func newVerifier(path, pem string) (verify x509.VerifyOptions, err error) {
-	if pem == "" {
+func loadVerifier(path string) (verify x509.VerifyOptions, err error) {
+	if path == "" {
 		err = errors.New("No trust anchors specified")
 		return
 	}
 
-	anchors, err := tls.DecodePEMCertPool(pem)
+	pemb, err := ioutil.ReadFile(path)
 	if err != nil {
-		return
+		log.Fatalf("Failed to read trust anchors: %s", err)
 	}
 
-	if err = ioutil.WriteFile(path, []byte(pem), 0600); err != nil {
-		err = fmt.Errorf("Failed to write trust anchors: %s", err)
+	anchors, err := tls.DecodePEMCertPool(string(pemb))
+	if err != nil {
 		return
 	}
 
@@ -165,8 +164,8 @@ func checkEndEntityDir(dir string) (string, string, string, string, error) {
 	// }
 
 	trustPath := filepath.Join(dir, "trust-anchors.pem")
-	if err = checkNotExists(trustPath); err != nil {
-		log.Info(err.Error())
+	if err = checkExists(trustPath); err != nil {
+		return "", "", "", "", err
 	}
 
 	keyPath := filepath.Join(dir, "key.p8")
@@ -194,6 +193,11 @@ func checkNotExists(p string) (err error) {
 	} else if os.IsNotExist(err) {
 		err = nil
 	}
+	return
+}
+
+func checkExists(p string) (err error) {
+	_, err = os.Stat(p)
 	return
 }
 
