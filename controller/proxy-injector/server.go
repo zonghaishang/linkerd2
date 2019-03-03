@@ -4,10 +4,10 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
-	"github.com/linkerd/linkerd2/pkg/k8s"
 	pkgTls "github.com/linkerd/linkerd2/pkg/tls"
 	log "github.com/sirupsen/logrus"
 	"k8s.io/client-go/kubernetes"
@@ -78,14 +78,8 @@ func (w *WebhookServer) Shutdown() error {
 }
 
 func tlsConfig(ca *pkgTls.CA, controllerNS string) (*tls.Config, error) {
-	tlsIdentity := k8s.TLSIdentity{
-		Name:                "linkerd-proxy-injector",
-		Kind:                k8s.Service,
-		Namespace:           controllerNS,
-		ControllerNamespace: controllerNS,
-	}
-	dnsName := tlsIdentity.ToDNSName()
-	cred, err := ca.GenerateEndEntityCred(dnsName)
+	name := fmt.Sprintf("linkerd-proxy-injector.%s.svc", controllerNS)
+	cred, err := ca.GenerateEndEntityCred(name)
 	if err != nil {
 		return nil, err
 	}

@@ -10,6 +10,7 @@ import (
 	"github.com/linkerd/linkerd2/controller/api/destination"
 	"github.com/linkerd/linkerd2/controller/k8s"
 	"github.com/linkerd/linkerd2/pkg/admin"
+	"github.com/linkerd/linkerd2/pkg/config"
 	"github.com/linkerd/linkerd2/pkg/flags"
 	log "github.com/sirupsen/logrus"
 )
@@ -19,7 +20,6 @@ func main() {
 	metricsAddr := flag.String("metrics-addr", ":9996", "address to serve scrapable metrics on")
 	kubeConfigPath := flag.String("kubeconfig", "", "path to kube config")
 	k8sDNSZone := flag.String("kubernetes-dns-zone", "", "The DNS suffix for the local Kubernetes zone.")
-	enableTLS := flag.Bool("enable-tls", true, "Enable transparent identity")
 	enableH2Upgrade := flag.Bool("enable-h2-upgrade", true, "Enable transparently upgraded HTTP2 connections among pods in the service mesh")
 	controllerNamespace := flag.String("controller-namespace", "linkerd", "namespace in which Linkerd is installed")
 	flags.ConfigureAndParse()
@@ -42,7 +42,12 @@ func main() {
 		log.Fatalf("Failed to listen on %s: %s", *addr, err)
 	}
 
-	server, err := destination.NewServer(*addr, *k8sDNSZone, *controllerNamespace, *enableTLS, *enableH2Upgrade, k8sAPI, done)
+	trustDomain := ""
+	if global, err := config.Global(); err != nil {
+		trustDomain = global.GetIdentityContext().GetTrustDomain()
+	}
+
+	server, err := destination.NewServer(*addr, *k8sDNSZone, *controllerNamespace, trustDomain, *enableH2Upgrade, k8sAPI, done)
 	if err != nil {
 		log.Fatal(err)
 	}

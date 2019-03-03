@@ -94,9 +94,9 @@ func diffUpdateAddresses(oldAddrs, newAddrs []*updateAddress) ([]*updateAddress,
 
 // implements the endpointUpdateListener interface
 type endpointListener struct {
-	enableTLS,
 	enableH2Upgrade bool
-	controllerNS     string
+	controllerNS,
+	identityTrustDomain string
 	ownerKindAndName ownerKindAndNameFn
 
 	labels map[string]string
@@ -109,17 +109,17 @@ type endpointListener struct {
 func newEndpointListener(
 	stream pb.Destination_GetServer,
 	ownerKindAndName ownerKindAndNameFn,
-	enableTLS, enableH2Upgrade bool,
-	controllerNS string,
+	enableH2Upgrade bool,
+	controllerNS, identityTrustDomain string,
 ) *endpointListener {
 	return &endpointListener{
-		controllerNS:     controllerNS,
-		stream:           stream,
-		ownerKindAndName: ownerKindAndName,
-		labels:           make(map[string]string),
-		enableTLS:        enableTLS,
-		enableH2Upgrade:  enableH2Upgrade,
-		stopCh:           make(chan struct{}),
+		controllerNS:        controllerNS,
+		identityTrustDomain: identityTrustDomain,
+		stream:              stream,
+		ownerKindAndName:    ownerKindAndName,
+		labels:              make(map[string]string),
+		enableH2Upgrade:     enableH2Upgrade,
+		stopCh:              make(chan struct{}),
 		log: log.WithFields(log.Fields{
 			"component": "endpoint-listener",
 		}),
@@ -219,8 +219,10 @@ func (l *endpointListener) toWeightedAddr(address *updateAddress) *pb.WeightedAd
 
 func (l *endpointListener) getAddrMetadata(pod *corev1.Pod) (map[string]string, *pb.ProtocolHint, *pb.TlsIdentity) {
 	controllerNS := pod.Labels[pkgK8s.ControllerNSLabel]
-	ownerKind, ownerName := l.ownerKindAndName(pod)
-	labels := pkgK8s.GetPodLabels(ownerKind, ownerName, pod)
+	sa, ns := pkgK8s.GetServiceAccountAndNS(pod)
+
+	ok, on := l.ownerKindAndName(pod)
+	labels := pkgK8s.GetPodLabels(ok, on, pod)
 
 	// If the pod is controlled by us, then it can be hinted that this destination
 	// knows H2 (and handles our orig-proto translation). Note that this check
@@ -237,19 +239,15 @@ func (l *endpointListener) getAddrMetadata(pod *corev1.Pod) (map[string]string, 
 	}
 
 	var identity *pb.TlsIdentity
-	if l.enableTLS && controllerNS == l.controllerNS &&
-		pod.Annotations[pkgK8s.IdentityModeAnnotation] == pkgK8s.IdentityModeOptional {
-		name := pkgK8s.TLSIdentity{
-			Name:                ownerName,
-			Kind:                ownerKind,
-			Namespace:           pod.Namespace,
-			ControllerNamespace: controllerNS,
-		}.ToDNSName()
+	if l.identityTrustDomain != "" &&
+		controllerNS == l.controllerNS &&
+		pod.Annotations[pkgK8s.IdentityModeAnnotation] == pkgK8s.IdentityModeDefault {
 
+		id := fmt.Sprintf("%s.%s.serviceaccount.identity.%s.%s", sa, ns, controllerNS, l.identityTrustDomain)
 		identity = &pb.TlsIdentity{
 			Strategy: &pb.TlsIdentity_K8SPodIdentity_{
 				K8SPodIdentity: &pb.TlsIdentity_K8SPodIdentity{
-					PodIdentity:  name,
+					PodIdentity:  id,
 					ControllerNs: controllerNS,
 				},
 			},

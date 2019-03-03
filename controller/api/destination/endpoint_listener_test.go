@@ -70,7 +70,7 @@ func TestEndpointListener(t *testing.T) {
 		listener := newEndpointListener(
 			mockGetServer,
 			defaultOwnerKindAndName,
-			false, false, "linkerd",
+			false, "linkerd", "",
 		)
 
 		listener.Update(add, remove)
@@ -87,7 +87,7 @@ func TestEndpointListener(t *testing.T) {
 		listener := newEndpointListener(
 			mockGetServer,
 			defaultOwnerKindAndName,
-			false, false, "linkerd",
+			false, "linkerd", "",
 		)
 
 		listener.Update(add, remove)
@@ -127,7 +127,7 @@ func TestEndpointListener(t *testing.T) {
 		listener := newEndpointListener(
 			mockGetServer,
 			defaultOwnerKindAndName,
-			false, false, "linkerd",
+			false, "linkerd", "",
 		)
 
 		completed := make(chan bool)
@@ -150,6 +150,7 @@ func TestEndpointListener(t *testing.T) {
 		expectedPodName := pod1.Name
 		expectedNamespace := thisNS
 		expectedReplicationControllerName := "rc-name"
+		expectedServiceAccountName := "serviceaccount-name"
 
 		podForAddedAddress1 := &corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
@@ -158,6 +159,9 @@ func TestEndpointListener(t *testing.T) {
 			},
 			Status: corev1.PodStatus{
 				Phase: corev1.PodRunning,
+			},
+			Spec: corev1.PodSpec{
+				ServiceAccountName: expectedServiceAccountName,
 			},
 		}
 
@@ -169,7 +173,7 @@ func TestEndpointListener(t *testing.T) {
 		listener := newEndpointListener(
 			mockGetServer,
 			ownerKindAndName,
-			false, false, "linkerd",
+			false, "linkerd", "",
 		)
 		listener.labels = map[string]string{
 			"service":   expectedServiceName,
@@ -191,6 +195,7 @@ func TestEndpointListener(t *testing.T) {
 		expectedAddedAddress1MetricLabels := map[string]string{
 			"pod":                   expectedPodName,
 			"replicationcontroller": expectedReplicationControllerName,
+			"serviceaccount":        expectedServiceAccountName,
 		}
 		if !reflect.DeepEqual(actualAddedAddress1MetricLabels, expectedAddedAddress1MetricLabels) {
 			t.Fatalf("Expected global metric labels sent to be [%v] but was [%v]", expectedAddedAddress1MetricLabels, actualAddedAddress1MetricLabels)
@@ -233,9 +238,9 @@ func TestEndpointListener(t *testing.T) {
 		listener := newEndpointListener(
 			mockGetServer,
 			ownerKindAndName,
-			true,
 			false,
 			expectedControllerNamespace,
+			"trust.domain",
 		)
 
 		add := []*updateAddress{
@@ -285,9 +290,9 @@ func TestEndpointListener(t *testing.T) {
 		listener := newEndpointListener(
 			mockGetServer,
 			ownerKindAndName,
-			true,
 			false,
 			"linkerd-namespace",
+			"trust.domain",
 		)
 
 		add := []*updateAddress{
@@ -334,8 +339,8 @@ func TestEndpointListener(t *testing.T) {
 			mockGetServer,
 			ownerKindAndName,
 			false,
-			false,
 			expectedControllerNamespace,
+			"",
 		)
 
 		add := []*updateAddress{

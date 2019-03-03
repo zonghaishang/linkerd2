@@ -137,12 +137,30 @@ func CreatedByAnnotationValue() string {
 	return fmt.Sprintf("linkerd/cli %s", version.Version)
 }
 
+// GetServiceAccountAndNS returns the pod's serviceaccount and namespace.
+func GetServiceAccountAndNS(pod *corev1.Pod) (sa string, ns string) {
+	sa = pod.Spec.ServiceAccountName
+	if sa == "" {
+		sa = "default"
+	}
+
+	ns = pod.GetNamespace()
+	if ns == "" {
+		ns = "default"
+	}
+
+	return
+}
+
 // GetPodLabels returns the set of prometheus owner labels for a given pod
 func GetPodLabels(ownerKind, ownerName string, pod *corev1.Pod) map[string]string {
 	labels := map[string]string{"pod": pod.Name}
 
 	l5dLabel := KindToL5DLabel(ownerKind)
 	labels[l5dLabel] = ownerName
+
+	sa, _ := GetServiceAccountAndNS(pod)
+	labels["serviceaccount"] = sa
 
 	if controllerNS := pod.Labels[ControllerNSLabel]; controllerNS != "" {
 		labels["control_plane_ns"] = controllerNS
@@ -158,31 +176,4 @@ func GetPodLabels(ownerKind, ownerName string, pod *corev1.Pod) map[string]strin
 // IsMeshed returns whether a given Pod is in a given controller's service mesh.
 func IsMeshed(pod *corev1.Pod, controllerNS string) bool {
 	return pod.Labels[ControllerNSLabel] == controllerNS
-}
-
-// TLSIdentity is the identity of a pod owner (Deployment, Pod,
-// ReplicationController, etc.).
-type TLSIdentity struct {
-	// Name is the name of the pod owner.
-	Name string
-
-	// Kind is the singular, lowercased Kubernetes resource type of the pod owner
-	// (deployment, daemonset, job, replicationcontroller, etc.).
-	Kind string
-
-	// Namespace is the pod's namespace. Kubernetes requires that pods and
-	// pod owners be in the same namespace.
-	Namespace string
-
-	// ControllerNamespace is the namespace of the controller for the pod.
-	ControllerNamespace string
-}
-
-// ToDNSName formats a TLSIdentity as a DNS name.
-func (i TLSIdentity) ToDNSName() string {
-	if i.Kind == Service {
-		return fmt.Sprintf("%s.%s.svc", i.Name, i.Namespace)
-	}
-	return fmt.Sprintf("%s.%s.%s.linkerd-managed.%s.svc.cluster.local", i.Name,
-		i.Kind, i.Namespace, i.ControllerNamespace)
 }
