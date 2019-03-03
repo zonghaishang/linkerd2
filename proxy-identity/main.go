@@ -204,7 +204,13 @@ func generateAndStoreKey(p string) (key *ecdsa.PrivateKey, err error) {
 		return
 	}
 
-	err = ioutil.WriteFile(p, tls.EncodePrivateKeyP8(key), 0600)
+	pemb := tls.EncodePrivateKeyP8(key)
+	err = ioutil.WriteFile(p, pemb, 0600)
+	if err == nil {
+		log.Infof("Wrote %dB ecdsa key to %s", len(pemb), p)
+	} else {
+		log.Errorf("Failed to write %dB ecdsa key: %s", len(pemb), err)
+	}
 	return
 }
 
