@@ -166,22 +166,22 @@ func checkEndEntityDir(dir string) (string, string, string, string, error) {
 
 	trustPath := filepath.Join(dir, "trust-anchors.pem")
 	if err = checkNotExists(trustPath); err != nil {
-		return "", "", "", "", err
+		log.Info(err.Error())
 	}
 
 	keyPath := filepath.Join(dir, "key.p8")
 	if err = checkNotExists(keyPath); err != nil {
-		return "", "", "", "", err
+		log.Info(err.Error())
 	}
 
 	csrPath := filepath.Join(dir, "csr.der")
 	if err = checkNotExists(csrPath); err != nil {
-		return "", "", "", "", err
+		log.Info(err.Error())
 	}
 
 	crtPath := filepath.Join(dir, "crt.pem")
 	if err = checkNotExists(crtPath); err != nil {
-		return "", "", "", "", err
+		log.Info(err.Error())
 	}
 
 	return trustPath, keyPath, csrPath, crtPath, nil
