@@ -143,5 +143,12 @@ spec:
         {{- end }}
         securityContext:
           runAsUser: {{.ControllerUID}}
+      volumes:
+      - name: identity-issuer
+        secret:
+          secretName: linkerd-identity-issuer
+      - name: identity-trust-anchors
+        configMap:
+          name: linkerd-identity-trust-anchors
 {{end -}}
 {{end -}}
