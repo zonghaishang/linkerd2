@@ -461,19 +461,19 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 				Name:  "LINKERD2_PROXY_TLS_POD_IDENTITY",
 				Value: "$(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)",
 			},
-			v1.EnvVar{
+			{
 				Name:  "LINKERD2_PROXY_END_ENTITY_DIR",
 				Value: endEntityDir,
 			},
-			v1.EnvVar{
+			{
 				Name:  "LINKERD2_PROXY_TLS_TRUST_ANCHORS",
 				Value: filepath.Join(endEntityDir, "trust-anchors.pem"),
 			},
-			v1.EnvVar{
+			{
 				Name:  "LINKERD2_PROXY_TLS_PRIVATE_KEY",
 				Value: filepath.Join(endEntityDir, "key.p8"),
 			},
-			v1.EnvVar{
+			{
 				Name:  "LINKERD2_PROXY_TLS_CERT",
 				Value: filepath.Join(endEntityDir, "crt.pem"),
 			},
@@ -509,17 +509,17 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 		patch.addContainer(&v1.Container{
 			Image: fmt.Sprintf("gcr.io/linkerd-io/proxy-identity:%s", conf.globalConfig.GetVersion()),
 			Name:  "linkerd-proxy-identity",
-			Env: append(env,
+			Env: append(sidecar.Env,
 				v1.EnvVar{Name: "TRUST_ANCHORS_PEM", Value: idctx.GetTrustAnchorsPem()},
 				v1.EnvVar{Name: "ID_ADDR", Value: fmt.Sprintf("%s:8080", identityDNS)},
 			),
 			Command: []string{"/bin/sh", "-c"},
 			Args: []string{`
-				set -eu
+				set -eux
 				echo "$TRUST_ANCHORS_PEM" >$LINKERD2_PROXY_TLS_TRUST_ANCHORS
 				/bin/proxy-identity -addr=$ID_ADDR \
 					-dir=$LINKERD2_PROXY_END_ENTITY_DIR \
-					-name=$(LINKERD2_PROXY_TLS_POD_IDENTITY) \
+					-name=$LINKERD2_PROXY_TLS_POD_IDENTITY \
 					-token=/var/run/secrets/kubernetes.io/serviceaccount/token
 			`},
 			VolumeMounts: []v1.VolumeMount{{
