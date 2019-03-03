@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	// localhostDNSNameOverride allows override of the controlPlaneDNS. This
+	// localhostDNSNameOverride allows override of the destinationDNS. This
 	// must be in absolute form for the proxy to special-case it.
 	localhostDNSNameOverride = "localhost."
 	// controlPlanePodName default control plane pod name.
@@ -336,9 +336,14 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 		initArgs = append(initArgs, strings.Join(outboundSkipPortsStr, ","))
 	}
 
-	controlPlaneDNS := fmt.Sprintf("linkerd-destination.%s.svc.cluster.local", conf.globalConfig.GetLinkerdNamespace())
+	destinationDNS := fmt.Sprintf("linkerd-destination.%s.svc.cluster.local", conf.globalConfig.GetLinkerdNamespace())
 	if conf.dnsNameOverride != "" {
-		controlPlaneDNS = conf.dnsNameOverride
+		destinationDNS = conf.dnsNameOverride
+	}
+
+	identityDNS := fmt.Sprintf("linkerd-identity.%s.svc.cluster.local", conf.globalConfig.GetLinkerdNamespace())
+	if conf.dnsNameOverride != "" {
+		identityDNS = conf.dnsNameOverride
 	}
 
 	metricsPort := intstr.IntOrString{
@@ -402,7 +407,7 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 			{Name: "LINKERD2_PROXY_LOG", Value: conf.proxyConfig.GetLogLevel().GetLevel()},
 			{
 				Name:  "LINKERD2_PROXY_CONTROL_URL",
-				Value: fmt.Sprintf("tcp://%s:%d", controlPlaneDNS, conf.proxyConfig.GetDestinationApiPort().GetPort()),
+				Value: fmt.Sprintf("tcp://%s:8086", destinationDNS),
 			},
 			{Name: "LINKERD2_PROXY_CONTROL_LISTENER", Value: fmt.Sprintf("tcp://0.0.0.0:%d", conf.proxyConfig.GetControlPort().GetPort())},
 			{Name: "LINKERD2_PROXY_METRICS_LISTENER", Value: fmt.Sprintf("tcp://0.0.0.0:%d", conf.proxyConfig.GetMetricsPort().GetPort())},
@@ -502,7 +507,7 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 			Name:    "linkerd-proxy-identity",
 			Command: []string{"proxy-identity"},
 			Args: []string{
-				"-addr=linkerd-identity.$(L5D_NS).svc.cluster.local",
+				"-addr", fmt.Sprintf("%s:8080", identityDNS),
 				"-dir", endEntityDir,
 				"-name=$(LINKERD2_PROXY_TLS_POD_IDENTITY)",
 				"-token=/var/run/secrets/kubernetes.io/serviceaccount/token",
