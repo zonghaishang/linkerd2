@@ -43,7 +43,10 @@ func main() {
 	}
 
 	trustDomain := ""
-	if global, err := config.Global(); err != nil {
+	global, err := config.Global()
+	if err != nil {
+		log.Errorf("Couldn't load config; continuing without identity: %s", err)
+	} else {
 		trustDomain = global.GetIdentityContext().GetTrustDomain()
 	}
 

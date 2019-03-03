@@ -99,7 +99,7 @@ func (s *server) GetProfile(dest *pb.GetDestination, stream pb.Destination_GetPr
 
 	proxyID := strings.Split(dest.ProxyId, ".")
 	proxyNS := ""
-	// <deployment>.<namespace>.serviceaccount.identity
+	// <deployment>.<namespace>.serviceaccount.identity.<linkerd-namespace>
 	if len(proxyID) >= 3 {
 		proxyNS = proxyID[1]
 	}
