@@ -157,7 +157,7 @@ spec:
         - -dir
         - /var/run/linkerd/identity/end-entity
         - -name=$(LINKERD2_PROXY_TLS_POD_IDENTITY)
-        - -token=/var/run/secrets/kubernetes.io/serviceaccount
+        - -token=/var/run/secrets/kubernetes.io/serviceaccount/token
         - -trust-anchors-data
         - |-
           -----BEGIN CERTIFICATE-----
@@ -475,7 +475,7 @@ spec:
         - -dir
         - /var/run/linkerd/identity/end-entity
         - -name=$(LINKERD2_PROXY_TLS_POD_IDENTITY)
-        - -token=/var/run/secrets/kubernetes.io/serviceaccount
+        - -token=/var/run/secrets/kubernetes.io/serviceaccount/token
         - -trust-anchors-data
         - |-
           -----BEGIN CERTIFICATE-----
@@ -814,7 +814,7 @@ spec:
         - -dir
         - /var/run/linkerd/identity/end-entity
         - -name=$(LINKERD2_PROXY_TLS_POD_IDENTITY)
-        - -token=/var/run/secrets/kubernetes.io/serviceaccount
+        - -token=/var/run/secrets/kubernetes.io/serviceaccount/token
         - -trust-anchors-data
         - |-
           -----BEGIN CERTIFICATE-----
@@ -1055,7 +1055,7 @@ spec:
         - -dir
         - /var/run/linkerd/identity/end-entity
         - -name=$(LINKERD2_PROXY_TLS_POD_IDENTITY)
-        - -token=/var/run/secrets/kubernetes.io/serviceaccount
+        - -token=/var/run/secrets/kubernetes.io/serviceaccount/token
         - -trust-anchors-data
         - |-
           -----BEGIN CERTIFICATE-----
@@ -1365,7 +1365,7 @@ spec:
         - -dir
         - /var/run/linkerd/identity/end-entity
         - -name=$(LINKERD2_PROXY_TLS_POD_IDENTITY)
-        - -token=/var/run/secrets/kubernetes.io/serviceaccount
+        - -token=/var/run/secrets/kubernetes.io/serviceaccount/token
         - -trust-anchors-data
         - |-
           -----BEGIN CERTIFICATE-----

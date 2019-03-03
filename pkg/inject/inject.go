@@ -505,7 +505,7 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 				"-addr=linkerd-identity.$(L5D_NS).svc.cluster.local",
 				"-dir", endEntityDir,
 				"-name=$(LINKERD2_PROXY_TLS_POD_IDENTITY)",
-				"-token=/var/run/secrets/kubernetes.io/serviceaccount",
+				"-token=/var/run/secrets/kubernetes.io/serviceaccount/token",
 				"-trust-anchors-data", idctx.GetTrustAnchorsPem(),
 			},
 			VolumeMounts: []v1.VolumeMount{{
