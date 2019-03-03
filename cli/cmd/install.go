@@ -7,114 +7,109 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"strings"
 	"time"
 
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/linkerd/linkerd2/cli/static"
-	"github.com/linkerd/linkerd2/controller/gen/config"
-	"github.com/linkerd/linkerd2/pkg/k8s"
-	"github.com/linkerd/linkerd2/pkg/tls"
+	"github.com/golang/protobuf/ptypes"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/proto/hapi/chart"
 	"k8s.io/helm/pkg/renderutil"
 	"k8s.io/helm/pkg/timeconv"
 	"sigs.k8s.io/yaml"
+
+	"github.com/linkerd/linkerd2/cli/static"
+	pb "github.com/linkerd/linkerd2/controller/gen/config"
+	"github.com/linkerd/linkerd2/pkg/config"
+	"github.com/linkerd/linkerd2/pkg/k8s"
+	"github.com/linkerd/linkerd2/pkg/tls"
+	"github.com/linkerd/linkerd2/pkg/version"
 )
 
-type installConfig struct {
-	Namespace                  string
-	ControllerImage            string
-	WebImage                   string
-	PrometheusImage            string
-	PrometheusVolumeName       string
-	GrafanaImage               string
-	GrafanaVolumeName          string
-	ControllerReplicas         uint
-	ImagePullPolicy            string
-	UUID                       string
-	CliVersion                 string
-	ControllerLogLevel         string
-	ControllerComponentLabel   string
-	CreatedByAnnotation        string
-	DestinationAPIPort         uint
-	ProxyContainerName         string
-	InboundPort                uint
-	OutboundPort               uint
-	IgnoreInboundPorts         string
-	IgnoreOutboundPorts        string
-	InboundAcceptKeepaliveMs   uint
-	OutboundConnectKeepaliveMs uint
-	ProxyAutoInjectEnabled     bool
-	ProxyInjectAnnotation      string
-	ProxyInjectDisabled        string
-	ProxyLogLevel              string
-	ProxyUID                   int64
-	ProxyMetricsPort           uint
-	ProxyControlPort           uint
-	ProxySpecFileName          string
-	ProxyInitSpecFileName      string
-	ProxyInitImage             string
-	ProxyImage                 string
-	ProxyResourceRequestCPU    string
-	ProxyResourceRequestMemory string
-	ProxyResourceLimitCPU      string
-	ProxyResourceLimitMemory   string
-	SingleNamespace            bool
-	EnableHA                   bool
-	ControllerUID              int64
-	ProfileSuffixes            string
-	EnableH2Upgrade            bool
-	NoInitContainer            bool
-	GlobalConfig               string
-	ProxyConfig                string
+type (
+	installConfig struct {
+		Namespace                   string
+		ControllerImage             string
+		WebImage                    string
+		PrometheusImage             string
+		PrometheusVolumeName        string
+		GrafanaImage                string
+		GrafanaVolumeName           string
+		ControllerReplicas          uint
+		ImagePullPolicy             string
+		UUID                        string
+		CliVersion                  string
+		ControllerLogLevel          string
+		ControllerComponentLabel    string
+		CreatedByAnnotation         string
+		EnableTLS                   bool
+		TLSTrustAnchorConfigMapName string
+		ProxyContainerName          string
+		TLSTrustAnchorFileName      string
+		ProxyAutoInjectEnabled      bool
+		ProxyInjectAnnotation       string
+		ProxyInjectDisabled         string
+		SingleNamespace             bool
+		EnableHA                    bool
+		ControllerUID               int64
+		EnableH2Upgrade             bool
+		NoInitContainer             bool
+		GlobalConfig                string
+		ProxyConfig                 string
 
-	Identity *installIdentityConfig
-}
+		Identity *installIdentityConfig
+	}
 
-type installIdentityConfig struct {
-	TrustDomain     string
-	TrustAnchorsPEM string
+	installIdentityConfig struct {
+		TrustDomain     string
+		TrustAnchorsPEM string
 
-	Issuer *issuerConfig
-}
+		Issuer *issuerConfig
+	}
 
-type issuerConfig struct {
-	ClockSkewAllowance string
-	IssuanceLifetime   string
+	issuerConfig struct {
+		ClockSkewAllowance string
+		IssuanceLifetime   string
 
-	KeyPEM, CrtPEM string
+		KeyPEM, CrtPEM string
 
-	CrtExpiry time.Time
+		CrtExpiry time.Time
 
-	CrtExpiryAnnotation string
-}
+		CrtExpiryAnnotation string
+	}
 
-// installOptions holds values for command line flags that apply to the install
-// command. All fields in this struct should have corresponding flags added in
-// the newCmdInstall func later in this file. It also embeds proxyConfigOptions
-// in order to hold values for command line flags that apply to both inject and
-// install.
-type installOptions struct {
-	controllerReplicas uint
-	controllerLogLevel string
-	proxyAutoInject    bool
-	singleNamespace    bool
-	highAvailability   bool
-	controllerUID      int64
-	disableH2Upgrade   bool
-	identityOptions    installIdentityOptions
-	*proxyConfigOptions
-}
+	// installOptions holds values for command line flags that apply to the install
+	// command. All fields in this struct should have corresponding flags added in
+	// the newCmdInstall func later in this file. It also embeds proxyConfigOptions
+	// in order to hold values for command line flags that apply to both inject and
+	// install.
+	installOptions struct {
+		controllerReplicas uint
+		controllerLogLevel string
+		proxyAutoInject    bool
+		singleNamespace    bool
+		highAvailability   bool
+		controllerUID      int64
+		disableH2Upgrade   bool
+		identityOptions    installIdentityOptions
+		proxyConfigOptions
+	}
 
-type installIdentityOptions struct {
-	trustDomain        string
-	issuanceLifetime   time.Duration
-	clockSkewAllowance time.Duration
-}
+	installIdentityOptions struct {
+		trustDomain        string
+		issuanceLifetime   time.Duration
+		clockSkewAllowance time.Duration
+	}
+
+	clusterState struct {
+		configs configs
+		issuer  struct{ keyPEM, crtPEM string }
+	}
+)
 
 const (
 	prometheusProxyOutboundCapacity   = 10000
@@ -143,10 +138,33 @@ func newInstallOptions() *installOptions {
 		highAvailability:   false,
 		controllerUID:      2103,
 		disableH2Upgrade:   false,
-		proxyConfigOptions: newProxyConfigOptions(),
+
+		proxyConfigOptions: proxyConfigOptions{
+			linkerdVersion:          version.Version,
+			proxyImage:              defaultDockerRegistry + "/proxy",
+			initImage:               defaultDockerRegistry + "/proxy-init",
+			dockerRegistry:          defaultDockerRegistry,
+			imagePullPolicy:         "IfNotPresent",
+			inboundPort:             4143,
+			outboundPort:            4140,
+			ignoreInboundPorts:      nil,
+			ignoreOutboundPorts:     nil,
+			proxyUID:                2102,
+			proxyLogLevel:           "warn,linkerd2_proxy=info",
+			proxyControlPort:        4190,
+			proxyMetricsPort:        4191,
+			proxyCPURequest:         "",
+			proxyMemoryRequest:      "",
+			proxyCPULimit:           "",
+			proxyMemoryLimit:        "",
+			disableExternalProfiles: false,
+			noInitContainer:         false,
+		},
+
 		identityOptions: installIdentityOptions{
-			trustDomain:      defaultIdentityTrustDomain,
-			issuanceLifetime: defaultIdentityIssuanceLifetime,
+			trustDomain:        defaultIdentityTrustDomain,
+			issuanceLifetime:   defaultIdentityIssuanceLifetime,
+			clockSkewAllowance: defaultIdentityClockSkewAllowance,
 		},
 	}
 }
@@ -159,7 +177,12 @@ func newCmdInstall() *cobra.Command {
 		Short: "Output Kubernetes configs to install Linkerd",
 		Long:  "Output Kubernetes configs to install Linkerd.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			config, err := validateAndBuildConfig(options)
+			cluster, err := fetchClusterState()
+			if err != nil {
+				return err
+			}
+
+			config, err := validateAndBuildConfig(cluster, options)
 			if err != nil {
 				return err
 			}
@@ -168,7 +191,7 @@ func newCmdInstall() *cobra.Command {
 		},
 	}
 
-	addProxyConfigFlags(cmd, options.proxyConfigOptions)
+	addProxyConfigFlags(cmd, &options.proxyConfigOptions)
 	cmd.PersistentFlags().UintVar(&options.controllerReplicas, "controller-replicas", options.controllerReplicas, "Replicas of the controller to deploy")
 	cmd.PersistentFlags().StringVar(&options.controllerLogLevel, "controller-log-level", options.controllerLogLevel, "Log level for the controller and web components")
 	cmd.PersistentFlags().BoolVar(&options.proxyAutoInject, "proxy-auto-inject", options.proxyAutoInject, "Enable proxy sidecar auto-injection via a webhook (default false)")
@@ -179,22 +202,36 @@ func newCmdInstall() *cobra.Command {
 	return cmd
 }
 
-func validateAndBuildConfig(options *installOptions) (*installConfig, error) {
-	if err := options.validate(); err != nil {
-		return nil, err
+func fetchClusterState() (state clusterState, err error) {
+	api, err := k8s.NewAPI(kubeconfigPath, kubeContext)
+	if err != nil {
+		return
 	}
 
-	// TODO: these seem to not be used?
-	ignoreInboundPorts := []string{
-		fmt.Sprintf("%d", options.proxyControlPort),
-		fmt.Sprintf("%d", options.proxyMetricsPort),
+	k, err := kubernetes.NewForConfig(api.Config)
+	if err != nil {
+		return
 	}
-	for _, p := range options.ignoreInboundPorts {
-		ignoreInboundPorts = append(ignoreInboundPorts, fmt.Sprintf("%d", p))
+
+	configMaps := k.CoreV1().ConfigMaps(controlPlaneNamespace)
+	state.configs.global, state.configs.proxy, err = config.Fetch(configMaps)
+	if err != nil {
+		return
 	}
-	ignoreOutboundPorts := []string{}
-	for _, p := range options.ignoreOutboundPorts {
-		ignoreOutboundPorts = append(ignoreOutboundPorts, fmt.Sprintf("%d", p))
+
+	// If we can't fetch the issuer secrets, then we assume they don't exist...
+	secrets := k.CoreV1().Secrets(controlPlaneNamespace)
+	if s, e := secrets.Get("linkerd-identity-issuer", metav1.GetOptions{}); e == nil {
+		state.issuer.crtPEM = string(s.Data["crt.pem"])
+		state.issuer.keyPEM = string(s.Data["key.pem"])
+	}
+
+	return
+}
+
+func validateAndBuildConfig(state clusterState, options *installOptions) (*installConfig, error) {
+	if err := options.validate(); err != nil {
+		return nil, err
 	}
 
 	if options.highAvailability && options.controllerReplicas == defaultControllerReplicas {
@@ -209,45 +246,84 @@ func validateAndBuildConfig(options *installOptions) (*installConfig, error) {
 		options.proxyMemoryRequest = "20Mi"
 	}
 
-	profileSuffixes := "."
-	if options.proxyConfigOptions.disableExternalProfiles {
-		profileSuffixes = "svc.cluster.local."
+	if state.configs.global == nil {
+		state.configs.global = &pb.Global{}
 	}
 
+	// TODO accept roots as configuration
 	var identity *installIdentityConfig
-	trustDomain := options.identityOptions.trustDomain
-	if options.identityOptions.trustDomain != "" {
-		// TODO accept roots as configuration
-		root, err := tls.GenerateRootCAWithDefaults(trustDomain)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to create root certificate for identity: %s", err)
-		}
+	if options.enableTLS() {
+		idctx := state.configs.global.GetIdentityContext()
+		if idctx != nil && state.issuer.crtPEM != "" && state.issuer.keyPEM != "" {
+			crt, err := tls.DecodePEMCrt(state.issuer.crtPEM)
+			if err != nil {
+				return nil, err
+			}
 
-		subdomain := fmt.Sprintf("identity.%s.%s", controlPlaneNamespace, trustDomain)
-		issuer, err := root.GenerateCA(subdomain, tls.Validity{}, -1)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to create issuer certificate for identity: %s", err)
-		}
+			var csa time.Duration
+			if d := idctx.GetClockSkewAllowance(); d != nil {
+				csa, err = ptypes.Duration(d)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				csa = options.identityOptions.clockSkewAllowance
+			}
 
-		// TODO accept a root key
+			var il time.Duration
+			if d := idctx.GetIssuanceLifetime(); d != nil {
+				il, err = ptypes.Duration(d)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				il = options.identityOptions.issuanceLifetime
+			}
 
-		identity = &installIdentityConfig{
-			TrustDomain:     trustDomain,
-			TrustAnchorsPEM: root.Cred.Crt.EncodeCertificatePEM(),
-			Issuer: &issuerConfig{
-				ClockSkewAllowance:  options.identityOptions.clockSkewAllowance.String(),
-				IssuanceLifetime:    options.identityOptions.issuanceLifetime.String(),
-				CrtExpiryAnnotation: k8s.IdentityIssuerExpiryAnnotation,
+			identity = &installIdentityConfig{
+				TrustDomain:     idctx.GetTrustDomain(),
+				TrustAnchorsPEM: idctx.GetTrustAnchorsPem(),
+				Issuer: &issuerConfig{
+					ClockSkewAllowance:  csa.String(),
+					IssuanceLifetime:    il.String(),
+					CrtExpiryAnnotation: k8s.IdentityIssuerExpiryAnnotation,
 
-				KeyPEM:    issuer.Cred.EncodePrivateKeyPEM(),
-				CrtPEM:    issuer.Cred.Crt.EncodeCertificatePEM(),
-				CrtExpiry: issuer.Cred.Crt.Certificate.NotAfter,
-			},
+					KeyPEM:    state.issuer.keyPEM,
+					CrtPEM:    state.issuer.crtPEM,
+					CrtExpiry: crt.Certificate.NotAfter,
+				},
+			}
+		} else {
+			trustDomain := options.identityOptions.trustDomain
+			root, err := tls.GenerateRootCAWithDefaults(trustDomain)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to create root certificate for identity: %s", err)
+			}
+
+			subdomain := fmt.Sprintf("identity.%s.%s", controlPlaneNamespace, trustDomain)
+			issuer, err := root.GenerateCA(subdomain, tls.Validity{}, -1)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to create issuer certificate for identity: %s", err)
+			}
+
+			identity = &installIdentityConfig{
+				TrustDomain:     trustDomain,
+				TrustAnchorsPEM: root.Cred.Crt.EncodeCertificatePEM(),
+				Issuer: &issuerConfig{
+					ClockSkewAllowance:  options.identityOptions.clockSkewAllowance.String(),
+					IssuanceLifetime:    options.identityOptions.issuanceLifetime.String(),
+					CrtExpiryAnnotation: k8s.IdentityIssuerExpiryAnnotation,
+
+					KeyPEM:    issuer.Cred.EncodePrivateKeyPEM(),
+					CrtPEM:    issuer.Cred.Crt.EncodeCertificatePEM(),
+					CrtExpiry: issuer.Cred.Crt.Certificate.NotAfter,
+				},
+			}
 		}
 	}
 
 	jsonMarshaler := jsonpb.Marshaler{EmitDefaults: true}
-	globalConfig, err := jsonMarshaler.MarshalToString(globalConfig(options))
+	globalConfig, err := jsonMarshaler.MarshalToString(globalConfig(options, identity))
 	if err != nil {
 		return nil, err
 	}
@@ -258,52 +334,35 @@ func validateAndBuildConfig(options *installOptions) (*installConfig, error) {
 	}
 
 	return &installConfig{
-		Namespace:                  controlPlaneNamespace,
-		ControllerImage:            fmt.Sprintf("%s/controller:%s", options.dockerRegistry, options.linkerdVersion),
-		WebImage:                   fmt.Sprintf("%s/web:%s", options.dockerRegistry, options.linkerdVersion),
-		PrometheusImage:            "prom/prometheus:v2.7.1",
-		PrometheusVolumeName:       "data",
-		GrafanaImage:               fmt.Sprintf("%s/grafana:%s", options.dockerRegistry, options.linkerdVersion),
-		GrafanaVolumeName:          "data",
-		ControllerReplicas:         options.controllerReplicas,
-		ImagePullPolicy:            options.imagePullPolicy,
-		UUID:                       uuid.NewV4().String(),
-		CliVersion:                 k8s.CreatedByAnnotationValue(),
-		ControllerLogLevel:         options.controllerLogLevel,
-		ControllerComponentLabel:   k8s.ControllerComponentLabel,
-		ControllerUID:              options.controllerUID,
-		CreatedByAnnotation:        k8s.CreatedByAnnotation,
-		DestinationAPIPort:         options.destinationAPIPort,
-		ProxyContainerName:         k8s.ProxyContainerName,
-		InboundPort:                options.inboundPort,
-		OutboundPort:               options.outboundPort,
-		IgnoreInboundPorts:         strings.Join(ignoreInboundPorts, ","),
-		IgnoreOutboundPorts:        strings.Join(ignoreOutboundPorts, ","),
-		InboundAcceptKeepaliveMs:   defaultKeepaliveMs,
-		OutboundConnectKeepaliveMs: defaultKeepaliveMs,
-		ProxyAutoInjectEnabled:     options.proxyAutoInject,
-		ProxyInjectAnnotation:      k8s.ProxyInjectAnnotation,
-		ProxyInjectDisabled:        k8s.ProxyInjectDisabled,
-		ProxyLogLevel:              options.proxyLogLevel,
-		ProxyUID:                   options.proxyUID,
-		ProxyMetricsPort:           options.proxyMetricsPort,
-		ProxyControlPort:           options.proxyControlPort,
-		ProxySpecFileName:          k8s.ProxySpecFileName,
-		ProxyInitSpecFileName:      k8s.ProxyInitSpecFileName,
-		ProxyInitImage:             options.taggedProxyInitImage(),
-		ProxyImage:                 options.taggedProxyImage(),
-		ProxyResourceRequestCPU:    options.proxyCPURequest,
-		ProxyResourceRequestMemory: options.proxyMemoryRequest,
-		ProxyResourceLimitCPU:      options.proxyCPULimit,
-		ProxyResourceLimitMemory:   options.proxyMemoryLimit,
-		SingleNamespace:            options.singleNamespace,
-		EnableHA:                   options.highAvailability,
-		ProfileSuffixes:            profileSuffixes,
-		EnableH2Upgrade:            !options.disableH2Upgrade,
-		NoInitContainer:            options.noInitContainer,
-		Identity:                   identity,
-		GlobalConfig:               globalConfig,
-		ProxyConfig:                proxyConfig,
+		Namespace:                   controlPlaneNamespace,
+		ControllerImage:             fmt.Sprintf("%s/controller:%s", options.dockerRegistry, options.linkerdVersion),
+		WebImage:                    fmt.Sprintf("%s/web:%s", options.dockerRegistry, options.linkerdVersion),
+		PrometheusImage:             "prom/prometheus:v2.7.1",
+		PrometheusVolumeName:        "data",
+		GrafanaImage:                fmt.Sprintf("%s/grafana:%s", options.dockerRegistry, options.linkerdVersion),
+		GrafanaVolumeName:           "data",
+		ControllerReplicas:          options.controllerReplicas,
+		ImagePullPolicy:             options.imagePullPolicy,
+		UUID:                        uuid.NewV4().String(),
+		CliVersion:                  k8s.CreatedByAnnotationValue(),
+		ControllerLogLevel:          options.controllerLogLevel,
+		ControllerComponentLabel:    k8s.ControllerComponentLabel,
+		ControllerUID:               options.controllerUID,
+		CreatedByAnnotation:         k8s.CreatedByAnnotation,
+		EnableTLS:                   options.enableTLS(),
+		TLSTrustAnchorConfigMapName: k8s.TLSTrustAnchorConfigMapName,
+		ProxyContainerName:          k8s.ProxyContainerName,
+		TLSTrustAnchorFileName:      k8s.TLSTrustAnchorFileName,
+		ProxyAutoInjectEnabled:      options.proxyAutoInject,
+		ProxyInjectAnnotation:       k8s.ProxyInjectAnnotation,
+		ProxyInjectDisabled:         k8s.ProxyInjectDisabled,
+		SingleNamespace:             options.singleNamespace,
+		EnableHA:                    options.highAvailability,
+		EnableH2Upgrade:             !options.disableH2Upgrade,
+		NoInitContainer:             options.noInitContainer,
+		GlobalConfig:                globalConfig,
+		ProxyConfig:                 proxyConfig,
+		Identity:                    identity,
 	}, nil
 }
 
@@ -368,17 +427,37 @@ func render(config installConfig, w io.Writer, options *installOptions) error {
 	}
 
 	injectOptions := newInjectOptions()
-	*injectOptions.proxyConfigOptions = *options.proxyConfigOptions
 
-	// Special case for linkerd-proxy running in the Prometheus pod.
-	injectOptions.proxyOutboundCapacity[config.PrometheusImage] = prometheusProxyOutboundCapacity
+	injectOptions.proxyConfigOptions = options.proxyConfigOptions
 
 	// Skip outbound port 443 to enable Kubernetes API access without the proxy.
 	// Once Kubernetes supports sidecar containers, this may be removed, as that
 	// will guarantee the proxy is running prior to control-plane startup.
 	injectOptions.ignoreOutboundPorts = append(injectOptions.ignoreOutboundPorts, 443)
 
-	return InjectYAML(&buf, w, ioutil.Discard, injectOptions)
+	// TODO: Fetch GlobalConfig and ProxyConfig from the ConfigMap/API
+	// c, err := fetchConfigsFromK8s()
+	// if err != nil {
+	// 	return err
+	// }
+	injectConfig := newConfig()
+	injectConfig.overrideFromOptions(injectOptions)
+
+	// Override does NOT set an identity context if none exists, since it can't be
+	// enabled at inject-time if it's not enabled at install-time.
+	if config.Identity != nil {
+		injectConfig.global.IdentityContext = &pb.IdentityContext{
+			TrustDomain:     config.Identity.TrustDomain,
+			TrustAnchorsPem: config.Identity.TrustAnchorsPEM,
+		}
+	}
+
+	return processYAML(&buf, w, ioutil.Discard, resourceTransformerInject{
+		configs: injectConfig,
+		proxyOutboundCapacity: map[string]uint{
+			config.PrometheusImage: prometheusProxyOutboundCapacity,
+		},
+	})
 }
 
 func (options *installOptions) validate() error {
@@ -406,64 +485,66 @@ func readIntoBytes(filename string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func globalConfig(options *installOptions) *config.GlobalConfig {
-	var identityContext *config.IdentityContext
-	if options.identityOptions.trustDomain != "" {
-		identityContext = new(config.IdentityContext)
+func globalConfig(options *installOptions, id *installIdentityConfig) *pb.Global {
+	var identityContext *pb.IdentityContext
+	if id != nil {
+		identityContext = &pb.IdentityContext{
+			TrustDomain:     id.TrustDomain,
+			TrustAnchorsPem: id.TrustAnchorsPEM,
+		}
 	}
 
-	return &config.GlobalConfig{
+	return &pb.Global{
 		LinkerdNamespace: controlPlaneNamespace,
 		CniEnabled:       options.noInitContainer,
+		Version:          options.linkerdVersion,
 		IdentityContext:  identityContext,
 	}
 }
 
-func proxyConfig(options *installOptions) *config.ProxyConfig {
-	ignoreInboundPorts := []*config.Port{}
+func proxyConfig(options *installOptions) *pb.Proxy {
+	ignoreInboundPorts := []*pb.Port{}
 	for _, port := range options.ignoreInboundPorts {
-		ignoreInboundPorts = append(ignoreInboundPorts, &config.Port{Port: uint32(port)})
+		ignoreInboundPorts = append(ignoreInboundPorts, &pb.Port{Port: uint32(port)})
 	}
 
-	ignoreOutboundPorts := []*config.Port{}
+	ignoreOutboundPorts := []*pb.Port{}
 	for _, port := range options.ignoreOutboundPorts {
-		ignoreOutboundPorts = append(ignoreOutboundPorts, &config.Port{Port: uint32(port)})
+		ignoreOutboundPorts = append(ignoreOutboundPorts, &pb.Port{Port: uint32(port)})
 	}
 
-	return &config.ProxyConfig{
-		ProxyImage: &config.Image{
-			ImageName:  options.taggedProxyImage(),
+	return &pb.Proxy{
+		ProxyImage: &pb.Image{
+			ImageName:  registryOverride(options.proxyImage, options.dockerRegistry),
 			PullPolicy: options.imagePullPolicy,
 		},
-		ProxyInitImage: &config.Image{
-			ImageName:  options.taggedProxyInitImage(),
+		ProxyInitImage: &pb.Image{
+			ImageName:  registryOverride(options.initImage, options.dockerRegistry),
 			PullPolicy: options.imagePullPolicy,
 		},
-		DestinationApiPort: &config.Port{
-			Port: uint32(options.destinationAPIPort),
-		},
-		ControlPort: &config.Port{
+		DestinationApiPort: &pb.Port{Port: 8086},
+		ControlPort: &pb.Port{
 			Port: uint32(options.proxyControlPort),
 		},
 		IgnoreInboundPorts:  ignoreInboundPorts,
 		IgnoreOutboundPorts: ignoreOutboundPorts,
-		InboundPort: &config.Port{
+		InboundPort: &pb.Port{
 			Port: uint32(options.inboundPort),
 		},
-		MetricsPort: &config.Port{
+		MetricsPort: &pb.Port{
 			Port: uint32(options.proxyMetricsPort),
 		},
-		OutboundPort: &config.Port{
+		OutboundPort: &pb.Port{
 			Port: uint32(options.outboundPort),
 		},
-		Resource: &config.ResourceRequirements{
+		Resource: &pb.ResourceRequirements{
 			RequestCpu:    options.proxyCPURequest,
 			RequestMemory: options.proxyMemoryRequest,
 			LimitCpu:      options.proxyCPULimit,
 			LimitMemory:   options.proxyMemoryLimit,
 		},
 		ProxyUid: options.proxyUID,
-		LogLevel: &config.LogLevel{
+		LogLevel: &pb.LogLevel{
 			Level: options.proxyLogLevel,
 		},
 		DisableExternalProfiles: options.disableExternalProfiles,

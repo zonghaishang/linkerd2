@@ -16,7 +16,7 @@ items:
       metadata:
         annotations:
           linkerd.io/created-by: linkerd/cli dev-undefined
-          linkerd.io/identity-mode: default
+          linkerd.io/identity-mode: disabled
           linkerd.io/proxy-version: testinjectversion
         creationTimestamp: null
         labels:
@@ -119,20 +119,8 @@ items:
                 fieldPath: metadata.namespace
           - name: L5D_NS
             value: linkerd
-          - name: L5D_TRUST_DOMAIN
-            value: cluster.local
           - name: LINKERD2_PROXY_ID
-            value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
-          - name: LINKERD2_PROXY_TLS_TRUST_ANCHORS
-            value: /var/run/linkerd/identity/trust-anchors/trust-anchors.pem
-          - name: LINKERD2_PROXY_TLS_END_ENTITY_DIR
-            value: /var/run/linkerd/identity/end-entity
-          - name: LINKERD2_PROXY_TLS_POD_IDENTITY
-            value: $(LINKERD2_PROXY_ID)
-          - name: LINKERD2_PROXY_CONTROLLER_NAMESPACE
-            value: linkerd
-          - name: LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY
-            value: linkerd-controller.$(L5D_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
+            value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS)
           image: gcr.io/linkerd-io/proxy:testinjectversion
           imagePullPolicy: IfNotPresent
           livenessProbe:
@@ -155,10 +143,6 @@ items:
           securityContext:
             runAsUser: 2102
           terminationMessagePolicy: FallbackToLogsOnError
-          volumeMounts:
-          - mountPath: /var/run/linkerd/identity/end-entity
-            name: linkerd-identity-end-entity
-            readOnly: true
         initContainers:
         - args:
           - --incoming-proxy-port
@@ -202,7 +186,7 @@ items:
       metadata:
         annotations:
           linkerd.io/created-by: linkerd/cli dev-undefined
-          linkerd.io/identity-mode: default
+          linkerd.io/identity-mode: disabled
           linkerd.io/proxy-version: testinjectversion
         creationTimestamp: null
         labels:
@@ -300,20 +284,8 @@ items:
                 fieldPath: metadata.namespace
           - name: L5D_NS
             value: linkerd
-          - name: L5D_TRUST_DOMAIN
-            value: cluster.local
           - name: LINKERD2_PROXY_ID
-            value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
-          - name: LINKERD2_PROXY_TLS_TRUST_ANCHORS
-            value: /var/run/linkerd/identity/trust-anchors/trust-anchors.pem
-          - name: LINKERD2_PROXY_TLS_END_ENTITY_DIR
-            value: /var/run/linkerd/identity/end-entity
-          - name: LINKERD2_PROXY_TLS_POD_IDENTITY
-            value: $(LINKERD2_PROXY_ID)
-          - name: LINKERD2_PROXY_CONTROLLER_NAMESPACE
-            value: linkerd
-          - name: LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY
-            value: linkerd-controller.$(L5D_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
+            value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS)
           image: gcr.io/linkerd-io/proxy:testinjectversion
           imagePullPolicy: IfNotPresent
           livenessProbe:
@@ -336,10 +308,6 @@ items:
           securityContext:
             runAsUser: 2102
           terminationMessagePolicy: FallbackToLogsOnError
-          volumeMounts:
-          - mountPath: /var/run/linkerd/identity/end-entity
-            name: linkerd-identity-end-entity
-            readOnly: true
         initContainers:
         - args:
           - --incoming-proxy-port

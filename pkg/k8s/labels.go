@@ -111,13 +111,29 @@ const (
 	// configuration resource of the proxy-injector webhook.
 	ProxyInjectorWebhookConfig = "linkerd-proxy-injector-webhook-config"
 
-	// ProxySpecFileName is the name (key) within the proxy-injector ConfigMap
-	// that contains the proxy container spec.
-	ProxySpecFileName = "proxy.yaml"
+	// TLSTrustAnchorVolumeName is the name of the trust anchor volume,
+	// used when injecting a proxy with TLS enabled.
+	TLSTrustAnchorVolumeName = "linkerd-trust-anchors"
 
-	// ProxyInitSpecFileName is the name (key) within the
-	// proxy-injector ConfigMap that contains the proxy-init container spec.
-	ProxyInitSpecFileName = "proxy-init.yaml"
+	// TLSSecretsVolumeName is the name of the volume holding the secrets,
+	// when injecting a proxy with TLS enabled.
+	TLSSecretsVolumeName = "linkerd-secrets"
+
+	// TLSTrustAnchorConfigMapName is the name of the ConfigMap that holds the
+	// trust anchors (trusted root certificates).
+	TLSTrustAnchorConfigMapName = "linkerd-ca-bundle"
+
+	// TLSTrustAnchorFileName is the name (key) within the trust anchor ConfigMap
+	// that contains the actual trust anchor bundle.
+	TLSTrustAnchorFileName = "trust-anchors.pem"
+
+	// TLSCertFileName is the name (key) within proxy-injector ConfigMap that
+	// contains the TLS certificate.
+	TLSCertFileName = "certificate.crt"
+
+	// TLSPrivateKeyFileName is the name (key) within proxy-injector ConfigMap
+	// that contains the TLS private key.
+	TLSPrivateKeyFileName = "private-key.p8"
 
 	/*
 	 * Mount paths
@@ -132,13 +148,23 @@ var InjectedLabels = []string{ControllerNSLabel, ProxyDeploymentLabel, ProxyRepl
 	ProxyReplicaSetLabel, ProxyJobLabel, ProxyDaemonSetLabel, ProxyStatefulSetLabel}
 
 var (
-	// MountPathConfigProxySpec is the path at which the proxy container spec is
-	// mounted to the proxy-injector
-	MountPathConfigProxySpec = MountPathBase + "/config/" + ProxySpecFileName
+	// MountPathTLSTrustAnchor is the path at which the trust anchor file is
+	// mounted
+	MountPathTLSTrustAnchor = MountPathBase + "/trust-anchors/" + TLSTrustAnchorFileName
 
-	// MountPathConfigProxyInitSpec is the path at which the proxy-init container
-	// spec is mounted to the proxy-injector
-	MountPathConfigProxyInitSpec = MountPathBase + "/config/" + ProxyInitSpecFileName
+	// MountPathTLSIdentityCert is the path at which the TLS identity cert file is
+	// mounted
+	MountPathTLSIdentityCert = MountPathBase + "/identity/" + TLSCertFileName
+
+	// MountPathTLSIdentityKey is the path at which the TLS identity key file is
+	// mounted
+	MountPathTLSIdentityKey = MountPathBase + "/identity/" + TLSPrivateKeyFileName
+
+	// MountPathGlobalConfig is the path at which the global config file is mounted
+	MountPathGlobalConfig = MountPathBase + "/config/global"
+
+	// MountPathProxyConfig is the path at which the global config file is mounted
+	MountPathProxyConfig = MountPathBase + "/config/proxy"
 )
 
 // CreatedByAnnotationValue returns the value associated with

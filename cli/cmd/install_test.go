@@ -4,116 +4,121 @@ import (
 	"bytes"
 	"fmt"
 	"testing"
-	"time"
 
-	"github.com/linkerd/linkerd2/pkg/k8s"
+	pb "github.com/linkerd/linkerd2/controller/gen/config"
 )
 
+const trustAnchorsPEM = `-----BEGIN CERTIFICATE-----
+MIIBYDCCAQegAwIBAgIBATAKBggqhkjOPQQDAjAYMRYwFAYDVQQDEw1jbHVzdGVy
+LmxvY2FsMB4XDTE5MDMwMzAxNTk1MloXDTI5MDIyODAyMDM1MlowGDEWMBQGA1UE
+AxMNY2x1c3Rlci5sb2NhbDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABAChpAt0
+xtgO9qbVtEtDK80N6iCL2Htyf2kIv2m5QkJ1y0TFQi5hTVe3wtspJ8YpZF0pl364
+6TiYeXB8tOOhIACjQjBAMA4GA1UdDwEB/wQEAwIBBjAdBgNVHSUEFjAUBggrBgEF
+BQcDAQYIKwYBBQUHAwIwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNHADBE
+AiBQ/AAwF8kG8VOmRSUTPakSSa/N4mqK2HsZuhQXCmiZHwIgZEzI5DCkpU7w3SIv
+OLO4Zsk1XrGZHGsmyiEyvYF9lpY=
+ -----END CERTIFICATE-----`
+
+const crtPEM = `-----BEGIN CERTIFICATE-----
+MIIBcjCCARigAwIBAgIBAjAKBggqhkjOPQQDAjAYMRYwFAYDVQQDEw1jbHVzdGVy
+LmxvY2FsMB4XDTE5MDMwMzAxNTk1MloXDTI5MDIyODAyMDM1MlowKTEnMCUGA1UE
+AxMeaWRlbnRpdHkubGlua2VyZC5jbHVzdGVyLmxvY2FsMFkwEwYHKoZIzj0CAQYI
+KoZIzj0DAQcDQgAEISg0CmJNBWLxJTsKt7+bz8As1YfqZFuTq2FnYo016NKVv70e
+QC3T6tOpaj9xuKsXflU6ZkuiVRiihw+tV2isq6NCMEAwDgYDVR0PAQH/BAQDAgEG
+MB0GA1UdJQQWMBQGCCsGAQUFBwMBBggrBgEFBQcDAjAPBgNVHRMBAf8EBTADAQH/
+MAoGCCqGSM49BAMCA0gAMEUCIF+aM0Bw2PdMFDq/KtaBQvHdAYaUPVx8vf3jn+M4
+AaD4AiEA9HBdjyWyiKeKxlA8CoOvUAwI95xc6XUMoDxRSXjnpXg=
+-----END CERTIFICATE-----`
+
+const keyPEM = `-----BEGIN EC PRIVATE KEY-----
+MHcCAQEEIMIJymekYz+kkCLPkFlrUyAu/cHJYRTywfmAURKKRXdzoAoGCCqGSM49
+AwEHoUQDQgAEISg0CmJNBWLxJTsKt7+bz8As1YfqZFuTq2FnYo016NKVv70eQC3T
+6tOpaj9xuKsXflU6ZkuiVRiihw+tV2isqw==
+-----END EC PRIVATE KEY-----`
+
 func TestRender(t *testing.T) {
+	cluster := clusterState{}
+	cluster.configs = newConfig()
+	cluster.configs.global.LinkerdNamespace = controlPlaneNamespace
+	cluster.configs.global.IdentityContext = &pb.IdentityContext{
+		TrustDomain:     "trust.domain",
+		TrustAnchorsPem: trustAnchorsPEM,
+	}
+	cluster.issuer.crtPEM = crtPEM
+	cluster.issuer.keyPEM = keyPEM
+
 	// The default configuration, with the random UUID overridden with a fixed
 	// value to facilitate testing.
-	defaultControlPlaneNamespace := controlPlaneNamespace
 	defaultOptions := newInstallOptions()
-	defaultConfig, err := validateAndBuildConfig(defaultOptions)
+	defaultConfig, err := validateAndBuildConfig(cluster, defaultOptions)
 	if err != nil {
 		t.Fatalf("Unexpected error from validateAndBuildConfig(): %v", err)
 	}
 
 	defaultConfig.UUID = "deaab91a-f4ab-448a-b7d1-c832a2fa0a60"
-	defaultConfig.Identity = &installIdentityConfig{
-		TrustDomain:     "cluster.local",
-		TrustAnchorsPEM: "zyx",
-		Issuer: &issuerConfig{
-			CrtExpiryAnnotation: k8s.IdentityIssuerExpiryAnnotation,
-			IssuanceLifetime:    "24h",
-
-			KeyPEM: "abc",
-			CrtPEM: "def",
-
-			CrtExpiry: time.Date(2030, time.February, 12, 0, 0, 0, 0, time.UTC),
-		},
-	}
 
 	// A configuration that shows that all config setting strings are honored
 	// by `render()`. Note that `SingleNamespace` is tested in a separate
 	// configuration, since it's incompatible with `ProxyAutoInjectEnabled`.
 	metaConfig := installConfig{
-		Namespace:                  "Namespace",
-		ControllerImage:            "ControllerImage",
-		WebImage:                   "WebImage",
-		PrometheusImage:            "PrometheusImage",
-		PrometheusVolumeName:       "data",
-		GrafanaImage:               "GrafanaImage",
-		GrafanaVolumeName:          "data",
-		ControllerReplicas:         1,
-		ImagePullPolicy:            "ImagePullPolicy",
-		UUID:                       "UUID",
-		CliVersion:                 "CliVersion",
-		ControllerLogLevel:         "ControllerLogLevel",
-		ControllerComponentLabel:   "ControllerComponentLabel",
-		CreatedByAnnotation:        "CreatedByAnnotation",
-		DestinationAPIPort:         123,
-		ProxyContainerName:         "ProxyContainerName",
-		ProxyAutoInjectEnabled:     true,
-		ProxyInjectAnnotation:      "ProxyInjectAnnotation",
-		ProxyInjectDisabled:        "ProxyInjectDisabled",
-		ProxyLogLevel:              "ProxyLogLevel",
-		ProxyUID:                   2102,
-		ControllerUID:              2103,
-		InboundPort:                4143,
-		OutboundPort:               4140,
-		InboundAcceptKeepaliveMs:   10000,
-		OutboundConnectKeepaliveMs: 10000,
-		ProxyControlPort:           4190,
-		ProxyMetricsPort:           4191,
-		ProxyInitImage:             "ProxyInitImage",
-		ProxyImage:                 "ProxyImage",
-		ProxySpecFileName:          "ProxySpecFileName",
-		ProxyInitSpecFileName:      "ProxyInitSpecFileName",
-		IgnoreInboundPorts:         "4190,4191,1,2,3",
-		IgnoreOutboundPorts:        "2,3,4",
-		ProxyResourceRequestCPU:    "RequestCPU",
-		ProxyResourceRequestMemory: "RequestMemory",
-		ProfileSuffixes:            "suffix.",
-		EnableH2Upgrade:            true,
-		NoInitContainer:            false,
-		Identity:                   defaultConfig.Identity,
-		GlobalConfig:               "GlobalConfig",
-		ProxyConfig:                "ProxyConfig",
+		Namespace:                   "Namespace",
+		ControllerImage:             "ControllerImage",
+		WebImage:                    "WebImage",
+		PrometheusImage:             "PrometheusImage",
+		PrometheusVolumeName:        "data",
+		GrafanaImage:                "GrafanaImage",
+		GrafanaVolumeName:           "data",
+		ControllerReplicas:          1,
+		ImagePullPolicy:             "ImagePullPolicy",
+		UUID:                        "UUID",
+		CliVersion:                  "CliVersion",
+		ControllerLogLevel:          "ControllerLogLevel",
+		ControllerComponentLabel:    "ControllerComponentLabel",
+		CreatedByAnnotation:         "CreatedByAnnotation",
+		EnableTLS:                   true,
+		TLSTrustAnchorConfigMapName: "TLSTrustAnchorConfigMapName",
+		ProxyContainerName:          "ProxyContainerName",
+		TLSTrustAnchorFileName:      "TLSTrustAnchorFileName",
+		ProxyAutoInjectEnabled:      true,
+		ProxyInjectAnnotation:       "ProxyInjectAnnotation",
+		ProxyInjectDisabled:         "ProxyInjectDisabled",
+		ControllerUID:               2103,
+		EnableH2Upgrade:             true,
+		NoInitContainer:             false,
+		GlobalConfig:                "GlobalConfig",
+		ProxyConfig:                 "ProxyConfig",
 	}
 
 	singleNamespaceConfig := installConfig{
-		Namespace:                  "Namespace",
-		ControllerImage:            "ControllerImage",
-		WebImage:                   "WebImage",
-		PrometheusImage:            "PrometheusImage",
-		PrometheusVolumeName:       "data",
-		GrafanaImage:               "GrafanaImage",
-		GrafanaVolumeName:          "data",
-		ControllerReplicas:         1,
-		ImagePullPolicy:            "ImagePullPolicy",
-		UUID:                       "UUID",
-		CliVersion:                 "CliVersion",
-		ControllerLogLevel:         "ControllerLogLevel",
-		ControllerComponentLabel:   "ControllerComponentLabel",
-		CreatedByAnnotation:        "CreatedByAnnotation",
-		DestinationAPIPort:         123,
-		ProxyUID:                   2102,
-		ControllerUID:              2103,
-		InboundAcceptKeepaliveMs:   10000,
-		OutboundConnectKeepaliveMs: 10000,
-		ProxyContainerName:         "ProxyContainerName",
-		SingleNamespace:            true,
-		EnableH2Upgrade:            true,
-		NoInitContainer:            false,
-		Identity:                   defaultConfig.Identity,
-		GlobalConfig:               "GlobalConfig",
-		ProxyConfig:                "ProxyConfig",
+		Namespace:                   "Namespace",
+		ControllerImage:             "ControllerImage",
+		WebImage:                    "WebImage",
+		PrometheusImage:             "PrometheusImage",
+		PrometheusVolumeName:        "data",
+		GrafanaImage:                "GrafanaImage",
+		GrafanaVolumeName:           "data",
+		ControllerReplicas:          1,
+		ImagePullPolicy:             "ImagePullPolicy",
+		UUID:                        "UUID",
+		CliVersion:                  "CliVersion",
+		ControllerLogLevel:          "ControllerLogLevel",
+		ControllerComponentLabel:    "ControllerComponentLabel",
+		CreatedByAnnotation:         "CreatedByAnnotation",
+		ControllerUID:               2103,
+		EnableTLS:                   true,
+		TLSTrustAnchorConfigMapName: "TLSTrustAnchorConfigMapName",
+		ProxyContainerName:          "ProxyContainerName",
+		TLSTrustAnchorFileName:      "TLSTrustAnchorFileName",
+		SingleNamespace:             true,
+		EnableH2Upgrade:             true,
+		NoInitContainer:             false,
+		GlobalConfig:                "GlobalConfig",
+		ProxyConfig:                 "ProxyConfig",
 	}
 
 	haOptions := newInstallOptions()
 	haOptions.highAvailability = true
-	haConfig, _ := validateAndBuildConfig(haOptions)
+	haConfig, _ := validateAndBuildConfig(cluster, haOptions)
 	haConfig.UUID = defaultConfig.UUID
 	haConfig.Identity = defaultConfig.Identity
 
@@ -122,20 +127,20 @@ func TestRender(t *testing.T) {
 	haWithOverridesOptions.controllerReplicas = 2
 	haWithOverridesOptions.proxyCPURequest = "400m"
 	haWithOverridesOptions.proxyMemoryRequest = "300Mi"
-	haWithOverridesConfig, _ := validateAndBuildConfig(haWithOverridesOptions)
+	haWithOverridesConfig, _ := validateAndBuildConfig(cluster, haWithOverridesOptions)
 	haWithOverridesConfig.UUID = defaultConfig.UUID
 	haWithOverridesConfig.Identity = defaultConfig.Identity
 
 	noInitContainerOptions := newInstallOptions()
 	noInitContainerOptions.noInitContainer = true
-	noInitContainerConfig, _ := validateAndBuildConfig(noInitContainerOptions)
+	noInitContainerConfig, _ := validateAndBuildConfig(cluster, noInitContainerOptions)
 	noInitContainerConfig.UUID = defaultConfig.UUID
 	noInitContainerConfig.Identity = defaultConfig.Identity
 
 	noInitContainerWithProxyAutoInjectOptions := newInstallOptions()
 	noInitContainerWithProxyAutoInjectOptions.noInitContainer = true
 	noInitContainerWithProxyAutoInjectOptions.proxyAutoInject = true
-	noInitContainerWithProxyAutoInjectConfig, _ := validateAndBuildConfig(noInitContainerWithProxyAutoInjectOptions)
+	noInitContainerWithProxyAutoInjectConfig, _ := validateAndBuildConfig(cluster, noInitContainerWithProxyAutoInjectOptions)
 	noInitContainerWithProxyAutoInjectConfig.UUID = defaultConfig.UUID
 	noInitContainerWithProxyAutoInjectConfig.Identity = defaultConfig.Identity
 
@@ -145,7 +150,7 @@ func TestRender(t *testing.T) {
 		controlPlaneNamespace string
 		goldenFileName        string
 	}{
-		{*defaultConfig, defaultOptions, defaultControlPlaneNamespace, "install_default.golden"},
+		{*defaultConfig, defaultOptions, controlPlaneNamespace, "install_default.golden"},
 		{metaConfig, defaultOptions, metaConfig.Namespace, "install_output.golden"},
 		{singleNamespaceConfig, defaultOptions, singleNamespaceConfig.Namespace, "install_single_namespace_output.golden"},
 		{*haConfig, haOptions, haConfig.Namespace, "install_ha_output.golden"},
@@ -171,7 +176,7 @@ func TestRender(t *testing.T) {
 func TestValidate(t *testing.T) {
 	t.Run("Accepts the default options as valid", func(t *testing.T) {
 		if err := newInstallOptions().validate(); err != nil {
-			t.Fatalf("Unexpected error: %s", err)
+			t.Fatalf("Failed to validate install options: %s", err)
 		}
 	})
 
