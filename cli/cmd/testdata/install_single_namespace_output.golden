@@ -208,6 +208,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: LINKERD2_PROXY_POD_NAMESPACE
+          value: $(K8S_NS)
         - name: L5D_NS
           value: Namespace
         - name: LINKERD2_PROXY_ID
@@ -389,6 +391,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: LINKERD2_PROXY_POD_NAMESPACE
+          value: $(K8S_NS)
         - name: L5D_NS
           value: Namespace
         - name: LINKERD2_PROXY_ID
@@ -579,6 +583,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: LINKERD2_PROXY_POD_NAMESPACE
+          value: $(K8S_NS)
         - name: L5D_NS
           value: Namespace
         - name: LINKERD2_PROXY_ID
@@ -839,6 +845,8 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: LINKERD2_PROXY_POD_NAMESPACE
+          value: $(K8S_NS)
         - name: L5D_NS
           value: Namespace
         - name: LINKERD2_PROXY_ID

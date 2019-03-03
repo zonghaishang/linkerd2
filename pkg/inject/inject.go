@@ -419,6 +419,7 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 				Name:      "K8S_NS",
 				ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{FieldPath: "metadata.namespace"}},
 			},
+			{Name: "LINKERD2_PROXY_POD_NAMESPACE", Value: "$(K8S_NS)"},
 			{Name: "L5D_NS", Value: conf.globalConfig.GetLinkerdNamespace()},
 			{Name: "LINKERD2_PROXY_ID", Value: "$(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS)"},
 		},
