@@ -508,13 +508,11 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 				"-token=/var/run/secrets/kubernetes.io/serviceaccount",
 				"-trust-anchors-data", idctx.GetTrustAnchorsPem(),
 			},
-			VolumeMounts: []v1.VolumeMount{
-				{
-					Name:      endEntityVolName,
-					MountPath: endEntityDir,
-					ReadOnly:  false,
-				},
-			},
+			VolumeMounts: []v1.VolumeMount{{
+				Name:      endEntityVolName,
+				MountPath: endEntityDir,
+				ReadOnly:  false,
+			}},
 
 			ImagePullPolicy: v1.PullPolicy(conf.proxyConfig.GetProxyImage().GetPullPolicy()),
 			SecurityContext: &v1.SecurityContext{RunAsUser: &proxyUID},

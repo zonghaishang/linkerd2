@@ -8,13 +8,13 @@ COPY pkg/tls pkg/tls
 COPY pkg/version pkg/version
 RUN go build ./pkg/...
 
-COPY identity identity
-RUN CGO_ENABLED=0 GOOS=linux go install ./identity/cmd/init
+COPY proxy-identity proxy-identity
+RUN CGO_ENABLED=0 GOOS=linux go install ./proxy-identity
 
 ## package runtime
 FROM scratch
 COPY LICENSE /linkerd/LICENSE
-COPY --from=golang /go/bin/init /bin/identity-init
+COPY --from=golang /go/bin/proxy-identity /bin/proxy-identity
 ARG LINKERD_VERSION
 ENV LINKERD_CONTAINER_VERSION_OVERRIDE=${LINKERD_VERSION}
-ENTRYPOINT ["/bin/identity-init"]
+ENTRYPOINT ["/bin/proxy-identity"]
