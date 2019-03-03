@@ -84,7 +84,7 @@ func DecodePEMCertPool(txt string) (pool *x509.CertPool, err error) {
 		return
 	}
 	if len(certs) == 0 {
-		err = errors.New("No certficiates found")
+		err = errors.New("No certificates found")
 		return
 	}
 
