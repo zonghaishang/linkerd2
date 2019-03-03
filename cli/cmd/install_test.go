@@ -195,7 +195,6 @@ func TestValidate(t *testing.T) {
 			input string
 			valid bool
 		}{
-			{"", false},
 			{"info", true},
 			{"somemodule", true},
 			{"bad%name", false},
