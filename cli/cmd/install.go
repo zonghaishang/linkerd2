@@ -212,9 +212,9 @@ func fetchClusterState() (state clusterState, err error) {
 	}
 
 	configMaps := k.CoreV1().ConfigMaps(controlPlaneNamespace)
-	state.configs.global, state.configs.proxy, err = config.Fetch(configMaps)
-	if err != nil {
-		return
+	if g, p, err := config.Fetch(configMaps); err == nil {
+		state.configs.global = g
+		state.configs.proxy = p
 	}
 
 	// If we can't fetch the issuer secrets, then we assume they don't exist...
