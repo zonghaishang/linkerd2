@@ -293,7 +293,7 @@ func validateAndBuildConfig(state clusterState, options *installOptions) (*insta
 			}
 		} else {
 			trustDomain := options.identityOptions.trustDomain
-			root, err := tls.GenerateRootCAWithDefaults(trustDomain)
+			root, err := tls.GenerateRootCAWithDefaults(fmt.Sprintf("identity.%s", trustDomain))
 			if err != nil {
 				return nil, fmt.Errorf("Failed to create root certificate for identity: %s", err)
 			}
