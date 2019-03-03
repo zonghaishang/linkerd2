@@ -446,9 +446,22 @@ func render(config installConfig, w io.Writer, options *installOptions) error {
 	// Override does NOT set an identity context if none exists, since it can't be
 	// enabled at inject-time if it's not enabled at install-time.
 	if config.Identity != nil {
+		id := config.Identity
+		il, err := time.ParseDuration(id.Issuer.IssuanceLifetime)
+		if err != nil {
+			il = defaultIdentityIssuanceLifetime
+		}
+
+		csa, err := time.ParseDuration(id.Issuer.ClockSkewAllowance)
+		if err != nil {
+			csa = defaultIdentityClockSkewAllowance
+		}
+
 		injectConfig.global.IdentityContext = &pb.IdentityContext{
-			TrustDomain:     config.Identity.TrustDomain,
-			TrustAnchorsPem: config.Identity.TrustAnchorsPEM,
+			TrustDomain:        id.TrustDomain,
+			TrustAnchorsPem:    id.TrustAnchorsPEM,
+			IssuanceLifetime:   ptypes.DurationProto(il),
+			ClockSkewAllowance: ptypes.DurationProto(csa),
 		}
 	}
 
