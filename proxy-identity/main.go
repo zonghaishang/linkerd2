@@ -155,9 +155,9 @@ func checkEndEntityDir(dir string) (string, string, string, error) {
 	if !s.IsDir() {
 		return "", "", "", fmt.Errorf("Not a directory: %s", dir)
 	}
-	if s.Mode().Perm()&0002 == 0002 {
-		return "", "", "", fmt.Errorf("Must not be world-writeable: %s; got %s", dir, s.Mode().Perm())
-	}
+	// if s.Mode().Perm()&0002 == 0002 {
+	// 	return "", "", "", fmt.Errorf("Must not be world-writeable: %s; got %s", dir, s.Mode().Perm())
+	// }
 
 	// TODO remove files if they exist?
 
