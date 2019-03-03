@@ -40,7 +40,7 @@ set -eu
 
 /bin/echo -n "$TRUST_ANCHORS_PEM" >$LINKERD2_PROXY_TLS_TRUST_ANCHORS
 /bin/proxy-identity -addr=$ID_ADDR \
-  -dir=$LINKERD2_PROXY_END_ENTITY_DIR \
+  -end-entity-dir=$LINKERD2_PROXY_END_ENTITY_DIR \
   -name=$LINKERD2_PROXY_TLS_POD_IDENTITY \
   -token=/var/run/secrets/kubernetes.io/serviceaccount/token
 `

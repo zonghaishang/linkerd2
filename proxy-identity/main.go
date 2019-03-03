@@ -29,7 +29,7 @@ func main() {
 	addr := flag.String("addr", "localhost:8083", "address of identity service")
 	tokenPath := flag.String("token", "", "path to serviceaccount token")
 	name := flag.String("name", "", "identity name")
-	dir := flag.String("dir", "", "directory under which credentials are written")
+	dir := flag.String("end-entity-dir", "", "directory under which credentials are written")
 	flags.ConfigureAndParse()
 
 	trustPath, keyPath, csrPath, crtPath, err := checkEndEntityDir(*dir)
