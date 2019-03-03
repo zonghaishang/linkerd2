@@ -32,6 +32,18 @@ const (
 
 	// defaultKeepaliveMs is used in the proxy configuration for remote connections
 	defaultKeepaliveMs = 10000
+
+	// proxyIdentitySh is a shell script that's used to initialize proxy-identity
+	// from the environment.
+	proxyIdentitySh = `
+set -eu
+
+/bin/echo -n "$TRUST_ANCHORS_PEM" >$LINKERD2_PROXY_TLS_TRUST_ANCHORS
+/bin/proxy-identity -addr=$ID_ADDR \
+  -dir=$LINKERD2_PROXY_END_ENTITY_DIR \
+  -name=$LINKERD2_PROXY_TLS_POD_IDENTITY \
+  -token=/var/run/secrets/kubernetes.io/serviceaccount/token
+`
 )
 
 var injectableKinds = []string{
@@ -59,8 +71,8 @@ type ResourceConfig struct {
 	objMeta                   objMeta
 	podLabels                 map[string]string
 	podSpec                   *v1.PodSpec
-	controllerDnsNameOverride string
-	identityDnsNameOverride   string
+	controllerDNSNameOverride string
+	identityDNSNameOverride   string
 	proxyOutboundCapacity     map[string]uint
 }
 
@@ -239,10 +251,10 @@ func (conf *ResourceConfig) parse(bytes []byte) error {
 		}
 
 		if v.Name == controllerDeployName && v.Namespace == conf.globalConfig.GetLinkerdNamespace() {
-			conf.controllerDnsNameOverride = localhostDNSNameOverride
+			conf.controllerDNSNameOverride = localhostDNSNameOverride
 		}
 		if v.Name == identityDeployName && v.Namespace == conf.globalConfig.GetLinkerdNamespace() {
-			conf.identityDnsNameOverride = localhostDNSNameOverride
+			conf.identityDNSNameOverride = localhostDNSNameOverride
 		}
 
 		conf.obj = v
@@ -343,13 +355,13 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 	}
 
 	destinationDNS := fmt.Sprintf("linkerd-destination.%s.svc.cluster.local", conf.globalConfig.GetLinkerdNamespace())
-	if conf.controllerDnsNameOverride != "" {
-		destinationDNS = conf.controllerDnsNameOverride
+	if conf.controllerDNSNameOverride != "" {
+		destinationDNS = conf.controllerDNSNameOverride
 	}
 
 	identityDNS := fmt.Sprintf("linkerd-identity.%s.svc.cluster.local", conf.globalConfig.GetLinkerdNamespace())
-	if conf.identityDnsNameOverride != "" {
-		identityDNS = conf.identityDnsNameOverride
+	if conf.identityDNSNameOverride != "" {
+		identityDNS = conf.identityDNSNameOverride
 	}
 
 	metricsPort := intstr.IntOrString{
@@ -520,14 +532,7 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 				v1.EnvVar{Name: "ID_ADDR", Value: fmt.Sprintf("%s:8080", identityDNS)},
 			),
 			Command: []string{"/bin/sh", "-c"},
-			Args: []string{`
-				set -eux
-				/bin/echo -n "$TRUST_ANCHORS_PEM" >$LINKERD2_PROXY_TLS_TRUST_ANCHORS
-				/bin/proxy-identity -addr=$ID_ADDR \
-					-dir=$LINKERD2_PROXY_END_ENTITY_DIR \
-					-name=$LINKERD2_PROXY_TLS_POD_IDENTITY \
-					-token=/var/run/secrets/kubernetes.io/serviceaccount/token
-			`},
+			Args:    []string{proxyIdentitySh},
 			VolumeMounts: []v1.VolumeMount{{
 				Name:      k8s.IdentityEndEntityVolumeName,
 				MountPath: endEntityDir,
