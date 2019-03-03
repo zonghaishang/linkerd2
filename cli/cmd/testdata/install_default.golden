@@ -220,11 +220,11 @@ spec:
         - name: LINKERD2_PROXY_TLS_POD_IDENTITY
           value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
         - name: LINKERD2_PROXY_TLS_TRUST_ANCHORS
-          value: /var/run/linkerd/identity/trust-anchors/trust-anchors.pem
+          value: /var/run/linkerd/identity/end-entity/trust-anchors.pem
         - name: LINKERD2_PROXY_TLS_PRIVATE_KEY
-          value: /var/run/linkerd/identity/end-entity/private-key.p8
+          value: /var/run/linkerd/identity/end-entity/key.p8
         - name: LINKERD2_PROXY_TLS_CERT
-          value: /var/run/linkerd/identity/end-entity/certificate.crt
+          value: /var/run/linkerd/identity/end-entity/crt.pem
         - name: LINKERD2_PROXY_CONTROLLER_NAMESPACE
           value: $(L5D_NS)
         - name: LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY
@@ -538,11 +538,11 @@ spec:
         - name: LINKERD2_PROXY_TLS_POD_IDENTITY
           value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
         - name: LINKERD2_PROXY_TLS_TRUST_ANCHORS
-          value: /var/run/linkerd/identity/trust-anchors/trust-anchors.pem
+          value: /var/run/linkerd/identity/end-entity/trust-anchors.pem
         - name: LINKERD2_PROXY_TLS_PRIVATE_KEY
-          value: /var/run/linkerd/identity/end-entity/private-key.p8
+          value: /var/run/linkerd/identity/end-entity/key.p8
         - name: LINKERD2_PROXY_TLS_CERT
-          value: /var/run/linkerd/identity/end-entity/certificate.crt
+          value: /var/run/linkerd/identity/end-entity/crt.pem
         - name: LINKERD2_PROXY_CONTROLLER_NAMESPACE
           value: $(L5D_NS)
         - name: LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY
@@ -877,11 +877,11 @@ spec:
         - name: LINKERD2_PROXY_TLS_POD_IDENTITY
           value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
         - name: LINKERD2_PROXY_TLS_TRUST_ANCHORS
-          value: /var/run/linkerd/identity/trust-anchors/trust-anchors.pem
+          value: /var/run/linkerd/identity/end-entity/trust-anchors.pem
         - name: LINKERD2_PROXY_TLS_PRIVATE_KEY
-          value: /var/run/linkerd/identity/end-entity/private-key.p8
+          value: /var/run/linkerd/identity/end-entity/key.p8
         - name: LINKERD2_PROXY_TLS_CERT
-          value: /var/run/linkerd/identity/end-entity/certificate.crt
+          value: /var/run/linkerd/identity/end-entity/crt.pem
         - name: LINKERD2_PROXY_CONTROLLER_NAMESPACE
           value: $(L5D_NS)
         - name: LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY
@@ -1120,11 +1120,11 @@ spec:
         - name: LINKERD2_PROXY_TLS_POD_IDENTITY
           value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
         - name: LINKERD2_PROXY_TLS_TRUST_ANCHORS
-          value: /var/run/linkerd/identity/trust-anchors/trust-anchors.pem
+          value: /var/run/linkerd/identity/end-entity/trust-anchors.pem
         - name: LINKERD2_PROXY_TLS_PRIVATE_KEY
-          value: /var/run/linkerd/identity/end-entity/private-key.p8
+          value: /var/run/linkerd/identity/end-entity/key.p8
         - name: LINKERD2_PROXY_TLS_CERT
-          value: /var/run/linkerd/identity/end-entity/certificate.crt
+          value: /var/run/linkerd/identity/end-entity/crt.pem
         - name: LINKERD2_PROXY_CONTROLLER_NAMESPACE
           value: $(L5D_NS)
         - name: LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY
@@ -1428,11 +1428,11 @@ spec:
         - name: LINKERD2_PROXY_TLS_POD_IDENTITY
           value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
         - name: LINKERD2_PROXY_TLS_TRUST_ANCHORS
-          value: /var/run/linkerd/identity/trust-anchors/trust-anchors.pem
+          value: /var/run/linkerd/identity/end-entity/trust-anchors.pem
         - name: LINKERD2_PROXY_TLS_PRIVATE_KEY
-          value: /var/run/linkerd/identity/end-entity/private-key.p8
+          value: /var/run/linkerd/identity/end-entity/key.p8
         - name: LINKERD2_PROXY_TLS_CERT
-          value: /var/run/linkerd/identity/end-entity/certificate.crt
+          value: /var/run/linkerd/identity/end-entity/crt.pem
         - name: LINKERD2_PROXY_CONTROLLER_NAMESPACE
           value: $(L5D_NS)
         - name: LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY

@@ -66,9 +66,5 @@ spec:
     securityContext:
       runAsUser: 2102
     terminationMessagePolicy: FallbackToLogsOnError
-  volumes:
-  - emptyDir:
-      medium: Memory
-    name: linkerd-identity-end-entity
 status: {}
 ---

@@ -84,10 +84,6 @@ items:
           securityContext:
             runAsUser: 2102
           terminationMessagePolicy: FallbackToLogsOnError
-        volumes:
-        - emptyDir:
-            medium: Memory
-          name: linkerd-identity-end-entity
   status: {}
 - apiVersion: apps/v1beta1
   kind: Deployment
@@ -168,10 +164,6 @@ items:
           securityContext:
             runAsUser: 2102
           terminationMessagePolicy: FallbackToLogsOnError
-        volumes:
-        - emptyDir:
-            medium: Memory
-          name: linkerd-identity-end-entity
   status: {}
 kind: List
 metadata: {}

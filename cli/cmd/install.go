@@ -32,36 +32,34 @@ import (
 
 type (
 	installConfig struct {
-		Namespace                   string
-		ControllerImage             string
-		WebImage                    string
-		PrometheusImage             string
-		PrometheusVolumeName        string
-		GrafanaImage                string
-		GrafanaVolumeName           string
-		ControllerReplicas          uint
-		ImagePullPolicy             string
-		UUID                        string
-		CliVersion                  string
-		ControllerLogLevel          string
-		ControllerComponentLabel    string
-		CreatedByAnnotation         string
-		EnableTLS                   bool
-		TLSTrustAnchorConfigMapName string
-		ProxyContainerName          string
-		TLSTrustAnchorFileName      string
-		ProxyAutoInjectEnabled      bool
-		ProxyInjectAnnotation       string
-		ProxyInjectDisabled         string
-		SingleNamespace             bool
-		EnableHA                    bool
-		ControllerUID               int64
-		EnableH2Upgrade             bool
-		NoInitContainer             bool
-		GlobalConfig                string
-		ProxyConfig                 string
+		Namespace                string
+		ControllerImage          string
+		WebImage                 string
+		PrometheusImage          string
+		PrometheusVolumeName     string
+		GrafanaImage             string
+		GrafanaVolumeName        string
+		ControllerReplicas       uint
+		ImagePullPolicy          string
+		UUID                     string
+		CliVersion               string
+		ControllerLogLevel       string
+		ControllerComponentLabel string
+		CreatedByAnnotation      string
+		ProxyContainerName       string
+		ProxyAutoInjectEnabled   bool
+		ProxyInjectAnnotation    string
+		ProxyInjectDisabled      string
+		SingleNamespace          bool
+		EnableHA                 bool
+		ControllerUID            int64
+		EnableH2Upgrade          bool
+		NoInitContainer          bool
+		GlobalConfig             string
+		ProxyConfig              string
 
-		Identity *installIdentityConfig
+		EnableTLS bool
+		Identity  *installIdentityConfig
 	}
 
 	installIdentityConfig struct {
@@ -334,35 +332,33 @@ func validateAndBuildConfig(state clusterState, options *installOptions) (*insta
 	}
 
 	return &installConfig{
-		Namespace:                   controlPlaneNamespace,
-		ControllerImage:             fmt.Sprintf("%s/controller:%s", options.dockerRegistry, options.linkerdVersion),
-		WebImage:                    fmt.Sprintf("%s/web:%s", options.dockerRegistry, options.linkerdVersion),
-		PrometheusImage:             "prom/prometheus:v2.7.1",
-		PrometheusVolumeName:        "data",
-		GrafanaImage:                fmt.Sprintf("%s/grafana:%s", options.dockerRegistry, options.linkerdVersion),
-		GrafanaVolumeName:           "data",
-		ControllerReplicas:          options.controllerReplicas,
-		ImagePullPolicy:             options.imagePullPolicy,
-		UUID:                        uuid.NewV4().String(),
-		CliVersion:                  k8s.CreatedByAnnotationValue(),
-		ControllerLogLevel:          options.controllerLogLevel,
-		ControllerComponentLabel:    k8s.ControllerComponentLabel,
-		ControllerUID:               options.controllerUID,
-		CreatedByAnnotation:         k8s.CreatedByAnnotation,
-		EnableTLS:                   options.enableTLS(),
-		TLSTrustAnchorConfigMapName: k8s.TLSTrustAnchorConfigMapName,
-		ProxyContainerName:          k8s.ProxyContainerName,
-		TLSTrustAnchorFileName:      k8s.TLSTrustAnchorFileName,
-		ProxyAutoInjectEnabled:      options.proxyAutoInject,
-		ProxyInjectAnnotation:       k8s.ProxyInjectAnnotation,
-		ProxyInjectDisabled:         k8s.ProxyInjectDisabled,
-		SingleNamespace:             options.singleNamespace,
-		EnableHA:                    options.highAvailability,
-		EnableH2Upgrade:             !options.disableH2Upgrade,
-		NoInitContainer:             options.noInitContainer,
-		GlobalConfig:                globalConfig,
-		ProxyConfig:                 proxyConfig,
-		Identity:                    identity,
+		Namespace:                controlPlaneNamespace,
+		ControllerImage:          fmt.Sprintf("%s/controller:%s", options.dockerRegistry, options.linkerdVersion),
+		WebImage:                 fmt.Sprintf("%s/web:%s", options.dockerRegistry, options.linkerdVersion),
+		PrometheusImage:          "prom/prometheus:v2.7.1",
+		PrometheusVolumeName:     "data",
+		GrafanaImage:             fmt.Sprintf("%s/grafana:%s", options.dockerRegistry, options.linkerdVersion),
+		GrafanaVolumeName:        "data",
+		ControllerReplicas:       options.controllerReplicas,
+		ImagePullPolicy:          options.imagePullPolicy,
+		UUID:                     uuid.NewV4().String(),
+		CliVersion:               k8s.CreatedByAnnotationValue(),
+		ControllerLogLevel:       options.controllerLogLevel,
+		ControllerComponentLabel: k8s.ControllerComponentLabel,
+		ControllerUID:            options.controllerUID,
+		CreatedByAnnotation:      k8s.CreatedByAnnotation,
+		EnableTLS:                options.enableTLS(),
+		ProxyContainerName:       k8s.ProxyContainerName,
+		ProxyAutoInjectEnabled:   options.proxyAutoInject,
+		ProxyInjectAnnotation:    k8s.ProxyInjectAnnotation,
+		ProxyInjectDisabled:      k8s.ProxyInjectDisabled,
+		SingleNamespace:          options.singleNamespace,
+		EnableHA:                 options.highAvailability,
+		EnableH2Upgrade:          !options.disableH2Upgrade,
+		NoInitContainer:          options.noInitContainer,
+		GlobalConfig:             globalConfig,
+		ProxyConfig:              proxyConfig,
+		Identity:                 identity,
 	}, nil
 }
 

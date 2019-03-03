@@ -42,7 +42,7 @@ func (conf *ResourceConfig) uninjectPodSpec(report *Report) {
 	volumes := []v1.Volume{}
 	for _, volume := range t.Volumes {
 		// TODO: move those strings to constants
-		if volume.Name != k8s.TLSTrustAnchorVolumeName && volume.Name != k8s.TLSSecretsVolumeName {
+		if volume.Name != k8s.IdentityEndEntityVolumeName {
 			volumes = append(volumes, volume)
 		}
 	}

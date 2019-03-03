@@ -33,14 +33,14 @@ func main() {
 	dir := flag.String("dir", "", "directory under which credentials are written")
 	flags.ConfigureAndParse()
 
-	verify, err := newVerifier(*trustAnchors)
-	if err != nil {
-		log.Fatalf("Failed to load trust anchors: %s", err)
-	}
-
-	keyPath, csrPath, crtPath, err := checkEndEntityDir(*dir)
+	trustPath, keyPath, csrPath, crtPath, err := checkEndEntityDir(*dir)
 	if err != nil {
 		log.Fatalf("Invalid end-entity directory: %s", err)
+	}
+
+	verify, err := newVerifier(trustPath, *trustAnchors)
+	if err != nil {
+		log.Fatalf("Failed to load trust anchors: %s", err)
 	}
 
 	key, err := generateAndStoreKey(keyPath)
@@ -117,7 +117,7 @@ func main() {
 	}
 }
 
-func newVerifier(pem string) (verify x509.VerifyOptions, err error) {
+func newVerifier(path, pem string) (verify x509.VerifyOptions, err error) {
 	if pem == "" {
 		err = errors.New("No trust anchors specified")
 		return
@@ -125,6 +125,11 @@ func newVerifier(pem string) (verify x509.VerifyOptions, err error) {
 
 	anchors, err := tls.DecodePEMCertPool(pem)
 	if err != nil {
+		return
+	}
+
+	if err = ioutil.WriteFile(path, []byte(pem), 0400); err != nil {
+		err = fmt.Errorf("Failed to write trust anchors: %s", err)
 		return
 	}
 
@@ -143,40 +148,43 @@ func newVerifier(pem string) (verify x509.VerifyOptions, err error) {
 //
 // If the key, CSR, and/or Crt paths refer to existing files, it is assumed that
 // multiple instances of this process are running, and an error is returned.
-func checkEndEntityDir(dir string) (string, string, string, error) {
+func checkEndEntityDir(dir string) (string, string, string, string, error) {
 	if dir == "" {
-		return "", "", "", errors.New("No end entity directory specified")
+		return "", "", "", "", errors.New("No end entity directory specified")
 	}
 
 	s, err := os.Stat(dir)
 	if err != nil {
-		return "", "", "", err
+		return "", "", "", "", err
 	}
 	if !s.IsDir() {
-		return "", "", "", fmt.Errorf("Not a directory: %s", dir)
+		return "", "", "", "", fmt.Errorf("Not a directory: %s", dir)
 	}
 	// if s.Mode().Perm()&0002 == 0002 {
 	// 	return "", "", "", fmt.Errorf("Must not be world-writeable: %s; got %s", dir, s.Mode().Perm())
 	// }
 
-	// TODO remove files if they exist?
-
-	keyPath := filepath.Join(dir, "key")
-	if err = checkNotExists(keyPath); err != nil {
-		return "", "", "", err
+	trustPath := filepath.Join(dir, "trust-anchors.pem")
+	if err = checkNotExists(trustPath); err != nil {
+		return "", "", "", "", err
 	}
 
-	csrPath := filepath.Join(dir, "csr")
+	keyPath := filepath.Join(dir, "key.p8")
+	if err = checkNotExists(keyPath); err != nil {
+		return "", "", "", "", err
+	}
+
+	csrPath := filepath.Join(dir, "csr.der")
 	if err = checkNotExists(csrPath); err != nil {
-		return "", "", "", err
+		return "", "", "", "", err
 	}
 
 	crtPath := filepath.Join(dir, "crt.pem")
 	if err = checkNotExists(crtPath); err != nil {
-		return "", "", "", err
+		return "", "", "", "", err
 	}
 
-	return keyPath, csrPath, crtPath, nil
+	return trustPath, keyPath, csrPath, crtPath, nil
 }
 
 func checkNotExists(p string) (err error) {

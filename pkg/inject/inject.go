@@ -447,7 +447,7 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 	}
 
 	if idctx := conf.globalConfig.GetIdentityContext(); idctx != nil {
-		base := "/var/run/linkerd/identity"
+		base := filepath.Join(k8s.MountPathBase, "identity")
 		endEntityDir := filepath.Join(base, "end-entity")
 
 		env := []v1.EnvVar{
@@ -461,15 +461,15 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 		sidecar.Env = append(append(sidecar.Env, env...),
 			v1.EnvVar{
 				Name:  "LINKERD2_PROXY_TLS_TRUST_ANCHORS",
-				Value: filepath.Join(base, "trust-anchors", k8s.TLSTrustAnchorFileName),
+				Value: filepath.Join(endEntityDir, "trust-anchors.pem"),
 			},
 			v1.EnvVar{
 				Name:  "LINKERD2_PROXY_TLS_PRIVATE_KEY",
-				Value: filepath.Join(endEntityDir, k8s.TLSPrivateKeyFileName),
+				Value: filepath.Join(endEntityDir, "key.p8"),
 			},
 			v1.EnvVar{
 				Name:  "LINKERD2_PROXY_TLS_CERT",
-				Value: filepath.Join(endEntityDir, k8s.TLSCertFileName),
+				Value: filepath.Join(endEntityDir, "crt.pem"),
 			},
 			v1.EnvVar{Name: "LINKERD2_PROXY_CONTROLLER_NAMESPACE", Value: "$(L5D_NS)"},
 			v1.EnvVar{
@@ -481,9 +481,8 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 		if len(conf.podSpec.Volumes) == 0 {
 			patch.addVolumeRoot()
 		}
-		const endEntityVolName = "linkerd-identity-end-entity"
 		patch.addVolume(&v1.Volume{
-			Name: endEntityVolName,
+			Name: k8s.IdentityEndEntityVolumeName,
 			VolumeSource: v1.VolumeSource{
 				EmptyDir: &v1.EmptyDirVolumeSource{
 					Medium: "Memory",
@@ -491,7 +490,7 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 			},
 		})
 		sidecar.VolumeMounts = append(sidecar.VolumeMounts, v1.VolumeMount{
-			Name:      endEntityVolName,
+			Name:      k8s.IdentityEndEntityVolumeName,
 			MountPath: endEntityDir,
 			ReadOnly:  true,
 		})
@@ -510,7 +509,7 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 				"-trust-anchors-data", idctx.GetTrustAnchorsPem(),
 			},
 			VolumeMounts: []v1.VolumeMount{{
-				Name:      endEntityVolName,
+				Name:      k8s.IdentityEndEntityVolumeName,
 				MountPath: endEntityDir,
 				ReadOnly:  false,
 			}},

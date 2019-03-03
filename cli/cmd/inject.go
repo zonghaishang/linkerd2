@@ -16,8 +16,6 @@ import (
 )
 
 const (
-	podNamespaceEnvVarName = "K8S_NS"
-
 	// for inject reports
 	hostNetworkDesc    = "pods do not use host networking"
 	sidecarDesc        = "pods do not have a 3rd party proxy or initContainer already injected"

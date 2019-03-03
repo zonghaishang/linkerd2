@@ -167,10 +167,6 @@ items:
             runAsNonRoot: false
             runAsUser: 0
           terminationMessagePolicy: FallbackToLogsOnError
-        volumes:
-        - emptyDir:
-            medium: Memory
-          name: linkerd-identity-end-entity
   status: {}
 - apiVersion: apps/v1beta1
   kind: Deployment
@@ -334,10 +330,6 @@ items:
             runAsNonRoot: false
             runAsUser: 0
           terminationMessagePolicy: FallbackToLogsOnError
-        volumes:
-        - emptyDir:
-            medium: Memory
-          name: linkerd-identity-end-entity
   status: {}
 kind: List
 metadata: {}

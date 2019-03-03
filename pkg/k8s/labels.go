@@ -107,40 +107,14 @@ const (
 	// ProxyContainerName is the name assigned to the injected proxy container.
 	ProxyContainerName = "linkerd-proxy"
 
-	// ProxyInjectorWebhookConfig is the name of the mutating webhook
+	IdentityEndEntityVolumeName = "linkerd-identity-end-entity"
+
+	// ProxyInjectorWebookConfig is the name of the mutating webhook
 	// configuration resource of the proxy-injector webhook.
 	ProxyInjectorWebhookConfig = "linkerd-proxy-injector-webhook-config"
 
-	// TLSTrustAnchorVolumeName is the name of the trust anchor volume,
-	// used when injecting a proxy with TLS enabled.
-	TLSTrustAnchorVolumeName = "linkerd-trust-anchors"
-
-	// TLSSecretsVolumeName is the name of the volume holding the secrets,
-	// when injecting a proxy with TLS enabled.
-	TLSSecretsVolumeName = "linkerd-secrets"
-
-	// TLSTrustAnchorConfigMapName is the name of the ConfigMap that holds the
-	// trust anchors (trusted root certificates).
-	TLSTrustAnchorConfigMapName = "linkerd-ca-bundle"
-
-	// TLSTrustAnchorFileName is the name (key) within the trust anchor ConfigMap
-	// that contains the actual trust anchor bundle.
-	TLSTrustAnchorFileName = "trust-anchors.pem"
-
-	// TLSCertFileName is the name (key) within proxy-injector ConfigMap that
-	// contains the TLS certificate.
-	TLSCertFileName = "certificate.crt"
-
-	// TLSPrivateKeyFileName is the name (key) within proxy-injector ConfigMap
-	// that contains the TLS private key.
-	TLSPrivateKeyFileName = "private-key.p8"
-
-	/*
-	 * Mount paths
-	 */
-
 	// MountPathBase is the base directory of the mount path
-	MountPathBase = "/var/linkerd-io"
+	MountPathBase = "/var/run/linkerd"
 )
 
 // InjectedLabels contains the list of label keys subjected to be injected by Linkerd into resource definitions
@@ -148,22 +122,12 @@ var InjectedLabels = []string{ControllerNSLabel, ProxyDeploymentLabel, ProxyRepl
 	ProxyReplicaSetLabel, ProxyJobLabel, ProxyDaemonSetLabel, ProxyStatefulSetLabel}
 
 var (
-	// MountPathTLSTrustAnchor is the path at which the trust anchor file is
-	// mounted
-	MountPathTLSTrustAnchor = MountPathBase + "/trust-anchors/" + TLSTrustAnchorFileName
-
-	// MountPathTLSIdentityCert is the path at which the TLS identity cert file is
-	// mounted
-	MountPathTLSIdentityCert = MountPathBase + "/identity/" + TLSCertFileName
-
-	// MountPathTLSIdentityKey is the path at which the TLS identity key file is
-	// mounted
-	MountPathTLSIdentityKey = MountPathBase + "/identity/" + TLSPrivateKeyFileName
-
 	// MountPathGlobalConfig is the path at which the global config file is mounted
+	// in the control plane.
 	MountPathGlobalConfig = MountPathBase + "/config/global"
 
-	// MountPathProxyConfig is the path at which the global config file is mounted
+	// MountPathProxyConfig is the path at which the proxy injection config file is
+	// mounted in the control plane.
 	MountPathProxyConfig = MountPathBase + "/config/proxy"
 )
 
