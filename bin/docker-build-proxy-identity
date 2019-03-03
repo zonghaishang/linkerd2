@@ -22,4 +22,5 @@ validate_go_deps_tag $dockerfile
     $bindir/docker-build-go-deps
 ) >/dev/null
 
-docker_build proxy-identity "$(head_root_tag)" $dockerfile
+tag="$(head_root_tag)"
+docker_build controller $tag $dockerfile --build-arg LINKERD_VERSION=$tag
