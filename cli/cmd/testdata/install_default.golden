@@ -503,6 +503,9 @@ spec:
         resources: {}
         securityContext:
           runAsUser: 2103
+        volumeMounts:
+        - mountPath: /var/run/linkerd/config
+          name: config
       - args:
         - tap
         - -controller-namespace=linkerd
@@ -715,6 +718,9 @@ spec:
         terminationMessagePolicy: FallbackToLogsOnError
       serviceAccountName: linkerd-controller
       volumes:
+      - configMap:
+          name: linkerd-config
+        name: config
       - emptyDir:
           medium: Memory
         name: linkerd-identity-end-entity

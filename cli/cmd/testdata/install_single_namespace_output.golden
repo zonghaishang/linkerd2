@@ -156,6 +156,9 @@ spec:
         resources: {}
         securityContext:
           runAsUser: 2103
+        volumeMounts:
+        - mountPath: /var/run/linkerd/config
+          name: config
       - args:
         - tap
         - -controller-namespace=Namespace
@@ -261,6 +264,10 @@ spec:
           runAsUser: 0
         terminationMessagePolicy: FallbackToLogsOnError
       serviceAccountName: linkerd-controller
+      volumes:
+      - configMap:
+          name: linkerd-config
+        name: config
 status: {}
 ---
 kind: ConfigMap

@@ -151,6 +151,9 @@ spec:
         - "-controller-namespace={{.Values.Namespace}}"
         - "-enable-h2-upgrade={{.Values.EnableH2Upgrade}}"
         - "-log-level={{.Values.ControllerLogLevel}}"
+        volumeMounts:
+        - name: config
+          mountPath: /var/run/linkerd/config
         livenessProbe:
           httpGet:
             path: /ping
@@ -199,6 +202,10 @@ spec:
         {{- end }}
         securityContext:
           runAsUser: {{.Values.ControllerUID}}
+      volumes:
+      - name: config
+        configMap:
+          name: linkerd-config
 ---
 kind: ConfigMap
 apiVersion: v1
