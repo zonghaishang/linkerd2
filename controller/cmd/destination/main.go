@@ -45,7 +45,7 @@ func main() {
 	trustDomain := ""
 	global, err := config.Global()
 	if err != nil {
-		log.Errorf("Couldn't load config; continuing without identity: %s", err)
+		log.Warnf("Couldn't load config; continuing without identity: %s", err)
 	} else {
 		trustDomain = global.GetIdentityContext().GetTrustDomain()
 	}
