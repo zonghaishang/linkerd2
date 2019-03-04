@@ -103,6 +103,8 @@ spec:
         - "-admin-addr=:9990"
         - "-log-level={{.ControllerLogLevel}}"
         volumeMounts:
+        - mountPath: /var/run/linkerd/config
+          name: config
         - mountPath: /var/run/linkerd/identity/trust-anchors
           name: identity-trust-anchors
         - mountPath: /var/run/linkerd/identity/issuer
