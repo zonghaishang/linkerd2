@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"os"
 	"os/signal"
@@ -11,12 +10,14 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/golang/protobuf/ptypes"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 
 	idctl "github.com/linkerd/linkerd2/controller/identity"
 	"github.com/linkerd/linkerd2/controller/k8s"
 	"github.com/linkerd/linkerd2/pkg/admin"
+	"github.com/linkerd/linkerd2/pkg/config"
 	"github.com/linkerd/linkerd2/pkg/flags"
 	"github.com/linkerd/linkerd2/pkg/identity"
 	"github.com/linkerd/linkerd2/pkg/tls"
@@ -24,41 +25,40 @@ import (
 
 // TODO watch trustAnchorsPath for changes
 // TODO watch issuerPath for changes
+// TODO restrict servicetoken audiences (and lifetimes)
 func main() {
 	addr := flag.String("addr", ":8083", "address to serve on")
 	adminAddr := flag.String("admin-addr", ":9996", "address of HTTP admin server")
 	kubeConfigPath := flag.String("kubeconfig", "", "path to kube config")
-	controllerNS := flag.String("controller-namespace", "linkerd",
-		"namespace in which Linkerd is installed")
-	trustDomain := flag.String("trust-domain", "cluster.local", "trust domain for identities")
-	trustAnchorsPath := flag.String("trust-anchors",
-		"/var/run/linkerd/identity/trust-anchors/trust-anchors.pem",
-		"path to file or directory containing trust anchors")
 	issuerPath := flag.String("issuer",
 		"/var/run/linkerd/identity/issuer",
 		"path to directoring containing issuer credentials")
-	issuanceLifetime := flag.Duration("issuance-lifetime", 24*time.Hour,
-		"The amount of time for which a signed certificate is valid")
-	clockSkewAllowance := flag.Duration("clock-skew-allowance", 0,
-		"The amount of time to allow for clock skew between nodes")
-	// TODO flag.String("audience", "linkerd.io/identity", "Token audience")
 	flags.ConfigureAndParse()
+
+	cfg, err := config.Global()
+	if err != nil {
+		log.Fatalf("Failed to load config: %s", err.Error())
+	}
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
-	dom, err := idctl.NewTrustDomain(*controllerNS, *trustDomain)
+	controllerNS := cfg.GetLinkerdNamespace()
+	idctx := cfg.GetIdentityContext()
+	if idctx == nil {
+		log.Infof("Identity disabled in control plane configuration.")
+		os.Exit(0)
+	}
+
+	trustDomain := idctx.GetTrustDomain()
+	dom, err := idctl.NewTrustDomain(controllerNS, trustDomain)
 	if err != nil {
 		log.Fatalf("Invalid trust domain: %s", err.Error())
 	}
 
-	tab, err := ioutil.ReadFile(*trustAnchorsPath)
+	trustAnchors, err := tls.DecodePEMCertPool(idctx.GetTrustAnchorsPem())
 	if err != nil {
-		log.Fatalf("Failed to read trust anchors from %s: %s", *trustAnchorsPath, err)
-	}
-	trustAnchors, err := tls.DecodePEMCertPool(string(tab))
-	if err != nil {
-		log.Fatalf("Failed to read trust anchors from %s: %s", *trustAnchorsPath, err)
+		log.Fatalf("Failed to read trust anchors: %s", err)
 	}
 
 	creds, err := tls.ReadPEMCreds(filepath.Join(*issuerPath, "key.pem"), filepath.Join(*issuerPath, "crt.pem"))
@@ -66,14 +66,28 @@ func main() {
 		log.Fatalf("Failed to read CA from %s: %s", *issuerPath, err)
 	}
 
-	expectedName := fmt.Sprintf("identity.%s.%s", *controllerNS, *trustDomain)
+	expectedName := fmt.Sprintf("identity.%s.%s", controllerNS, trustDomain)
 	if err := creds.Crt.Verify(trustAnchors, expectedName); err != nil {
 		log.Fatalf("Failed to verify issuer credentials for '%s' with trust anchors: %s", expectedName, err)
 	}
 
+	csa := 0 * time.Minute
+	if pbd := idctx.GetClockSkewAllowance(); pbd != nil {
+		if d, err := ptypes.Duration(pbd); err == nil {
+			csa = d
+		}
+	}
+
+	il := 24 * time.Hour
+	if pbd := idctx.GetIssuanceLifetime(); pbd != nil {
+		if d, err := ptypes.Duration(pbd); err == nil {
+			il = d
+		}
+	}
+
 	ca := tls.NewCA(*creds, tls.Validity{
-		ClockSkewAllowance: *clockSkewAllowance,
-		Lifetime:           *issuanceLifetime,
+		ClockSkewAllowance: csa,
+		Lifetime:           il,
 	})
 	if err != nil {
 		log.Fatalf("Failed to read issuer credentials from %s: %s", *issuerPath, err)

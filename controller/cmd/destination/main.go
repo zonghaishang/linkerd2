@@ -50,7 +50,15 @@ func main() {
 		trustDomain = global.GetIdentityContext().GetTrustDomain()
 	}
 
-	server, err := destination.NewServer(*addr, *k8sDNSZone, *controllerNamespace, trustDomain, *enableH2Upgrade, k8sAPI, done)
+	server, err := destination.NewServer(
+		*addr,
+		*k8sDNSZone,
+		*controllerNamespace,
+		trustDomain,
+		*enableH2Upgrade,
+		k8sAPI,
+		done,
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
