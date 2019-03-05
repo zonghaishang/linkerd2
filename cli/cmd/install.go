@@ -14,8 +14,6 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/helm/pkg/chartutil"
 	"k8s.io/helm/pkg/proto/hapi/chart"
 	"k8s.io/helm/pkg/renderutil"
@@ -24,7 +22,6 @@ import (
 
 	"github.com/linkerd/linkerd2/cli/static"
 	pb "github.com/linkerd/linkerd2/controller/gen/config"
-	"github.com/linkerd/linkerd2/pkg/config"
 	"github.com/linkerd/linkerd2/pkg/k8s"
 	"github.com/linkerd/linkerd2/pkg/tls"
 	"github.com/linkerd/linkerd2/pkg/version"
@@ -175,11 +172,9 @@ func newCmdInstall() *cobra.Command {
 		Short: "Output Kubernetes configs to install Linkerd",
 		Long:  "Output Kubernetes configs to install Linkerd.",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cluster, err := fetchClusterState()
-			if err != nil {
-				return err
-			}
-
+			// TODO fetch the cluster state via the K8S api so that we only regenerate
+			// certificates as needed.
+			cluster := clusterState{}
 			config, err := validateAndBuildConfig(cluster, options)
 			if err != nil {
 				return err
@@ -200,32 +195,32 @@ func newCmdInstall() *cobra.Command {
 	return cmd
 }
 
-func fetchClusterState() (state clusterState, err error) {
-	api, err := k8s.NewAPI(kubeconfigPath, kubeContext)
-	if err != nil {
-		return
-	}
-
-	k, err := kubernetes.NewForConfig(api.Config)
-	if err != nil {
-		return
-	}
-
-	configMaps := k.CoreV1().ConfigMaps(controlPlaneNamespace)
-	if g, p, err := config.Fetch(configMaps); err == nil {
-		state.configs.global = g
-		state.configs.proxy = p
-	}
-
-	// If we can't fetch the issuer secrets, then we assume they don't exist...
-	secrets := k.CoreV1().Secrets(controlPlaneNamespace)
-	if s, e := secrets.Get("linkerd-identity-issuer", metav1.GetOptions{}); e == nil {
-		state.issuer.crtPEM = string(s.Data["crt.pem"])
-		state.issuer.keyPEM = string(s.Data["key.pem"])
-	}
-
-	return
-}
+// func fetchClusterState() (state clusterState, err error) {
+// 	api, err := k8s.NewAPI(kubeconfigPath, kubeContext)
+// 	if err != nil {
+// 		return
+// 	}
+//
+// 	k, err := kubernetes.NewForConfig(api.Config)
+// 	if err != nil {
+// 		return
+// 	}
+//
+// 	configMaps := k.CoreV1().ConfigMaps(controlPlaneNamespace)
+// 	if g, p, err := config.Fetch(configMaps); err == nil {
+// 		state.configs.global = g
+// 		state.configs.proxy = p
+// 	}
+//
+// 	// If we can't fetch the issuer secrets, then we assume they don't exist...
+// 	secrets := k.CoreV1().Secrets(controlPlaneNamespace)
+// 	if s, e := secrets.Get("linkerd-identity-issuer", metav1.GetOptions{}); e == nil {
+// 		state.issuer.crtPEM = string(s.Data["crt.pem"])
+// 		state.issuer.keyPEM = string(s.Data["key.pem"])
+// 	}
+//
+// 	return
+// }
 
 func validateAndBuildConfig(state clusterState, options *installOptions) (*installConfig, error) {
 	if err := options.validate(); err != nil {
