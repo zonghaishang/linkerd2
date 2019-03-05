@@ -126,8 +126,7 @@ var (
 	// in the control plane.
 	MountPathGlobalConfig = MountPathBase + "/config/global"
 
-	// MountPathProxyConfig is the path at which the proxy injection config file is
-	// mounted in the control plane.
+	// MountPathProxyConfig is the path at which the global config file is mounted
 	MountPathProxyConfig = MountPathBase + "/config/proxy"
 )
 

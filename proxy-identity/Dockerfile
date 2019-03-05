@@ -1,7 +1,7 @@
 ARG RUNTIME_IMAGE=gcr.io/linkerd-io/base:2019-02-19.01
 
 ## compile proxy-identity agent
-FROM gcr.io/linkerd-io/go-deps:90ae17cf as golang
+FROM gcr.io/linkerd-io/go-deps:b788bbdf as golang
 WORKDIR /go/src/github.com/linkerd/linkerd2
 ENV CGO_ENABLED=0 GOOS=linux
 

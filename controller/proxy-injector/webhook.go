@@ -1,8 +1,8 @@
 package injector
 
 import (
-	"github.com/linkerd/linkerd2/pkg/config"
-	"github.com/linkerd/linkerd2/pkg/inject"
+	"fmt"
+
 	log "github.com/sirupsen/logrus"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -10,6 +10,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
+
+	"github.com/linkerd/linkerd2/pkg/config"
+	"github.com/linkerd/linkerd2/pkg/inject"
+	"github.com/linkerd/linkerd2/pkg/version"
 )
 
 // Webhook is a Kubernetes mutating admission webhook that mutates pods admission
@@ -72,11 +76,6 @@ func (w *Webhook) Mutate(data []byte) *admissionv1beta1.AdmissionReview {
 	}
 	admissionReview.Response = admissionResponse
 
-	if len(admissionResponse.Patch) > 0 {
-		log.Infof("patch generated: %s", admissionResponse.Patch)
-	}
-	log.Info("done")
-
 	return admissionReview
 }
 
@@ -107,8 +106,8 @@ func (w *Webhook) inject(request *admissionv1beta1.AdmissionRequest) (*admission
 
 	conf := inject.NewResourceConfig(globalConfig, proxyConfig).
 		WithNsAnnotations(nsAnnotations).
-		WithMeta(request.Kind.Kind, request.Namespace, request.Name)
-	patchJSON, reports, err := conf.GetPatch(request.Object.Raw, inject.ShouldInjectWebhook)
+		WithKind(request.Kind.Kind)
+	nonEmpty, err := conf.ParseMeta(request.Object.Raw)
 	if err != nil {
 		return nil, err
 	}
@@ -117,10 +116,32 @@ func (w *Webhook) inject(request *admissionv1beta1.AdmissionRequest) (*admission
 		UID:     request.UID,
 		Allowed: true,
 	}
-
-	if len(reports) > 0 && !reports[0].Injectable() {
+	if !nonEmpty {
 		return admissionResponse, nil
 	}
+
+	p, _, err := conf.GetPatch(request.Object.Raw, inject.ShouldInjectWebhook)
+	if err != nil {
+		return nil, err
+	}
+
+	if p.IsEmpty() {
+		return admissionResponse, nil
+	}
+
+	p.AddCreatedByPodAnnotation(fmt.Sprintf("linkerd/proxy-injector %s", version.Version))
+
+	// When adding workloads through `kubectl apply` the spec template labels are
+	// automatically copied to the workload's main metadata section.
+	// This doesn't happen when adding labels through the webhook. So we manually
+	// add them to remain consistent.
+	conf.AddRootLabels(p)
+
+	patchJSON, err := p.Marshal()
+	if err != nil {
+		return nil, err
+	}
+	log.Infof("patch generated: %s", patchJSON)
 
 	patchType := admissionv1beta1.PatchTypeJSONPatch
 	admissionResponse.Patch = patchJSON

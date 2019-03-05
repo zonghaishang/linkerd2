@@ -86,10 +86,9 @@ func NewResourceConfig(globalConfig *config.Global, proxyConfig *config.Proxy) *
 	}
 }
 
-// WithMeta enriches ResourceConfig with extra metadata
-func (conf *ResourceConfig) WithMeta(kind, namespace, name string) *ResourceConfig {
+// WithKind enriches ResourceConfig with the workload kind
+func (conf *ResourceConfig) WithKind(kind string) *ResourceConfig {
 	conf.meta = metav1.TypeMeta{Kind: kind}
-	conf.objMeta = objMeta{&metav1.ObjectMeta{Name: name, Namespace: namespace}}
 	return conf
 }
 
@@ -138,9 +137,9 @@ func (conf *ResourceConfig) ParseMeta(bytes []byte) (bool, error) {
 func (conf *ResourceConfig) GetPatch(
 	bytes []byte,
 	shouldInject func(*ResourceConfig, Report) bool,
-) ([]byte, []Report, error) {
+) (*Patch, []Report, error) {
 	report := newReport(conf)
-	log.Infof("working on %s %s..", strings.ToLower(conf.meta.Kind), conf.objMeta.Name)
+	log.Infof("working on %s %s..", strings.ToLower(conf.meta.Kind), report.Name)
 
 	if err := conf.parse(bytes); err != nil {
 		return nil, nil, err
@@ -166,13 +165,7 @@ func (conf *ResourceConfig) GetPatch(
 		report.UnsupportedResource = true
 	}
 
-	patchJSON, err := json.Marshal(patch.patchOps)
-	log.Debugf("patch: %s", patchJSON)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return patchJSON, []Report{report}, nil
+	return patch, []Report{report}, nil
 }
 
 // KindInjectable returns true if the resource in conf can be injected with a proxy
@@ -211,7 +204,7 @@ func (conf *ResourceConfig) getFreshWorkloadObj() runtime.Object {
 // that does conserve the field order as portrayed in k8s' api structs
 func (conf *ResourceConfig) JSONToYAML(bytes []byte) ([]byte, error) {
 	obj := conf.getFreshWorkloadObj()
-	if err := yaml.Unmarshal(bytes, obj); err != nil {
+	if err := json.Unmarshal(bytes, obj); err != nil {
 		return nil, err
 	}
 	return yaml.Marshal(obj)
@@ -579,7 +572,6 @@ func (conf *ResourceConfig) injectObjectMeta(patch *Patch) {
 	if len(conf.objMeta.Annotations) == 0 {
 		patch.addPodAnnotationsRoot()
 	}
-	patch.addPodAnnotation(k8s.CreatedByAnnotation, k8s.CreatedByAnnotationValue())
 	patch.addPodAnnotation(k8s.ProxyVersionAnnotation, conf.globalConfig.GetVersion())
 
 	if conf.globalConfig.GetIdentityContext() != nil {
@@ -588,11 +580,15 @@ func (conf *ResourceConfig) injectObjectMeta(patch *Patch) {
 		patch.addPodAnnotation(k8s.IdentityModeAnnotation, k8s.IdentityModeDisabled)
 	}
 
-	if len(conf.objMeta.Labels) == 0 {
-		patch.addPodLabelsRoot()
-	}
 	for k, v := range conf.podLabels {
 		patch.addPodLabel(k, v)
+	}
+}
+
+// AddRootLabels adds all the pod labels into the root workload (e.g. Deployment)
+func (conf *ResourceConfig) AddRootLabels(patch *Patch) {
+	for k, v := range conf.podLabels {
+		patch.addRootLabel(k, v)
 	}
 }
 

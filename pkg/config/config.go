@@ -2,7 +2,6 @@ package config
 
 import (
 	"bytes"
-	"fmt"
 	"io/ioutil"
 	"strings"
 
@@ -37,14 +36,16 @@ func Proxy() (*pb.Proxy, error) {
 func unmarshalConfig(filepath string, msg proto.Message) error {
 	configJSON, err := ioutil.ReadFile(filepath)
 	if err != nil {
-		return fmt.Errorf("Error reading config: %s", err)
+		log.Errorf("error reading %s: %s", filepath, err)
+		return err
 	}
 
 	log.Debugf("%s config JSON: %s", filepath, configJSON)
 
 	err = unmarshaler.Unmarshal(bytes.NewReader(configJSON), msg)
 	if err != nil {
-		return fmt.Errorf("Error unmarshaling config: %s", err)
+		log.Errorf("error unmarshaling %s: %s", filepath, err)
+		return err
 	}
 
 	return nil

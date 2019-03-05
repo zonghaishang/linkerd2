@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	jsonpatch "github.com/evanphx/json-patch"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"sigs.k8s.io/yaml"
 
@@ -106,21 +107,30 @@ func (rt resourceTransformerInject) transform(bytes []byte) ([]byte, []inject.Re
 	if len(rt.proxyOutboundCapacity) > 0 {
 		conf = conf.WithProxyOutboundCapacity(rt.proxyOutboundCapacity)
 	}
-	supportedResource, err := conf.ParseMeta(bytes)
+	nonEmpty, err := conf.ParseMeta(bytes)
 	if err != nil {
 		return nil, nil, err
 	}
-	if !supportedResource {
+	if !nonEmpty {
 		r := inject.Report{UnsupportedResource: true}
 		return bytes, []inject.Report{r}, nil
 	}
-	patchJSON, reports, err := conf.GetPatch(bytes, inject.ShouldInjectCLI)
-	if patchJSON == nil || err != nil {
-		return bytes, reports, err
+	p, reports, err := conf.GetPatch(bytes, inject.ShouldInjectCLI)
+	if err != nil {
+		return nil, nil, err
 	}
-	if !conf.KindInjectable() {
+	if p.IsEmpty() {
 		return bytes, reports, nil
 	}
+	p.AddCreatedByPodAnnotation(k8s.CreatedByAnnotationValue())
+	patchJSON, err := p.Marshal()
+	if patchJSON == nil {
+		return bytes, reports, nil
+	}
+	if err != nil {
+		return nil, nil, err
+	}
+	log.Debugf("patch generated: %s", patchJSON)
 	patch, err := jsonpatch.DecodePatch(patchJSON)
 	if err != nil {
 		return nil, nil, err
