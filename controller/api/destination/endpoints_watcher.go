@@ -8,6 +8,7 @@ import (
 	net "github.com/linkerd/linkerd2-proxy-api/go/net"
 	"github.com/linkerd/linkerd2/controller/k8s"
 	"github.com/linkerd/linkerd2/pkg/addr"
+	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -68,6 +69,19 @@ func newEndpointsWatcher(k8sAPI *k8s.API) *endpointsWatcher {
 			DeleteFunc: watcher.deleteEndpoints,
 		},
 	)
+
+	prometheus.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Subsystem: "endpoints_watcher",
+			Name:      "service_ports",
+			Help:      "Number of service ports.",
+		},
+		func() float64 {
+			watcher.mutex.RLock()
+			defer watcher.mutex.RUnlock()
+			return float64(len(watcher.servicePorts))
+		},
+	))
 
 	return watcher
 }
@@ -326,6 +340,32 @@ func newServicePort(service *corev1.Service, endpoints *corev1.Endpoints, port u
 	}
 
 	sp.addresses = sp.endpointsToAddresses(endpoints, targetPort)
+
+	prometheus.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Subsystem: "service_ports",
+			Name:      "listeners",
+			Help:      "Number of listeners connected to this service port.",
+		},
+		func() float64 {
+			sp.mutex.RLock()
+			defer sp.mutex.RUnlock()
+			return float64(len(sp.listeners))
+		},
+	))
+
+	prometheus.MustRegister(prometheus.NewGaugeFunc(
+		prometheus.GaugeOpts{
+			Subsystem: "service_ports",
+			Name:      "addresses",
+			Help:      "Number of addresses available for this service port.",
+		},
+		func() float64 {
+			sp.mutex.RLock()
+			defer sp.mutex.RUnlock()
+			return float64(len(sp.addresses))
+		},
+	))
 
 	return sp
 }
