@@ -2,6 +2,8 @@ package admin
 
 import (
 	"net/http"
+	"net/http/pprof"
+	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -24,7 +26,7 @@ func StartServer(addr string) {
 		Addr:         addr,
 		Handler:      h,
 		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		WriteTimeout: 60 * time.Second,
 	}
 
 	log.Fatal(s.ListenAndServe())
@@ -38,8 +40,14 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		h.servePing(w, req)
 	case "/ready":
 		h.serveReady(w, req)
+	case "/debug/pprof/profile":
+		pprof.Profile(w, req)
 	default:
-		http.NotFound(w, req)
+		if strings.HasPrefix(req.URL.Path, "/debug/pprof/") {
+			pprof.Index(w, req)
+		} else {
+			http.NotFound(w, req)
+		}
 	}
 }
 
