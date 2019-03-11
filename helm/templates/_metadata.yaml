@@ -1,0 +1,17 @@
+{{- define "metadata.pod" -}}
+annotations:
+  {{ .root.Values.Internal.CreatedByAnnotation }}: {{ .root.Values.CliVersion }}
+  linkerd.io/identity-mode: {{ if .root.Values.TLS.Enabled -}}optional{{- else -}}disabled{{- end }}
+  linkerd.io/proxy-version: {{ .root.Values.Proxy.Version }}
+labels:
+  linkerd.io/control-plane-component: {{ .name }}
+  linkerd.io/control-plane-ns: {{ .root.Values.Namespace }}
+  linkerd.io/proxy-deployment: {{ printf "%s-%s" .root.Values.Namespace .name }}
+{{- end }}
+
+{{- define "metadata.resource" -}}
+labels:
+  {{ .root.Values.Controller.ComponentLabel }}: {{ .name }}
+annotations:
+  {{ .root.Values.Internal.CreatedByAnnotation }}: {{ .root.Values.CliVersion }}
+{{- end }}

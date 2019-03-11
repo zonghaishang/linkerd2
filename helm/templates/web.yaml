@@ -14,10 +14,7 @@ apiVersion: v1
 metadata:
   name: linkerd-web
   namespace: {{.Values.Namespace}}
-  labels:
-    {{.Values.Controller.ComponentLabel}}: web
-  annotations:
-    {{.Values.Internal.CreatedByAnnotation}}: {{.Values.CliVersion}}
+  {{- include "metadata.resource" (dict "root" . "name" "web" ) | nindent 2 }}
 spec:
   type: ClusterIP
   selector:
@@ -35,18 +32,12 @@ apiVersion: extensions/v1beta1
 metadata:
   name: linkerd-web
   namespace: {{.Values.Namespace}}
-  labels:
-    {{.Values.Controller.ComponentLabel}}: web
-  annotations:
-    {{.Values.Internal.CreatedByAnnotation}}: {{.Values.CliVersion}}
+  {{- include "metadata.resource" (dict "root" . "name" "web" ) | nindent 2 }}
 spec:
   replicas: 1
   template:
     metadata:
-      labels:
-        {{.Values.Controller.ComponentLabel}}: web
-      annotations:
-        {{.Values.Internal.CreatedByAnnotation}}: {{.Values.CliVersion}}
+      {{- include "metadata.pod" (dict "root" . "name" "web" ) | nindent 6 }}
     spec:
       containers:
       - name: web
@@ -81,7 +72,7 @@ spec:
         {{- end }}
         securityContext:
           runAsUser: {{.Values.Controller.UID}}
-      {{- include "containers.proxy" . | nindent 6 }}
+      {{- include "containers.proxy" (dict "root" . "name" "web") | nindent 6 }}
         terminationMessagePolicy: FallbackToLogsOnError
       initContainers:
       {{- include "containers.init" . | nindent 6 }}

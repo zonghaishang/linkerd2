@@ -14,10 +14,7 @@ apiVersion: v1
 metadata:
   name: linkerd-grafana
   namespace: {{.Values.Namespace}}
-  labels:
-    {{.Values.Controller.ComponentLabel}}: grafana
-  annotations:
-    {{.Values.Internal.CreatedByAnnotation}}: {{.Values.CliVersion}}
+  {{- include "metadata.resource" (dict "root" . "name" "grafana" ) | nindent 2 }}
 spec:
   type: ClusterIP
   selector:
@@ -32,18 +29,12 @@ apiVersion: extensions/v1beta1
 metadata:
   name: linkerd-grafana
   namespace: {{.Values.Namespace}}
-  labels:
-    {{.Values.Controller.ComponentLabel}}: grafana
-  annotations:
-    {{.Values.Internal.CreatedByAnnotation}}: {{.Values.CliVersion}}
+  {{- include "metadata.resource" (dict "root" . "name" "grafana" ) | nindent 2 }}
 spec:
   replicas: 1
   template:
     metadata:
-      labels:
-        {{.Values.Controller.ComponentLabel}}: grafana
-      annotations:
-        {{.Values.Internal.CreatedByAnnotation}}: {{.Values.CliVersion}}
+      {{- include "metadata.pod" (dict "root" . "name" "grafana" ) | nindent 6 }}
     spec:
       volumes:
       - name: {{.Values.Grafana.VolumeName}}
@@ -91,7 +82,7 @@ spec:
         {{- end }}
         securityContext:
           runAsUser: 472
-      {{- include "containers.proxy" . | nindent 6 }}
+      {{- include "containers.proxy" (dict "root" . "name" "grafana") | nindent 6 }}
         terminationMessagePolicy: FallbackToLogsOnError
       initContainers:
       {{- include "containers.init" . | nindent 6 }}
@@ -101,10 +92,7 @@ apiVersion: v1
 metadata:
   name: linkerd-grafana-config
   namespace: {{.Values.Namespace}}
-  labels:
-    {{.Values.Controller.ComponentLabel}}: grafana
-  annotations:
-    {{.Values.Internal.CreatedByAnnotation}}: {{.Values.CliVersion}}
+  {{- include "metadata.resource" (dict "root" . "name" "grafana" ) | nindent 2 }}
 data:
   grafana.ini: |-
     instance_name = linkerd-grafana

@@ -9,10 +9,7 @@ apiVersion: apps/v1
 metadata:
   name: linkerd-proxy-injector
   namespace: {{.Values.Namespace}}
-  labels:
-    {{.Values.Controller.ComponentLabel}}: proxy-injector
-  annotations:
-    {{.Values.Internal.CreatedByAnnotation}}: {{.Values.CliVersion}}
+  {{- include "metadata.resource" (dict "root" . "name" "proxy-injector" ) | nindent 2 }}
 spec:
   replicas: 1
   selector:
@@ -20,10 +17,7 @@ spec:
       {{.Values.Controller.ComponentLabel}}: proxy-injector
   template:
     metadata:
-      labels:
-        {{.Values.Controller.ComponentLabel}}: proxy-injector
-      annotations:
-        {{.Values.Internal.CreatedByAnnotation}}: {{.Values.CliVersion}}
+      {{- include "metadata.pod" (dict "root" . "name" "proxy-injector" ) | nindent 6 }}
     spec:
       serviceAccountName: linkerd-proxy-injector
       containers:
@@ -102,10 +96,7 @@ apiVersion: v1
 metadata:
   name: linkerd-proxy-injector
   namespace: {{.Values.Namespace}}
-  labels:
-    {{.Values.Controller.ComponentLabel}}: proxy-injector
-  annotations:
-    {{.Values.Internal.CreatedByAnnotation}}: {{.Values.CliVersion}}
+  {{- include "metadata.resource" (dict "root" . "name" "proxy-injector" ) | nindent 2 }}
 spec:
   type: ClusterIP
   selector:
@@ -120,10 +111,7 @@ apiVersion: v1
 metadata:
   name: linkerd-proxy-injector-sidecar-config
   namespace: {{.Values.Namespace}}
-  labels:
-    {{.Values.Controller.ComponentLabel}}: proxy-injector
-  annotations:
-    {{.Values.Internal.CreatedByAnnotation}}: {{.Values.CliVersion}}
+  {{- include "metadata.resource" (dict "root" . "name" "proxy-injector" ) | nindent 2 }}
 data:
   {{.Values.Proxy.InitSpecFileName}}: |
     args:

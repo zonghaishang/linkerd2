@@ -56,18 +56,12 @@ apiVersion: extensions/v1beta1
 metadata:
   name: linkerd-ca
   namespace: {{.Values.Namespace}}
-  labels:
-    {{.Values.Controller.ComponentLabel}}: ca
-  annotations:
-    {{.Values.Internal.CreatedByAnnotation}}: {{.Values.CliVersion}}
+  {{- include "metadata.resource" (dict "root" . "name" "ca" ) | nindent 2 }}
 spec:
   replicas: 1
   template:
     metadata:
-      labels:
-        {{.Values.Controller.ComponentLabel}}: ca
-      annotations:
-        {{.Values.Internal.CreatedByAnnotation}}: {{.Values.CliVersion}}
+      {{- include "metadata.pod" (dict "root" . "name" "ca" ) | nindent 6 }}
     spec:
       serviceAccountName: linkerd-ca
       containers:

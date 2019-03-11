@@ -55,10 +55,7 @@ apiVersion: v1
 metadata:
   name: linkerd-controller-api
   namespace: {{.Values.Namespace}}
-  labels:
-    {{.Values.Controller.ComponentLabel}}: controller
-  annotations:
-    {{.Values.Internal.CreatedByAnnotation}}: {{.Values.CliVersion}}
+  {{- include "metadata.resource" (dict "root" . "name" "controller" ) | nindent 2 }}
 spec:
   type: ClusterIP
   selector:
@@ -73,10 +70,7 @@ apiVersion: v1
 metadata:
   name: linkerd-destination
   namespace: {{.Values.Namespace}}
-  labels:
-    {{.Values.Controller.ComponentLabel}}: controller
-  annotations:
-    {{.Values.Internal.CreatedByAnnotation}}: {{.Values.CliVersion}}
+  {{- include "metadata.resource" (dict "root" . "name" "controller" ) | nindent 2 }}
 spec:
   type: ClusterIP
   selector:
@@ -91,18 +85,12 @@ apiVersion: extensions/v1beta1
 metadata:
   name: linkerd-controller
   namespace: {{.Values.Namespace}}
-  labels:
-    {{.Values.Controller.ComponentLabel}}: controller
-  annotations:
-    {{.Values.Internal.CreatedByAnnotation}}: {{.Values.CliVersion}}
+  {{- include "metadata.resource" (dict "root" . "name" "controller" ) | nindent 2 }}
 spec:
   replicas: {{ if .Values.EnableHA }}{{.Values.Controller.HAReplicas}}{{ else }}{{.Values.Controller.Replicas}}{{ end }}
   template:
     metadata:
-      labels:
-        {{.Values.Controller.ComponentLabel}}: controller
-      annotations:
-        {{.Values.Internal.CreatedByAnnotation}}: {{.Values.CliVersion}}
+      {{- include "metadata.pod" (dict "root" . "name" "controller" ) | nindent 6 }}
     spec:
       serviceAccountName: linkerd-controller
       containers:
@@ -200,7 +188,7 @@ spec:
         {{- end }}
         securityContext:
           runAsUser: {{.Values.Controller.UID}}
-      {{- include "containers.proxy" . | nindent 6 }}
+      {{- include "containers.proxy" (dict "root" . "name" "tap") | nindent 6 }}
         terminationMessagePolicy: FallbackToLogsOnError
       initContainers:
       {{- include "containers.init" . | nindent 6 }}
@@ -211,10 +199,7 @@ apiVersion: v1
 metadata:
   name: linkerd-config
   namespace: {{.Values.Namespace}}
-  labels:
-    {{.Values.Controller.ComponentLabel}}: controller
-  annotations:
-    {{.Values.Internal.CreatedByAnnotation}}: {{.Values.CliVersion}}
+  {{- include "metadata.resource" (dict "root" . "name" "controller" ) | nindent 2 }}
 data:
   {{- if include "config.global" . }}
   global: |

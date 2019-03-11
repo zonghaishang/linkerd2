@@ -42,10 +42,7 @@ apiVersion: v1
 metadata:
   name: linkerd-prometheus
   namespace: {{.Values.Namespace}}
-  labels:
-    {{.Values.Controller.ComponentLabel}}: prometheus
-  annotations:
-    {{.Values.Internal.CreatedByAnnotation}}: {{.Values.CliVersion}}
+  {{- include "metadata.resource" (dict "root" . "name" "prometheus" ) | nindent 2 }}
 spec:
   type: ClusterIP
   selector:
@@ -68,10 +65,7 @@ spec:
   replicas: 1
   template:
     metadata:
-      labels:
-        {{.Values.Controller.ComponentLabel}}: prometheus
-      annotations:
-        {{.Values.Internal.CreatedByAnnotation}}: {{.Values.CliVersion}}
+      {{- include "metadata.pod" (dict "root" . "name" "prometheus") | nindent 6 }}
     spec:
       serviceAccountName: linkerd-prometheus
       volumes:
@@ -94,6 +88,7 @@ spec:
         image: {{.Values.Prometheus.Image}}
         imagePullPolicy: {{.Values.ImagePullPolicy}}
         args:
+        - "--log.level={{.Values.Controller.LogLevel}}"
         - "--storage.tsdb.path=/{{.Values.Prometheus.VolumeName}}"
         - "--storage.tsdb.retention=6h"
         - "--config.file=/etc/prometheus/prometheus.yml"
@@ -117,7 +112,7 @@ spec:
         {{- end }}
         securityContext:
           runAsUser: 65534
-      {{- include "containers.proxy" . | nindent 6 }}
+      {{- include "containers.proxy" (dict "root" . "name" "prometheus") | nindent 6 }}
         terminationMessagePolicy: FallbackToLogsOnError
       initContainers:
       {{- include "containers.init" . | nindent 6 }}
@@ -127,10 +122,7 @@ apiVersion: v1
 metadata:
   name: linkerd-prometheus-config
   namespace: {{.Values.Namespace}}
-  labels:
-    {{.Values.Controller.ComponentLabel}}: prometheus
-  annotations:
-    {{.Values.Internal.CreatedByAnnotation}}: {{.Values.CliVersion}}
+  {{- include "metadata.resource" (dict "root" . "name" "prometheus" ) | nindent 2 }}
 data:
   prometheus.yml: |-
     global:

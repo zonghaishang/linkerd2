@@ -58,6 +58,7 @@ Proxy:
   MetricsPort: 4191
   SpecFileName: proxy.yaml
   UID: 2102
+  Version: edge-19.2.5
 
 # These values are internal to the operation of linkerd,
 # and should not be changed unless you are entirely sure of what you're doing.
