@@ -113,6 +113,7 @@ jobs:
         - echo "$(git diff)" >&2
         - git diff-index -v HEAD --
         - echo "$(git diff-index -v HEAD --)"
+        - git status
       script:
         - bin/docker-build
         - bin/docker-push-deps
