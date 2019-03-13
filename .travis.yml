@@ -75,12 +75,10 @@ jobs:
       language: generic
       services:
         - docker
-
       cache:
         directories:
           - "$HOME/google-cloud-sdk/"
           - "$HOME/.cache"
-
       before_install:
         - docker version
         - |
@@ -163,7 +161,7 @@ jobs:
         - |
           # Cleanup after integration test run.
           version="$(./linkerd version --client --short | tr -cd '[:alnum:]-')"
-          ./bin/test-cleanup linkerd-$version
+          # ./bin/test-cleanup linkerd-$version
 
     - name: "Docker master push"
       stage: docker-master-push
