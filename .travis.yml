@@ -11,10 +11,9 @@ sudo: false
 
 stages:
   - name: test
-  # - name: docker-deploy
-  #   if: type != pull_request
   - name: integration-test
-    # if: type != pull_request
+  - name: docker-master-push
+    if: type != pull_request
 
 jobs:
   include:
@@ -84,7 +83,6 @@ jobs:
 
       before_install:
         - docker version
-
         - |
           # Install gcloud and kubectl.
           dir="${CLOUDSDK_INSTALL_DIR:-${HOME}}/google-cloud-sdk"
@@ -99,25 +97,18 @@ jobs:
           (. bin/_gcp.sh ; get_k8s_ctx "$GCP_PROJECT" "$GCP_ZONE" "$GKE_CLUSTER")
         - gcloud version
         - kubectl version --short
-
       before_script:
         - gcloud docker --authorize-only
         - bin/docker-pull-deps
-         # Pulling master helps with docker build cache, but may fail if we're
-         # adding a new image to the mix.
-        - bin/docker-pull master || echo "docker pull failed" >&2
         - |
           export LINKERD_TAG=$(. bin/_tag.sh ; clean_head_root_tag)
           echo "LINKERD_TAG=${LINKERD_TAG}"
         - export BUILD_DEBUG=1 DOCKER_TRACE=1
-
       script:
         - bin/docker-build
-
       after_success:
         - bin/docker-push-deps
         - bin/docker-push $LINKERD_TAG
-        #- bin/docker-retag-all $LINKERD_TAG master && bin/docker-push master
         - target/cli/linux/linkerd install --linkerd-version=$LINKERD_TAG |tee linkerd.yml
         - kubectl -n linkerd apply -f linkerd.yml --prune --selector='linkerd.io/control-plane-component'
 
@@ -129,20 +120,16 @@ jobs:
       go_import_path: github.com/linkerd/linkerd2
       services:
         - docker
-
       cache:
         directories:
           - vendor
           - "$HOME/google-cloud-sdk/"
           - "$HOME/.cache"
-
       before_install:
         - echo $GITCOOKIE_SH | base64 -d | bash
-
       install:
         - ./bin/dep ensure -vendor-only -v
         - ./bin/dep status -v
-
         - |
           # Install gcloud and kubectl.
           dir="${CLOUDSDK_INSTALL_DIR:-${HOME}}/google-cloud-sdk"
@@ -164,7 +151,6 @@ jobs:
         - gcloud version
         - kubectl version --short
         - ./linkerd version --client
-
       script:
         - |
           # Run integration tests.
@@ -178,6 +164,39 @@ jobs:
           # Cleanup after integration test run.
           version="$(./linkerd version --client --short | tr -cd '[:alnum:]-')"
           ./bin/test-cleanup linkerd-$version
+
+    - name: "Docker master push"
+      stage: docker-master-push
+      language: generic
+      services:
+        - docker
+      cache:
+        directories:
+          - "$HOME/google-cloud-sdk/"
+          - "$HOME/.cache"
+      before_install:
+        - docker version
+        - |
+          # Install gcloud and kubectl.
+          dir="${CLOUDSDK_INSTALL_DIR:-${HOME}}/google-cloud-sdk"
+          (. bin/_gcp.sh ; install_gcloud_kubectl "$dir")
+          . "$dir/path.bash.inc"
+        - |
+          # Configure gcloud with a service account.
+          openssl aes-256-cbc -K $encrypted_ea955175587c_key -iv $encrypted_ea955175587c_iv -in .gcp.json.enc -out .gcp.json -d
+          (. bin/_gcp.sh ; set_gcloud_config "$GCP_PROJECT" "$GCP_ZONE" "$GKE_CLUSTER")
+        - |
+          # Get a kubernetes context.
+          (. bin/_gcp.sh ; get_k8s_ctx "$GCP_PROJECT" "$GCP_ZONE" "$GKE_CLUSTER")
+        - gcloud version
+        - kubectl version --short
+      before_script:
+        - gcloud docker --authorize-only
+        - export LINKERD_TAG=$(. bin/_tag.sh ; clean_head_root_tag)
+      script:
+        - bin/docker-pull $LINKERD_TAG
+        - bin/docker-retag-all $LINKERD_TAG master
+        # - bin/docker-push master
 
 notifications:
   email:
