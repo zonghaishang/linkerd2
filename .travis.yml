@@ -19,7 +19,9 @@ stages:
 jobs:
   include:
 
-    - language: go
+    - name: "Go unit tests"
+      stage: test
+      language: go
       # Quote the version number to avoid parsing issues like
       # https://github.com/travis-ci/gimme/issues/132.
       go: "1.11.5"
@@ -41,7 +43,9 @@ jobs:
         - go test -cover -race -v ./...
         - ./bin/lint --verbose
 
-    - language: node_js
+    - name: "JS unit tests"
+      stage: test
+      language: node_js
       node_js:
         - "10"
       cache: yarn
@@ -54,7 +58,9 @@ jobs:
       script:
         - ./bin/web test --reporters=jest-dot-reporter
 
-    - language: generic
+    - name: "Go deps validation"
+      stage: test
+      language: generic
       script:
         - |
           (
@@ -65,7 +71,9 @@ jobs:
           )
 
     # Push container images to Google Container Registry.
-    - language: generic
+    - name: "Docker build and push"
+      stage: test
+      language: generic
       services:
         - docker
 
@@ -114,8 +122,8 @@ jobs:
         - kubectl -n linkerd apply -f linkerd.yml --prune --selector='linkerd.io/control-plane-component'
 
     # Run integration tests after container images have been published.
-    - stage: integration-test
-
+    - name: "Integration tests"
+      stage: integration-test
       language: go
       go: "1.11.5"
       go_import_path: github.com/linkerd/linkerd2
