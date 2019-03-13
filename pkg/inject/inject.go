@@ -38,7 +38,9 @@ const (
 	proxyIdentitySh = `
 set -eu
 export PATH="/var/lib/linkerd/bin:${PATH:-/usr/bin:/bin}"
-linkerd2-proxy-identity -dir=$LINKERD2_PROXY_IDENTITY_DIR -name=$LINKERD2_PROXY_IDENTITY_LOCAL_NAME
+if [ -z "${LINKERD2_PROXY_IDENTITY_DISABLED:-}" ]; then
+  linkerd2-proxy-identity -dir "$LINKERD2_PROXY_IDENTITY_DIR" -name "$LINKERD2_PROXY_IDENTITY_LOCAL_NAME"
+fi
 linkerd2-proxy
 `
 )
