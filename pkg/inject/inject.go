@@ -38,7 +38,6 @@ const (
 	proxyIdentitySh = `
 set -eu
 
-/bin/echo -n "$TRUST_ANCHORS_PEM" >$LINKERD2_PROXY_TLS_TRUST_ANCHORS
 /bin/proxy-identity -addr=$ID_ADDR \
   -end-entity-dir=$LINKERD2_PROXY_END_ENTITY_DIR \
   -name=$LINKERD2_PROXY_TLS_POD_IDENTITY \
@@ -398,6 +397,9 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 	}
 	proxyUID := conf.proxyConfig.GetProxyUid()
 	sidecar := v1.Container{
+		Command: []string{"/bin/sh", "-c"},
+		Args:    []string{proxyIdentitySh},
+
 		Name:                     k8s.ProxyContainerName,
 		Image:                    conf.taggedProxyImage(),
 		ImagePullPolicy:          v1.PullPolicy(conf.proxyConfig.GetProxyImage().GetPullPolicy()),
@@ -415,29 +417,50 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 		},
 		Resources: resources,
 		Env: []v1.EnvVar{
-			{Name: "LINKERD2_PROXY_LOG", Value: conf.proxyConfig.GetLogLevel().GetLevel()},
 			{
-				Name:  "LINKERD2_PROXY_CONTROL_URL",
-				Value: fmt.Sprintf("tcp://%s:8086", destinationDNS),
+				Name:  "LINKERD2_PROXY_LOG",
+				Value: conf.proxyConfig.GetLogLevel().GetLevel(),
 			},
-			{Name: "LINKERD2_PROXY_CONTROL_LISTENER", Value: fmt.Sprintf("tcp://0.0.0.0:%d", conf.proxyConfig.GetControlPort().GetPort())},
-			{Name: "LINKERD2_PROXY_METRICS_LISTENER", Value: fmt.Sprintf("tcp://0.0.0.0:%d", conf.proxyConfig.GetMetricsPort().GetPort())},
-			{Name: "LINKERD2_PROXY_OUTBOUND_LISTENER", Value: fmt.Sprintf("tcp://127.0.0.1:%d", conf.proxyConfig.GetOutboundPort().GetPort())},
-			{Name: "LINKERD2_PROXY_INBOUND_LISTENER", Value: fmt.Sprintf("tcp://0.0.0.0:%d", conf.proxyConfig.GetInboundPort().GetPort())},
-			{Name: "LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES", Value: profileSuffixes},
-			{Name: "LINKERD2_PROXY_INBOUND_ACCEPT_KEEPALIVE", Value: fmt.Sprintf("%dms", defaultKeepaliveMs)},
-			{Name: "LINKERD2_PROXY_OUTBOUND_CONNECT_KEEPALIVE", Value: fmt.Sprintf("%dms", defaultKeepaliveMs)},
 			{
-				Name:      "K8S_SA",
-				ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{FieldPath: "spec.serviceAccountName"}},
+				Name:  "LINKERD2_PROXY_DESTINATION_SVC_ADDR",
+				Value: fmt.Sprintf("%s:8086", destinationDNS),
+			},
+			{
+				Name:  "LINKERD2_PROXY_CONTROL_LISTENER",
+				Value: fmt.Sprintf("tcp://0.0.0.0:%d", conf.proxyConfig.GetControlPort().GetPort()),
+			},
+			{
+				Name:  "LINKERD2_PROXY_METRICS_LISTENER",
+				Value: fmt.Sprintf("tcp://0.0.0.0:%d", conf.proxyConfig.GetMetricsPort().GetPort()),
+			},
+			{
+				Name:  "LINKERD2_PROXY_OUTBOUND_LISTENER",
+				Value: fmt.Sprintf("tcp://127.0.0.1:%d", conf.proxyConfig.GetOutboundPort().GetPort()),
+			},
+			{
+				Name:  "LINKERD2_PROXY_INBOUND_LISTENER",
+				Value: fmt.Sprintf("tcp://0.0.0.0:%d", conf.proxyConfig.GetInboundPort().GetPort()),
+			},
+			{
+				Name:  "LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES",
+				Value: profileSuffixes,
+			},
+			{
+				Name:  "LINKERD2_PROXY_INBOUND_ACCEPT_KEEPALIVE",
+				Value: fmt.Sprintf("%dms", defaultKeepaliveMs),
+			},
+			{
+				Name:  "LINKERD2_PROXY_OUTBOUND_CONNECT_KEEPALIVE",
+				Value: fmt.Sprintf("%dms", defaultKeepaliveMs),
 			},
 			{
 				Name:      "K8S_NS",
 				ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{FieldPath: "metadata.namespace"}},
 			},
-			{Name: "LINKERD2_PROXY_POD_NAMESPACE", Value: "$(K8S_NS)"},
-			{Name: "L5D_NS", Value: conf.globalConfig.GetLinkerdNamespace()},
-			{Name: "LINKERD2_PROXY_ID", Value: "$(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS)"},
+			{
+				Name:  "LINKERD2_PROXY_DESTINATION_CONTEXT",
+				Value: "namespace:$(K8S_NS)",
+			},
 		},
 		LivenessProbe:  &proxyProbe,
 		ReadinessProbe: &proxyProbe,
@@ -467,7 +490,18 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 		endEntityDir := filepath.Join(base, "end-entity")
 
 		env := []v1.EnvVar{
-			{Name: "L5D_TRUST_DOMAIN", Value: idctx.GetTrustDomain()},
+			{
+				Name:      "K8S_SA",
+				ValueFrom: &v1.EnvVarSource{FieldRef: &v1.ObjectFieldSelector{FieldPath: "spec.serviceAccountName"}},
+			},
+			{
+				Name:  "L5D_NS",
+				Value: conf.globalConfig.GetLinkerdNamespace(),
+			},
+			{
+				Name:  "L5D_TRUST_DOMAIN",
+				Value: idctx.GetTrustDomain(),
+			},
 			{
 				Name:  "LINKERD2_PROXY_TLS_POD_IDENTITY",
 				Value: "$(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)",
@@ -477,26 +511,23 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 				Value: endEntityDir,
 			},
 			{
-				Name:  "LINKERD2_PROXY_TLS_TRUST_ANCHORS",
-				Value: filepath.Join(endEntityDir, "trust-anchors.pem"),
+				Name:  "LINKERD2_PROXY_TRUST_ANCHORS",
+				Value: idctx.GetTrustAnchorsPem(),
 			},
 			{
-				Name:  "LINKERD2_PROXY_TLS_PRIVATE_KEY",
-				Value: filepath.Join(endEntityDir, "key.p8"),
+				Name:  "LINKERD2_PROXY_IDENTITY_SVC_ADDR",
+				Value: fmt.Sprintf("%s:8080", identityDNS),
 			},
 			{
-				Name:  "LINKERD2_PROXY_TLS_CERT",
-				Value: filepath.Join(endEntityDir, "crt.pem"),
+				Name:  "LINKERD2_PROXY_IDENTITY_SVC_NAME",
+				Value: "linkerd-identity.$(L5D_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)",
 			},
-		}
-
-		sidecar.Env = append(append(sidecar.Env, env...),
-			v1.EnvVar{Name: "LINKERD2_PROXY_CONTROLLER_NAMESPACE", Value: "$(L5D_NS)"},
-			v1.EnvVar{
-				Name:  "LINKERD2_PROXY_TLS_CONTROLLER_IDENTITY",
+			{
+				Name:  "LINKERD2_PROXY_DESTINATION_SVC_NAME",
 				Value: "linkerd-controller.$(L5D_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)",
 			},
-		)
+		}
+		sidecar.Env = append(sidecar.Env, env...)
 
 		if len(conf.podSpec.Volumes) == 0 {
 			patch.addVolumeRoot()
@@ -512,30 +543,12 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 		sidecar.VolumeMounts = append(sidecar.VolumeMounts, v1.VolumeMount{
 			Name:      k8s.IdentityEndEntityVolumeName,
 			MountPath: endEntityDir,
-			ReadOnly:  true,
+			ReadOnly:  false,
 		})
-
-		// XXX temporary
-		// TODO specify identity so client can be secured.
-		patch.addContainer(&v1.Container{
-			Image: fmt.Sprintf("gcr.io/linkerd-io/proxy-identity:%s", conf.globalConfig.GetVersion()),
-			Name:  "linkerd-proxy-identity",
-			Env: append(sidecar.Env,
-				v1.EnvVar{Name: "TRUST_ANCHORS_PEM", Value: idctx.GetTrustAnchorsPem()},
-				v1.EnvVar{Name: "ID_ADDR", Value: fmt.Sprintf("%s:8080", identityDNS)},
-			),
-			Command: []string{"/bin/sh", "-c"},
-			Args:    []string{proxyIdentitySh},
-			VolumeMounts: []v1.VolumeMount{{
-				Name:      k8s.IdentityEndEntityVolumeName,
-				MountPath: endEntityDir,
-				ReadOnly:  false,
-			}},
-
-			ImagePullPolicy: v1.PullPolicy(conf.proxyConfig.GetProxyImage().GetPullPolicy()),
-			SecurityContext: &v1.SecurityContext{RunAsUser: &proxyUID},
-
-			TerminationMessagePolicy: v1.TerminationMessageFallbackToLogsOnError,
+	} else {
+		sidecar.Env = append(sidecar.Env, v1.EnvVar{
+			Name:  "LINKERD2_PROXY_IDENTITY_DISABLED",
+			Value: "Identity configuration is unavailable",
 		})
 	}
 

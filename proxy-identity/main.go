@@ -25,6 +25,11 @@ import (
 	"google.golang.org/grpc"
 )
 
+const (
+	envDisabled     = "LINKERD2_PROXY_IDENTITY_DISABLED"
+	envTrustAnchors = "LINKERD2_PROXY_TRUST_ANCHORS"
+)
+
 func main() {
 	addr := flag.String("addr", "localhost:8083", "address of identity service")
 	tokenPath := flag.String("token", "", "path to serviceaccount token")
@@ -32,12 +37,17 @@ func main() {
 	dir := flag.String("end-entity-dir", "", "directory under which credentials are written")
 	flags.ConfigureAndParse()
 
-	trustPath, keyPath, csrPath, crtPath, err := checkEndEntityDir(*dir)
+	if os.Getenv(envDisabled) != "" {
+		log.Debug("Identity disabled.")
+		os.Exit(0)
+	}
+
+	keyPath, csrPath, crtPath, err := checkEndEntityDir(*dir)
 	if err != nil {
 		log.Fatalf("Invalid end-entity directory: %s", err)
 	}
 
-	verify, err := loadVerifier(trustPath)
+	verify, err := loadVerifier(os.Getenv(envTrustAnchors))
 	if err != nil {
 		log.Fatalf("Failed to load trust anchors: %s", err)
 	}
@@ -116,17 +126,11 @@ func main() {
 	}
 }
 
-func loadVerifier(path string) (verify x509.VerifyOptions, err error) {
-	if path == "" {
-		err = errors.New("No trust anchors specified")
+func loadVerifier(pem string) (verify x509.VerifyOptions, err error) {
+	if pem == "" {
+		err = fmt.Errorf("%s must be set", envTrustAnchors)
 		return
 	}
-
-	pemb, err := ioutil.ReadFile(path)
-	if err != nil {
-		return
-	}
-	pem := string(pemb)
 
 	verify.Roots, err = tls.DecodePEMCertPool(pem)
 	return
@@ -143,26 +147,21 @@ func loadVerifier(path string) (verify x509.VerifyOptions, err error) {
 //
 // If the key, CSR, and/or Crt paths refer to existing files, it is assumed that
 // multiple instances of this process are running, and an error is returned.
-func checkEndEntityDir(dir string) (string, string, string, string, error) {
+func checkEndEntityDir(dir string) (string, string, string, error) {
 	if dir == "" {
-		return "", "", "", "", errors.New("No end entity directory specified")
+		return "", "", "", errors.New("No end entity directory specified")
 	}
 
 	s, err := os.Stat(dir)
 	if err != nil {
-		return "", "", "", "", err
+		return "", "", "", err
 	}
 	if !s.IsDir() {
-		return "", "", "", "", fmt.Errorf("Not a directory: %s", dir)
+		return "", "", "", fmt.Errorf("Not a directory: %s", dir)
 	}
 	// if s.Mode().Perm()&0002 == 0002 {
 	// 	return "", "", "", fmt.Errorf("Must not be world-writeable: %s; got %s", dir, s.Mode().Perm())
 	// }
-
-	trustPath := filepath.Join(dir, "trust-anchors.pem")
-	if err = checkExists(trustPath); err != nil {
-		return "", "", "", "", err
-	}
 
 	keyPath := filepath.Join(dir, "key.p8")
 	if err = checkNotExists(keyPath); err != nil {
@@ -179,7 +178,7 @@ func checkEndEntityDir(dir string) (string, string, string, string, error) {
 		log.Info(err.Error())
 	}
 
-	return trustPath, keyPath, csrPath, crtPath, nil
+	return keyPath, csrPath, crtPath, nil
 }
 
 func checkNotExists(p string) (err error) {
