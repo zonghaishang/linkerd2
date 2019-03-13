@@ -105,6 +105,7 @@ jobs:
           export LINKERD_TAG=$(. bin/_tag.sh ; clean_head_root_tag)
           echo "LINKERD_TAG=${LINKERD_TAG}"
         - export BUILD_DEBUG=1 DOCKER_TRACE=1
+        - git diff # TESTING
       script:
         - bin/docker-build
         - bin/docker-push-deps
