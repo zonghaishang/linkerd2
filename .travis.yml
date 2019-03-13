@@ -106,7 +106,7 @@ jobs:
         - bin/docker-push-deps
 
     # Push container images to Google Container Registry.
-    - name: "Docker build and push (cli-bin)"
+    - &docker-build
       stage: docker-build
       language: generic
       services:
@@ -137,249 +137,35 @@ jobs:
           export LINKERD_TAG=$(. bin/_tag.sh ; clean_head_root_tag)
           echo "LINKERD_TAG=${LINKERD_TAG}"
         - export BUILD_DEBUG=1 DOCKER_TRACE=1
-      script:
-        - bin/docker-build-cli-bin
-      after_success:
-        - |
-          (
-            . bin/_docker.sh
-            docker_push cli-bin $LINKERD_TAG
-          )
-    - name: "Docker build and push (cni-plugin)"
-      stage: docker-build
-      language: generic
-      services:
-        - docker
-      cache:
-        directories:
-          - "$HOME/google-cloud-sdk/"
-          - "$HOME/.cache"
-      before_install:
-        - docker version
-        - |
-          # Install gcloud and kubectl.
-          dir="${CLOUDSDK_INSTALL_DIR:-${HOME}}/google-cloud-sdk"
-          (. bin/_gcp.sh ; install_gcloud_kubectl "$dir")
-          . "$dir/path.bash.inc"
-        - |
-          # Configure gcloud with a service account.
-          openssl aes-256-cbc -K $encrypted_ea955175587c_key -iv $encrypted_ea955175587c_iv -in .gcp.json.enc -out .gcp.json -d
-          (. bin/_gcp.sh ; set_gcloud_config "$GCP_PROJECT" "$GCP_ZONE" "$GKE_CLUSTER")
-        - |
-          # Get a kubernetes context.
-          (. bin/_gcp.sh ; get_k8s_ctx "$GCP_PROJECT" "$GCP_ZONE" "$GKE_CLUSTER")
-        - gcloud version
-        - kubectl version --short
-      before_script:
-        - gcloud docker --authorize-only
-        - |
-          export LINKERD_TAG=$(. bin/_tag.sh ; clean_head_root_tag)
-          echo "LINKERD_TAG=${LINKERD_TAG}"
-        - export BUILD_DEBUG=1 DOCKER_TRACE=1
-      script:
-        - bin/docker-build-cni-plugin
-      after_success:
-        - |
-          (
-            . bin/_docker.sh
-            docker_push cni-plugin $LINKERD_TAG
-          )
-    - name: "Docker build and push (controller)"
-      stage: docker-build
-      language: generic
-      services:
-        - docker
-      cache:
-        directories:
-          - "$HOME/google-cloud-sdk/"
-          - "$HOME/.cache"
-      before_install:
-        - docker version
-        - |
-          # Install gcloud and kubectl.
-          dir="${CLOUDSDK_INSTALL_DIR:-${HOME}}/google-cloud-sdk"
-          (. bin/_gcp.sh ; install_gcloud_kubectl "$dir")
-          . "$dir/path.bash.inc"
-        - |
-          # Configure gcloud with a service account.
-          openssl aes-256-cbc -K $encrypted_ea955175587c_key -iv $encrypted_ea955175587c_iv -in .gcp.json.enc -out .gcp.json -d
-          (. bin/_gcp.sh ; set_gcloud_config "$GCP_PROJECT" "$GCP_ZONE" "$GKE_CLUSTER")
-        - |
-          # Get a kubernetes context.
-          (. bin/_gcp.sh ; get_k8s_ctx "$GCP_PROJECT" "$GCP_ZONE" "$GKE_CLUSTER")
-        - gcloud version
-        - kubectl version --short
-      before_script:
-        - gcloud docker --authorize-only
-        - |
-          export LINKERD_TAG=$(. bin/_tag.sh ; clean_head_root_tag)
-          echo "LINKERD_TAG=${LINKERD_TAG}"
-        - export BUILD_DEBUG=1 DOCKER_TRACE=1
-      script:
-        - bin/docker-build-controller
-      after_success:
-        - |
-          (
-            . bin/_docker.sh
-            docker_push controller $LINKERD_TAG
-          )
-    - name: "Docker build and push (grafana)"
-      stage: docker-build
-      language: generic
-      services:
-        - docker
-      cache:
-        directories:
-          - "$HOME/google-cloud-sdk/"
-          - "$HOME/.cache"
-      before_install:
-        - docker version
-        - |
-          # Install gcloud and kubectl.
-          dir="${CLOUDSDK_INSTALL_DIR:-${HOME}}/google-cloud-sdk"
-          (. bin/_gcp.sh ; install_gcloud_kubectl "$dir")
-          . "$dir/path.bash.inc"
-        - |
-          # Configure gcloud with a service account.
-          openssl aes-256-cbc -K $encrypted_ea955175587c_key -iv $encrypted_ea955175587c_iv -in .gcp.json.enc -out .gcp.json -d
-          (. bin/_gcp.sh ; set_gcloud_config "$GCP_PROJECT" "$GCP_ZONE" "$GKE_CLUSTER")
-        - |
-          # Get a kubernetes context.
-          (. bin/_gcp.sh ; get_k8s_ctx "$GCP_PROJECT" "$GCP_ZONE" "$GKE_CLUSTER")
-        - gcloud version
-        - kubectl version --short
-      before_script:
-        - gcloud docker --authorize-only
-        - |
-          export LINKERD_TAG=$(. bin/_tag.sh ; clean_head_root_tag)
-          echo "LINKERD_TAG=${LINKERD_TAG}"
-        - export BUILD_DEBUG=1 DOCKER_TRACE=1
-      script:
-        - bin/docker-build-grafana
-      after_success:
-        - |
-          (
-            . bin/_docker.sh
-            docker_push grafana $LINKERD_TAG
-          )
 
-    - name: "Docker build and push (proxy)"
-      stage: docker-build
-      language: generic
-      services:
-        - docker
-      cache:
-        directories:
-          - "$HOME/google-cloud-sdk/"
-          - "$HOME/.cache"
-      before_install:
-        - docker version
-        - |
-          # Install gcloud and kubectl.
-          dir="${CLOUDSDK_INSTALL_DIR:-${HOME}}/google-cloud-sdk"
-          (. bin/_gcp.sh ; install_gcloud_kubectl "$dir")
-          . "$dir/path.bash.inc"
-        - |
-          # Configure gcloud with a service account.
-          openssl aes-256-cbc -K $encrypted_ea955175587c_key -iv $encrypted_ea955175587c_iv -in .gcp.json.enc -out .gcp.json -d
-          (. bin/_gcp.sh ; set_gcloud_config "$GCP_PROJECT" "$GCP_ZONE" "$GKE_CLUSTER")
-        - |
-          # Get a kubernetes context.
-          (. bin/_gcp.sh ; get_k8s_ctx "$GCP_PROJECT" "$GCP_ZONE" "$GKE_CLUSTER")
-        - gcloud version
-        - kubectl version --short
-      before_script:
-        - gcloud docker --authorize-only
-        - |
-          export LINKERD_TAG=$(. bin/_tag.sh ; clean_head_root_tag)
-          echo "LINKERD_TAG=${LINKERD_TAG}"
-        - export BUILD_DEBUG=1 DOCKER_TRACE=1
-      script:
-        - bin/docker-build-proxy
-      after_success:
-        - |
-          (
-            . bin/_docker.sh
-            docker_push proxy $LINKERD_TAG
-          )
-    - name: "Docker build and push (proxy-init)"
-      stage: docker-build
-      language: generic
-      services:
-        - docker
-      cache:
-        directories:
-          - "$HOME/google-cloud-sdk/"
-          - "$HOME/.cache"
-      before_install:
-        - docker version
-        - |
-          # Install gcloud and kubectl.
-          dir="${CLOUDSDK_INSTALL_DIR:-${HOME}}/google-cloud-sdk"
-          (. bin/_gcp.sh ; install_gcloud_kubectl "$dir")
-          . "$dir/path.bash.inc"
-        - |
-          # Configure gcloud with a service account.
-          openssl aes-256-cbc -K $encrypted_ea955175587c_key -iv $encrypted_ea955175587c_iv -in .gcp.json.enc -out .gcp.json -d
-          (. bin/_gcp.sh ; set_gcloud_config "$GCP_PROJECT" "$GCP_ZONE" "$GKE_CLUSTER")
-        - |
-          # Get a kubernetes context.
-          (. bin/_gcp.sh ; get_k8s_ctx "$GCP_PROJECT" "$GCP_ZONE" "$GKE_CLUSTER")
-        - gcloud version
-        - kubectl version --short
-      before_script:
-        - gcloud docker --authorize-only
-        - |
-          export LINKERD_TAG=$(. bin/_tag.sh ; clean_head_root_tag)
-          echo "LINKERD_TAG=${LINKERD_TAG}"
-        - export BUILD_DEBUG=1 DOCKER_TRACE=1
-      script:
-        - bin/docker-build-proxy-init
-      after_success:
-        - |
-          (
-            . bin/_docker.sh
-            docker_push proxy-init $LINKERD_TAG
-          )
-    - name: "Docker build and push (web)"
-      stage: docker-build
-      language: generic
-      services:
-        - docker
-      cache:
-        directories:
-          - "$HOME/google-cloud-sdk/"
-          - "$HOME/.cache"
-      before_install:
-        - docker version
-        - |
-          # Install gcloud and kubectl.
-          dir="${CLOUDSDK_INSTALL_DIR:-${HOME}}/google-cloud-sdk"
-          (. bin/_gcp.sh ; install_gcloud_kubectl "$dir")
-          . "$dir/path.bash.inc"
-        - |
-          # Configure gcloud with a service account.
-          openssl aes-256-cbc -K $encrypted_ea955175587c_key -iv $encrypted_ea955175587c_iv -in .gcp.json.enc -out .gcp.json -d
-          (. bin/_gcp.sh ; set_gcloud_config "$GCP_PROJECT" "$GCP_ZONE" "$GKE_CLUSTER")
-        - |
-          # Get a kubernetes context.
-          (. bin/_gcp.sh ; get_k8s_ctx "$GCP_PROJECT" "$GCP_ZONE" "$GKE_CLUSTER")
-        - gcloud version
-        - kubectl version --short
-      before_script:
-        - gcloud docker --authorize-only
-        - |
-          export LINKERD_TAG=$(. bin/_tag.sh ; clean_head_root_tag)
-          echo "LINKERD_TAG=${LINKERD_TAG}"
-        - export BUILD_DEBUG=1 DOCKER_TRACE=1
-      script:
-        - bin/docker-build-web
-      after_success:
-        - |
-          (
-            . bin/_docker.sh
-            docker_push web $LINKERD_TAG
-          )
+    - <<: *docker-build
+      name: "Docker build and push (cli-bin)"
+      script: bin/docker-build-cli-bin
+      after_success: (. bin/_docker.sh; docker_push cli-bin $LINKERD_TAG)
+    - <<: *docker-build
+      name: "Docker build and push (cni-plugin)"
+      script: bin/docker-build-cni-plugin
+      after_success: (. bin/_docker.sh; docker_push cni-plugin $LINKERD_TAG)
+    - <<: *docker-build
+      name: "Docker build and push (controller)"
+      script: bin/docker-build-controller
+      after_success: (. bin/_docker.sh; docker_push controller $LINKERD_TAG)
+    - <<: *docker-build
+      name: "Docker build and push (grafana)"
+      script: bin/docker-build-grafana
+      after_success: (. bin/_docker.sh; docker_push grafana $LINKERD_TAG)
+    - <<: *docker-build
+      name: "Docker build and push (proxy)"
+      script: bin/docker-build-proxy
+      after_success: (. bin/_docker.sh; docker_push proxy $LINKERD_TAG)
+    - <<: *docker-build
+      name: "Docker build and push (proxy-init)"
+      script: bin/docker-build-proxy-init
+      after_success: (. bin/_docker.sh; docker_push proxy-init $LINKERD_TAG)
+    - <<: *docker-build
+      name: "Docker build and push (web)"
+      script: bin/docker-build-web
+      after_success: (. bin/_docker.sh; docker_push web $LINKERD_TAG)
 
     # Run integration tests after container images have been published.
     - name: "Integration tests"
