@@ -106,7 +106,11 @@ jobs:
           echo "LINKERD_TAG=${LINKERD_TAG}"
         - export BUILD_DEBUG=1 DOCKER_TRACE=1
         - git diff # TESTING
+        - git diff >&2 # TESTING
         - echo $(git diff)
+        - echo "$(git diff)"
+        - echo "$(git diff >&2)"
+        - echo "$(git diff)" >&2
       script:
         - bin/docker-build
         - bin/docker-push-deps
