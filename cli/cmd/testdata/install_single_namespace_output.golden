@@ -191,11 +191,9 @@ spec:
         - |2
 
           set -eu
-
-          /bin/proxy-identity -addr=$ID_ADDR \
-            -end-entity-dir=$LINKERD2_PROXY_END_ENTITY_DIR \
-            -name=$LINKERD2_PROXY_TLS_POD_IDENTITY \
-            -token=/var/run/secrets/kubernetes.io/serviceaccount/token
+          export PATH="/var/lib/linkerd/bin:${PATH:-/usr/bin:/bin}"
+          linkerd2-proxy-identity -dir=$LINKERD2_PROXY_IDENTITY_DIR -name=$LINKERD2_PROXY_IDENTITY_LOCAL_NAME
+          linkerd2-proxy
         command:
         - /bin/sh
         - -c
@@ -384,11 +382,9 @@ spec:
         - |2
 
           set -eu
-
-          /bin/proxy-identity -addr=$ID_ADDR \
-            -end-entity-dir=$LINKERD2_PROXY_END_ENTITY_DIR \
-            -name=$LINKERD2_PROXY_TLS_POD_IDENTITY \
-            -token=/var/run/secrets/kubernetes.io/serviceaccount/token
+          export PATH="/var/lib/linkerd/bin:${PATH:-/usr/bin:/bin}"
+          linkerd2-proxy-identity -dir=$LINKERD2_PROXY_IDENTITY_DIR -name=$LINKERD2_PROXY_IDENTITY_LOCAL_NAME
+          linkerd2-proxy
         command:
         - /bin/sh
         - -c
@@ -582,11 +578,9 @@ spec:
         - |2
 
           set -eu
-
-          /bin/proxy-identity -addr=$ID_ADDR \
-            -end-entity-dir=$LINKERD2_PROXY_END_ENTITY_DIR \
-            -name=$LINKERD2_PROXY_TLS_POD_IDENTITY \
-            -token=/var/run/secrets/kubernetes.io/serviceaccount/token
+          export PATH="/var/lib/linkerd/bin:${PATH:-/usr/bin:/bin}"
+          linkerd2-proxy-identity -dir=$LINKERD2_PROXY_IDENTITY_DIR -name=$LINKERD2_PROXY_IDENTITY_LOCAL_NAME
+          linkerd2-proxy
         command:
         - /bin/sh
         - -c
@@ -850,11 +844,9 @@ spec:
         - |2
 
           set -eu
-
-          /bin/proxy-identity -addr=$ID_ADDR \
-            -end-entity-dir=$LINKERD2_PROXY_END_ENTITY_DIR \
-            -name=$LINKERD2_PROXY_TLS_POD_IDENTITY \
-            -token=/var/run/secrets/kubernetes.io/serviceaccount/token
+          export PATH="/var/lib/linkerd/bin:${PATH:-/usr/bin:/bin}"
+          linkerd2-proxy-identity -dir=$LINKERD2_PROXY_IDENTITY_DIR -name=$LINKERD2_PROXY_IDENTITY_LOCAL_NAME
+          linkerd2-proxy
         command:
         - /bin/sh
         - -c

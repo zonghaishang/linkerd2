@@ -133,11 +133,9 @@ spec:
         - |2
 
           set -eu
-
-          /bin/proxy-identity -addr=$ID_ADDR \
-            -end-entity-dir=$LINKERD2_PROXY_END_ENTITY_DIR \
-            -name=$LINKERD2_PROXY_TLS_POD_IDENTITY \
-            -token=/var/run/secrets/kubernetes.io/serviceaccount/token
+          export PATH="/var/lib/linkerd/bin:${PATH:-/usr/bin:/bin}"
+          linkerd2-proxy-identity -dir=$LINKERD2_PROXY_IDENTITY_DIR -name=$LINKERD2_PROXY_IDENTITY_LOCAL_NAME
+          linkerd2-proxy
         command:
         - /bin/sh
         - -c
@@ -174,11 +172,11 @@ spec:
           value: linkerd
         - name: L5D_TRUST_DOMAIN
           value: trust.domain
-        - name: LINKERD2_PROXY_TLS_POD_IDENTITY
+        - name: LINKERD2_PROXY_IDENTITY_LOCAL_NAME
           value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
-        - name: LINKERD2_PROXY_END_ENTITY_DIR
+        - name: LINKERD2_PROXY_IDENTITY_DIR
           value: /var/run/linkerd/identity/end-entity
-        - name: LINKERD2_PROXY_TRUST_ANCHORS
+        - name: LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS
           value: |-
             -----BEGIN CERTIFICATE-----
             MIIBYDCCAQegAwIBAgIBATAKBggqhkjOPQQDAjAYMRYwFAYDVQQDEw1jbHVzdGVy
@@ -461,11 +459,9 @@ spec:
         - |2
 
           set -eu
-
-          /bin/proxy-identity -addr=$ID_ADDR \
-            -end-entity-dir=$LINKERD2_PROXY_END_ENTITY_DIR \
-            -name=$LINKERD2_PROXY_TLS_POD_IDENTITY \
-            -token=/var/run/secrets/kubernetes.io/serviceaccount/token
+          export PATH="/var/lib/linkerd/bin:${PATH:-/usr/bin:/bin}"
+          linkerd2-proxy-identity -dir=$LINKERD2_PROXY_IDENTITY_DIR -name=$LINKERD2_PROXY_IDENTITY_LOCAL_NAME
+          linkerd2-proxy
         command:
         - /bin/sh
         - -c
@@ -502,11 +498,11 @@ spec:
           value: linkerd
         - name: L5D_TRUST_DOMAIN
           value: trust.domain
-        - name: LINKERD2_PROXY_TLS_POD_IDENTITY
+        - name: LINKERD2_PROXY_IDENTITY_LOCAL_NAME
           value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
-        - name: LINKERD2_PROXY_END_ENTITY_DIR
+        - name: LINKERD2_PROXY_IDENTITY_DIR
           value: /var/run/linkerd/identity/end-entity
-        - name: LINKERD2_PROXY_TRUST_ANCHORS
+        - name: LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS
           value: |-
             -----BEGIN CERTIFICATE-----
             MIIBYDCCAQegAwIBAgIBATAKBggqhkjOPQQDAjAYMRYwFAYDVQQDEw1jbHVzdGVy
@@ -798,11 +794,9 @@ spec:
         - |2
 
           set -eu
-
-          /bin/proxy-identity -addr=$ID_ADDR \
-            -end-entity-dir=$LINKERD2_PROXY_END_ENTITY_DIR \
-            -name=$LINKERD2_PROXY_TLS_POD_IDENTITY \
-            -token=/var/run/secrets/kubernetes.io/serviceaccount/token
+          export PATH="/var/lib/linkerd/bin:${PATH:-/usr/bin:/bin}"
+          linkerd2-proxy-identity -dir=$LINKERD2_PROXY_IDENTITY_DIR -name=$LINKERD2_PROXY_IDENTITY_LOCAL_NAME
+          linkerd2-proxy
         command:
         - /bin/sh
         - -c
@@ -839,11 +833,11 @@ spec:
           value: linkerd
         - name: L5D_TRUST_DOMAIN
           value: trust.domain
-        - name: LINKERD2_PROXY_TLS_POD_IDENTITY
+        - name: LINKERD2_PROXY_IDENTITY_LOCAL_NAME
           value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
-        - name: LINKERD2_PROXY_END_ENTITY_DIR
+        - name: LINKERD2_PROXY_IDENTITY_DIR
           value: /var/run/linkerd/identity/end-entity
-        - name: LINKERD2_PROXY_TRUST_ANCHORS
+        - name: LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS
           value: |-
             -----BEGIN CERTIFICATE-----
             MIIBYDCCAQegAwIBAgIBATAKBggqhkjOPQQDAjAYMRYwFAYDVQQDEw1jbHVzdGVy
@@ -1034,11 +1028,9 @@ spec:
         - |2
 
           set -eu
-
-          /bin/proxy-identity -addr=$ID_ADDR \
-            -end-entity-dir=$LINKERD2_PROXY_END_ENTITY_DIR \
-            -name=$LINKERD2_PROXY_TLS_POD_IDENTITY \
-            -token=/var/run/secrets/kubernetes.io/serviceaccount/token
+          export PATH="/var/lib/linkerd/bin:${PATH:-/usr/bin:/bin}"
+          linkerd2-proxy-identity -dir=$LINKERD2_PROXY_IDENTITY_DIR -name=$LINKERD2_PROXY_IDENTITY_LOCAL_NAME
+          linkerd2-proxy
         command:
         - /bin/sh
         - -c
@@ -1077,11 +1069,11 @@ spec:
           value: linkerd
         - name: L5D_TRUST_DOMAIN
           value: trust.domain
-        - name: LINKERD2_PROXY_TLS_POD_IDENTITY
+        - name: LINKERD2_PROXY_IDENTITY_LOCAL_NAME
           value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
-        - name: LINKERD2_PROXY_END_ENTITY_DIR
+        - name: LINKERD2_PROXY_IDENTITY_DIR
           value: /var/run/linkerd/identity/end-entity
-        - name: LINKERD2_PROXY_TRUST_ANCHORS
+        - name: LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS
           value: |-
             -----BEGIN CERTIFICATE-----
             MIIBYDCCAQegAwIBAgIBATAKBggqhkjOPQQDAjAYMRYwFAYDVQQDEw1jbHVzdGVy
@@ -1339,11 +1331,9 @@ spec:
         - |2
 
           set -eu
-
-          /bin/proxy-identity -addr=$ID_ADDR \
-            -end-entity-dir=$LINKERD2_PROXY_END_ENTITY_DIR \
-            -name=$LINKERD2_PROXY_TLS_POD_IDENTITY \
-            -token=/var/run/secrets/kubernetes.io/serviceaccount/token
+          export PATH="/var/lib/linkerd/bin:${PATH:-/usr/bin:/bin}"
+          linkerd2-proxy-identity -dir=$LINKERD2_PROXY_IDENTITY_DIR -name=$LINKERD2_PROXY_IDENTITY_LOCAL_NAME
+          linkerd2-proxy
         command:
         - /bin/sh
         - -c
@@ -1380,11 +1370,11 @@ spec:
           value: linkerd
         - name: L5D_TRUST_DOMAIN
           value: trust.domain
-        - name: LINKERD2_PROXY_TLS_POD_IDENTITY
+        - name: LINKERD2_PROXY_IDENTITY_LOCAL_NAME
           value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
-        - name: LINKERD2_PROXY_END_ENTITY_DIR
+        - name: LINKERD2_PROXY_IDENTITY_DIR
           value: /var/run/linkerd/identity/end-entity
-        - name: LINKERD2_PROXY_TRUST_ANCHORS
+        - name: LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS
           value: |-
             -----BEGIN CERTIFICATE-----
             MIIBYDCCAQegAwIBAgIBATAKBggqhkjOPQQDAjAYMRYwFAYDVQQDEw1jbHVzdGVy

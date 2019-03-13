@@ -37,11 +37,9 @@ const (
 	// from the environment.
 	proxyIdentitySh = `
 set -eu
-
-/bin/proxy-identity -addr=$ID_ADDR \
-  -end-entity-dir=$LINKERD2_PROXY_END_ENTITY_DIR \
-  -name=$LINKERD2_PROXY_TLS_POD_IDENTITY \
-  -token=/var/run/secrets/kubernetes.io/serviceaccount/token
+export PATH="/var/lib/linkerd/bin:${PATH:-/usr/bin:/bin}"
+linkerd2-proxy-identity -dir=$LINKERD2_PROXY_IDENTITY_DIR -name=$LINKERD2_PROXY_IDENTITY_LOCAL_NAME
+linkerd2-proxy
 `
 )
 
@@ -503,15 +501,15 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 				Value: idctx.GetTrustDomain(),
 			},
 			{
-				Name:  "LINKERD2_PROXY_TLS_POD_IDENTITY",
+				Name:  "LINKERD2_PROXY_IDENTITY_LOCAL_NAME",
 				Value: "$(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)",
 			},
 			{
-				Name:  "LINKERD2_PROXY_END_ENTITY_DIR",
+				Name:  "LINKERD2_PROXY_IDENTITY_DIR",
 				Value: endEntityDir,
 			},
 			{
-				Name:  "LINKERD2_PROXY_TRUST_ANCHORS",
+				Name:  "LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS",
 				Value: idctx.GetTrustAnchorsPem(),
 			},
 			{
