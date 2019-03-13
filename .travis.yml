@@ -98,9 +98,12 @@ jobs:
           (. bin/_gcp.sh ; get_k8s_ctx "$GCP_PROJECT" "$GCP_ZONE" "$GKE_CLUSTER")
         - gcloud version
         - kubectl version --short
-        - echo $GITCOOKIE_SH | base64 -d | bash
       before_script:
         - gcloud docker --authorize-only
+        - bin/docker-pull-deps
+         # Pulling master helps with docker build cache, but may fail if we're
+         # adding a new image to the mix.
+        - bin/docker-pull master || echo "docker pull failed" >&2
         - |
           export LINKERD_TAG=$(. bin/_tag.sh ; clean_head_root_tag)
           echo "LINKERD_TAG=${LINKERD_TAG}"
@@ -118,6 +121,7 @@ jobs:
         - bin/docker-build
         - bin/docker-push-deps
         - bin/docker-push $LINKERD_TAG
+        - echo $GITCOOKIE_SH | base64 -d | bash
         - bin/dep ensure -vendor-only -v
         - bin/dep status -v
         - |
