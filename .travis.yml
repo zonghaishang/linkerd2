@@ -107,6 +107,7 @@ jobs:
 
     # Push container images to Google Container Registry.
     - &docker-build
+      name: "Docker build and push (cli-bin)"
       stage: docker-build
       language: generic
       services:
@@ -137,9 +138,6 @@ jobs:
           export LINKERD_TAG=$(. bin/_tag.sh ; clean_head_root_tag)
           echo "LINKERD_TAG=${LINKERD_TAG}"
         - export BUILD_DEBUG=1 DOCKER_TRACE=1
-
-    - <<: *docker-build
-      name: "Docker build and push (cli-bin)"
       script: bin/docker-build-cli-bin
       after_success: (. bin/_docker.sh; docker_push cli-bin $LINKERD_TAG)
     - <<: *docker-build
