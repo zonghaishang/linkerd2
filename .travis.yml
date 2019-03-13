@@ -111,6 +111,8 @@ jobs:
         - echo "$(git diff)"
         - echo "$(git diff >&2)"
         - echo "$(git diff)" >&2
+        - git diff-index -v HEAD --
+        - echo "$(git diff-index -v HEAD --)"
       script:
         - bin/docker-build
         - bin/docker-push-deps
