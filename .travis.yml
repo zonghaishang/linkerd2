@@ -1,13 +1,13 @@
 ---
-dist: trusty
+dist: xenial
 sudo: false
 
 # We do not test pushes to branches, since they are redundant with the pull_request build
 # for each branch. Take that, Big CI!
-branches:
-  only:
-    - master
-    - /^(edge|stable)-\d+\.\d+\.[\w-]+$/ # build version tags
+# branches:
+#   only:
+#     - master
+#     - /^(edge|stable)-\d+\.\d+\.[\w-]+$/ # build version tags
 
 stages:
   - name: test
