@@ -208,9 +208,8 @@ func TestEndpointListener(t *testing.T) {
 		expectedPodNamespace := thisNS
 		expectedControllerNamespace := "linkerd-namespace"
 		expectedPodDeployment := podDeployment
-		expectedTLSIdentity := &pb.TlsIdentity_K8SPodIdentity{
-			PodIdentity:  "pod-deployment.deployment.this-namespace.linkerd-managed.linkerd-namespace.svc.cluster.local",
-			ControllerNs: "linkerd-namespace",
+		expectedTLSIdentity := &pb.TlsIdentity_DnsLikeIdentity{
+			Name: "this-serviceaccount.this-namespace.serviceaccount.identity.linkerd-namespace.cluster.local",
 		}
 
 		podForAddedAddress1 := &corev1.Pod{
@@ -253,7 +252,7 @@ func TestEndpointListener(t *testing.T) {
 			t.Fatalf("Expected [1] address returned, got %v", addrs)
 		}
 
-		actualTLSIdentity := addrs[0].GetTlsIdentity().GetK8SPodIdentity()
+		actualTLSIdentity := addrs[0].GetTlsIdentity().GetDnsLikeIdentity()
 		if !reflect.DeepEqual(actualTLSIdentity, expectedTLSIdentity) {
 			t.Fatalf("Expected TlsIdentity to be [%v] but was [%v]", expectedTLSIdentity, actualTLSIdentity)
 		}

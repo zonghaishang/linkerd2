@@ -97,11 +97,16 @@ func (s *server) GetProfile(dest *pb.GetDestination, stream pb.Destination_GetPr
 
 	listener := newProfileListener(stream)
 
-	proxyID := strings.Split(dest.ProxyId, ".")
 	proxyNS := ""
-	// <deployment>.<namespace>.serviceaccount.identity.<linkerd-namespace>
-	if len(proxyID) >= 3 {
-		proxyNS = proxyID[1]
+	context := strings.Split(dest.ContextToken, ":")
+	if len(context) == 2 && context[0] == "ns" {
+		proxyNS = context[1]
+	} else {
+		context = strings.Split(dest.ContextToken, ".")
+		// <deployment>.deployment.<namespace>.linkerd-managed...
+		if len(context) >= 3 {
+			proxyNS = context[2]
+		}
 	}
 
 	err = s.resolver.streamProfiles(host, proxyNS, listener)

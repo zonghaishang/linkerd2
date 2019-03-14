@@ -459,7 +459,7 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 			},
 			{
 				Name:  "LINKERD2_PROXY_DESTINATION_CONTEXT",
-				Value: "namespace:$(K8S_NS)",
+				Value: "ns:$(K8S_NS)",
 			},
 		},
 		LivenessProbe:  &proxyProbe,

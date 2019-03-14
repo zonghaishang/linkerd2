@@ -245,10 +245,9 @@ func (l *endpointListener) getAddrMetadata(pod *corev1.Pod) (map[string]string, 
 
 		id := fmt.Sprintf("%s.%s.serviceaccount.identity.%s.%s", sa, ns, controllerNS, l.identityTrustDomain)
 		identity = &pb.TlsIdentity{
-			Strategy: &pb.TlsIdentity_K8SPodIdentity_{
-				K8SPodIdentity: &pb.TlsIdentity_K8SPodIdentity{
-					PodIdentity:  id,
-					ControllerNs: controllerNS,
+			Strategy: &pb.TlsIdentity_DnsLikeIdentity_{
+				DnsLikeIdentity: &pb.TlsIdentity_DnsLikeIdentity{
+					Name: id,
 				},
 			},
 		}
