@@ -50,6 +50,19 @@ spec:
   - name: grpc
     port: 8080
     targetPort: 8080
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: linkerd-identity-trust-anchors
+  namespace: {{.Namespace}}
+  labels:
+    {{.ControllerComponentLabel}}: identity
+  annotations:
+    {{.CreatedByAnnotation}}: {{.CliVersion}}
+data:
+  trust-anchors.pem: |-
+{{indent 4 .Identity.TrustAnchorsPEM}}
 {{- if .Identity.Issuer}}
 ---
 kind: Secret
