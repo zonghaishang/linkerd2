@@ -426,20 +426,20 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 				Value: fmt.Sprintf("%s:8086", destinationDNS),
 			},
 			{
-				Name:  "LINKERD2_PROXY_CONTROL_LISTENER",
-				Value: fmt.Sprintf("tcp://0.0.0.0:%d", conf.proxyConfig.GetControlPort().GetPort()),
+				Name:  "LINKERD2_PROXY_CONTROL_LISTEN_ADDR",
+				Value: fmt.Sprintf("0.0.0.0:%d", conf.proxyConfig.GetControlPort().GetPort()),
 			},
 			{
-				Name:  "LINKERD2_PROXY_METRICS_LISTENER",
-				Value: fmt.Sprintf("tcp://0.0.0.0:%d", conf.proxyConfig.GetMetricsPort().GetPort()),
+				Name:  "LINKERD2_PROXY_METRICS_LISTEN_ADDR",
+				Value: fmt.Sprintf("0.0.0.0:%d", conf.proxyConfig.GetMetricsPort().GetPort()),
 			},
 			{
-				Name:  "LINKERD2_PROXY_OUTBOUND_LISTENER",
-				Value: fmt.Sprintf("tcp://127.0.0.1:%d", conf.proxyConfig.GetOutboundPort().GetPort()),
+				Name:  "LINKERD2_PROXY_OUTBOUND_LISTEN_ADDR",
+				Value: fmt.Sprintf("127.0.0.1:%d", conf.proxyConfig.GetOutboundPort().GetPort()),
 			},
 			{
-				Name:  "LINKERD2_PROXY_INBOUND_LISTENER",
-				Value: fmt.Sprintf("tcp://0.0.0.0:%d", conf.proxyConfig.GetInboundPort().GetPort()),
+				Name:  "LINKERD2_PROXY_INBOUND_LISTEN_ADDR",
+				Value: fmt.Sprintf("0.0.0.0:%d", conf.proxyConfig.GetInboundPort().GetPort()),
 			},
 			{
 				Name:  "LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES",
