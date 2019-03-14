@@ -18,7 +18,7 @@ import (
 
 const (
 	envDisabled     = "LINKERD2_PROXY_IDENTITY_DISABLED"
-	envTrustAnchors = "LINKERD2_PROXY_TRUST_ANCHORS"
+	envTrustAnchors = "LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS"
 )
 
 func main() {
