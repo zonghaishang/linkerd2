@@ -516,7 +516,7 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 			},
 			{
 				Name:  "LINKERD2_PROXY_IDENTITY_TOKEN_FILE",
-				Value: "/var/run/secrets/kubernetes.io/serviceaccount/token"
+				Value: "/var/run/secrets/kubernetes.io/serviceaccount/token",
 			},
 			{
 				Name:  "LINKERD2_PROXY_IDENTITY_SVC_ADDR",
