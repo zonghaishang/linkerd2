@@ -515,6 +515,10 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 				Value: idctx.GetTrustAnchorsPem(),
 			},
 			{
+				Name:  "LINKERD2_PROXY_IDENTITY_TOKEN_FILE",
+				Value: "/var/run/secrets/kubernetes.io/serviceaccount/token"
+			},
+			{
 				Name:  "LINKERD2_PROXY_IDENTITY_SVC_ADDR",
 				Value: fmt.Sprintf("%s:8080", identityDNS),
 			},
