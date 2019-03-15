@@ -50,10 +50,10 @@ linkerd2-proxy
 	internalProfileSuffix       = "svc.cluster.local."
 	envPodNamespace             = "LINKERD2_PROXY_POD_NAMESPACE"
 	envLog                      = "LINKERD2_PROXY_LOG"
-	envControlListener          = "LINKERD2_PROXY_CONTROL_LISTENER"
-	envMetricsListener          = "LINKERD2_PROXY_METRICS_LISTENER"
-	envOutboundListener         = "LINKERD2_PROXY_OUTBOUND_LISTENER"
-	envInboundListener          = "LINKERD2_PROXY_INBOUND_LISTENER"
+	envControlListenAddr        = "LINKERD2_PROXY_CONTROL_LISTEN_ADDR"
+	envMetricsListenAddr        = "LINKERD2_PROXY_METRICS_LISTEN_ADDR"
+	envOutboundListenAddr       = "LINKERD2_PROXY_OUTBOUND_LISTEN_ADDR"
+	envInboundListenAddr        = "LINKERD2_PROXY_INBOUND_LISTEN_ADDR"
 	envInboundAcceptKeepAlive   = "LINKERD2_PROXY_INBOUND_ACCEPT_KEEPALIVE"
 	envOutboundConnectKeepAlive = "LINKERD2_PROXY_OUTBOUND_CONNECT_KEEPALIVE"
 
@@ -422,20 +422,20 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 				Value: conf.proxyDestinationAddr(),
 			},
 			{
-				Name:  envControlListener,
-				Value: conf.proxyControlListener(),
+				Name:  envControlListenAddr,
+				Value: conf.proxyControlListenAddr(),
 			},
 			{
-				Name:  envMetricsListener,
-				Value: conf.proxyMetricsListener(),
+				Name:  envMetricsListenAddr,
+				Value: conf.proxyMetricsListenAddr(),
 			},
 			{
-				Name:  envOutboundListener,
-				Value: conf.proxyOutboundListener(),
+				Name:  envOutboundListenAddr,
+				Value: conf.proxyOutboundListenAddr(),
 			},
 			{
-				Name:  envInboundListener,
-				Value: conf.proxyInboundListener(),
+				Name:  envInboundListenAddr,
+				Value: conf.proxyInboundListenAddr(),
 			},
 			{
 				Name:  envDestinationProfileSuffixes,
@@ -737,19 +737,19 @@ func (conf *ResourceConfig) proxyIdentityAddr() string {
 	return fmt.Sprintf("%s:%d", dns, identityAPIPort)
 }
 
-func (conf *ResourceConfig) proxyControlListener() string {
+func (conf *ResourceConfig) proxyControlListenAddr() string {
 	return fmt.Sprintf("0.0.0.0:%d", conf.proxyControlPort())
 }
 
-func (conf *ResourceConfig) proxyInboundListener() string {
+func (conf *ResourceConfig) proxyInboundListenAddr() string {
 	return fmt.Sprintf("0.0.0.0:%d", conf.proxyInboundPort())
 }
 
-func (conf *ResourceConfig) proxyMetricsListener() string {
+func (conf *ResourceConfig) proxyMetricsListenAddr() string {
 	return fmt.Sprintf("0.0.0.0:%d", conf.proxyMetricsPort())
 }
 
-func (conf *ResourceConfig) proxyOutboundListener() string {
+func (conf *ResourceConfig) proxyOutboundListenAddr() string {
 	return fmt.Sprintf("127.0.0.1:%d", conf.proxyOutboundPort())
 }
 
