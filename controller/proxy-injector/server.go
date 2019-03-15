@@ -78,8 +78,8 @@ func (w *WebhookServer) Shutdown() error {
 }
 
 func tlsConfig(ca *pkgTls.CA, controllerNS string) (*tls.Config, error) {
-	name := fmt.Sprintf("linkerd-proxy-injector.%s.svc", controllerNS)
-	cred, err := ca.GenerateEndEntityCred(name)
+	dnsName := fmt.Sprintf("linkerd-proxy-injector.%s.svc", controllerNS)
+	cred, err := ca.GenerateEndEntityCred(dnsName)
 	if err != nil {
 		return nil, err
 	}

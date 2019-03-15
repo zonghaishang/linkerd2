@@ -35,7 +35,6 @@ type (
 		Data                pb.VersionInfo
 		UUID                string
 		ControllerNamespace string
-		ServiceProfiles     bool
 		Error               bool
 		ErrorMessage        string
 		PathPrefix          string
@@ -57,7 +56,6 @@ func NewServer(
 	staticDir string,
 	uuid string,
 	controllerNamespace string,
-	serviceProfiles bool,
 	reload bool,
 	apiClient public.APIClient,
 ) *http.Server {
@@ -78,7 +76,6 @@ func NewServer(
 		render:              server.RenderTemplate,
 		uuid:                uuid,
 		controllerNamespace: controllerNamespace,
-		serviceProfiles:     serviceProfiles,
 		grafanaProxy:        newGrafanaProxy(grafanaAddr),
 	}
 
@@ -97,6 +94,7 @@ func NewServer(
 	server.router.GET("/namespaces/:namespace", handler.handleIndex)
 	server.router.GET("/daemonsets", handler.handleIndex)
 	server.router.GET("/statefulsets", handler.handleIndex)
+	server.router.GET("/jobs", handler.handleIndex)
 	server.router.GET("/deployments", handler.handleIndex)
 	server.router.GET("/replicationcontrollers", handler.handleIndex)
 	server.router.GET("/pods", handler.handleIndex)
@@ -105,9 +103,11 @@ func NewServer(
 	server.router.GET("/namespaces/:namespace/daemonsets/:daemonset", handler.handleIndex)
 	server.router.GET("/namespaces/:namespace/statefulsets/:statefulset", handler.handleIndex)
 	server.router.GET("/namespaces/:namespace/deployments/:deployment", handler.handleIndex)
+	server.router.GET("/namespaces/:namespace/jobs/:job", handler.handleIndex)
 	server.router.GET("/namespaces/:namespace/replicationcontrollers/:replicationcontroller", handler.handleIndex)
 	server.router.GET("/tap", handler.handleIndex)
 	server.router.GET("/top", handler.handleIndex)
+	server.router.GET("/community", handler.handleIndex)
 	server.router.GET("/debug", handler.handleIndex)
 	server.router.GET("/routes", handler.handleIndex)
 	server.router.GET("/profiles/new", handler.handleProfileDownload)

@@ -124,13 +124,14 @@ func (rt resourceTransformerInject) transform(bytes []byte) ([]byte, []inject.Re
 	}
 	p.AddCreatedByPodAnnotation(k8s.CreatedByAnnotationValue())
 	patchJSON, err := p.Marshal()
-	if patchJSON == nil {
-		return bytes, reports, nil
-	}
 	if err != nil {
 		return nil, nil, err
 	}
-	log.Debugf("patch generated: %s", patchJSON)
+	if patchJSON == nil {
+		return bytes, reports, nil
+	}
+	log.Infof("patch generated for: %s", conf)
+	log.Debugf("patch: %s", patchJSON)
 	patch, err := jsonpatch.DecodePatch(patchJSON)
 	if err != nil {
 		return nil, nil, err

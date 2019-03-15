@@ -54,6 +54,28 @@ spec:
     port: 8080
     targetPort: 8080
 ---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: linkerd-identity-trust-anchors
+  namespace: linkerd
+  labels:
+    linkerd.io/control-plane-component: identity
+  annotations:
+    linkerd.io/created-by: linkerd/cli dev-undefined
+data:
+  trust-anchors.pem: |-
+    -----BEGIN CERTIFICATE-----
+    MIIBYDCCAQegAwIBAgIBATAKBggqhkjOPQQDAjAYMRYwFAYDVQQDEw1jbHVzdGVy
+    LmxvY2FsMB4XDTE5MDMwMzAxNTk1MloXDTI5MDIyODAyMDM1MlowGDEWMBQGA1UE
+    AxMNY2x1c3Rlci5sb2NhbDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABAChpAt0
+    xtgO9qbVtEtDK80N6iCL2Htyf2kIv2m5QkJ1y0TFQi5hTVe3wtspJ8YpZF0pl364
+    6TiYeXB8tOOhIACjQjBAMA4GA1UdDwEB/wQEAwIBBjAdBgNVHSUEFjAUBggrBgEF
+    BQcDAQYIKwYBBQUHAwIwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNHADBE
+    AiBQ/AAwF8kG8VOmRSUTPakSSa/N4mqK2HsZuhQXCmiZHwIgZEzI5DCkpU7w3SIv
+    OLO4Zsk1XrGZHGsmyiEyvYF9lpY=
+     -----END CERTIFICATE-----
+---
 kind: Secret
 apiVersion: v1
 metadata:
@@ -147,13 +169,13 @@ spec:
         - name: LINKERD2_PROXY_DESTINATION_SVC_ADDR
           value: linkerd-destination.linkerd.svc.cluster.local:8086
         - name: LINKERD2_PROXY_CONTROL_LISTENER
-          value: tcp://0.0.0.0:4190
+          value: 0.0.0.0:4190
         - name: LINKERD2_PROXY_METRICS_LISTENER
-          value: tcp://0.0.0.0:4191
+          value: 0.0.0.0:4191
         - name: LINKERD2_PROXY_OUTBOUND_LISTENER
-          value: tcp://127.0.0.1:4140
+          value: 127.0.0.1:4140
         - name: LINKERD2_PROXY_INBOUND_LISTENER
-          value: tcp://0.0.0.0:4143
+          value: 0.0.0.0:4143
         - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
           value: .
         - name: LINKERD2_PROXY_INBOUND_ACCEPT_KEEPALIVE
@@ -165,17 +187,7 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: LINKERD2_PROXY_DESTINATION_CONTEXT
-          value: namespace:$(K8S_NS)
-        - name: K8S_SA
-          valueFrom:
-            fieldRef:
-              fieldPath: spec.serviceAccountName
-        - name: L5D_NS
-          value: linkerd
-        - name: L5D_TRUST_DOMAIN
-          value: trust.domain
-        - name: LINKERD2_PROXY_IDENTITY_LOCAL_NAME
-          value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
+          value: ns:$(K8S_NS)
         - name: LINKERD2_PROXY_IDENTITY_DIR
           value: /var/run/linkerd/identity/end-entity
         - name: LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS
@@ -190,8 +202,20 @@ spec:
             AiBQ/AAwF8kG8VOmRSUTPakSSa/N4mqK2HsZuhQXCmiZHwIgZEzI5DCkpU7w3SIv
             OLO4Zsk1XrGZHGsmyiEyvYF9lpY=
              -----END CERTIFICATE-----
+        - name: LINKERD2_PROXY_IDENTITY_TOKEN_FILE
+          value: /var/run/secrets/kubernetes.io/serviceaccount/token
         - name: LINKERD2_PROXY_IDENTITY_SVC_ADDR
           value: localhost.:8080
+        - name: K8S_SA
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.serviceAccountName
+        - name: L5D_NS
+          value: linkerd
+        - name: L5D_TRUST_DOMAIN
+          value: trust.domain
+        - name: LINKERD2_PROXY_IDENTITY_LOCAL_NAME
+          value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
         - name: LINKERD2_PROXY_IDENTITY_SVC_NAME
           value: linkerd-identity.$(L5D_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
         - name: LINKERD2_PROXY_DESTINATION_SVC_NAME
@@ -396,6 +420,9 @@ spec:
             memory: 50Mi
         securityContext:
           runAsUser: 2103
+        volumeMounts:
+        - mountPath: /var/linkerd-io/config
+          name: config
       - args:
         - destination
         - -addr=:8086
@@ -475,13 +502,13 @@ spec:
         - name: LINKERD2_PROXY_DESTINATION_SVC_ADDR
           value: localhost.:8086
         - name: LINKERD2_PROXY_CONTROL_LISTENER
-          value: tcp://0.0.0.0:4190
+          value: 0.0.0.0:4190
         - name: LINKERD2_PROXY_METRICS_LISTENER
-          value: tcp://0.0.0.0:4191
+          value: 0.0.0.0:4191
         - name: LINKERD2_PROXY_OUTBOUND_LISTENER
-          value: tcp://127.0.0.1:4140
+          value: 127.0.0.1:4140
         - name: LINKERD2_PROXY_INBOUND_LISTENER
-          value: tcp://0.0.0.0:4143
+          value: 0.0.0.0:4143
         - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
           value: .
         - name: LINKERD2_PROXY_INBOUND_ACCEPT_KEEPALIVE
@@ -493,17 +520,7 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: LINKERD2_PROXY_DESTINATION_CONTEXT
-          value: namespace:$(K8S_NS)
-        - name: K8S_SA
-          valueFrom:
-            fieldRef:
-              fieldPath: spec.serviceAccountName
-        - name: L5D_NS
-          value: linkerd
-        - name: L5D_TRUST_DOMAIN
-          value: trust.domain
-        - name: LINKERD2_PROXY_IDENTITY_LOCAL_NAME
-          value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
+          value: ns:$(K8S_NS)
         - name: LINKERD2_PROXY_IDENTITY_DIR
           value: /var/run/linkerd/identity/end-entity
         - name: LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS
@@ -518,8 +535,20 @@ spec:
             AiBQ/AAwF8kG8VOmRSUTPakSSa/N4mqK2HsZuhQXCmiZHwIgZEzI5DCkpU7w3SIv
             OLO4Zsk1XrGZHGsmyiEyvYF9lpY=
              -----END CERTIFICATE-----
+        - name: LINKERD2_PROXY_IDENTITY_TOKEN_FILE
+          value: /var/run/secrets/kubernetes.io/serviceaccount/token
         - name: LINKERD2_PROXY_IDENTITY_SVC_ADDR
           value: linkerd-identity.linkerd.svc.cluster.local:8080
+        - name: K8S_SA
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.serviceAccountName
+        - name: L5D_NS
+          value: linkerd
+        - name: L5D_TRUST_DOMAIN
+          value: trust.domain
+        - name: LINKERD2_PROXY_IDENTITY_LOCAL_NAME
+          value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
         - name: LINKERD2_PROXY_IDENTITY_SVC_NAME
           value: linkerd-identity.$(L5D_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
         - name: LINKERD2_PROXY_DESTINATION_SVC_NAME
@@ -599,8 +628,7 @@ data:
   global: |
     {"linkerdNamespace":"linkerd","cniEnabled":false,"version":"dev-undefined","identityContext":{"trustDomain":"trust.domain","trustAnchorsPem":"-----BEGIN CERTIFICATE-----\nMIIBYDCCAQegAwIBAgIBATAKBggqhkjOPQQDAjAYMRYwFAYDVQQDEw1jbHVzdGVy\nLmxvY2FsMB4XDTE5MDMwMzAxNTk1MloXDTI5MDIyODAyMDM1MlowGDEWMBQGA1UE\nAxMNY2x1c3Rlci5sb2NhbDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABAChpAt0\nxtgO9qbVtEtDK80N6iCL2Htyf2kIv2m5QkJ1y0TFQi5hTVe3wtspJ8YpZF0pl364\n6TiYeXB8tOOhIACjQjBAMA4GA1UdDwEB/wQEAwIBBjAdBgNVHSUEFjAUBggrBgEF\nBQcDAQYIKwYBBQUHAwIwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNHADBE\nAiBQ/AAwF8kG8VOmRSUTPakSSa/N4mqK2HsZuhQXCmiZHwIgZEzI5DCkpU7w3SIv\nOLO4Zsk1XrGZHGsmyiEyvYF9lpY=\n -----END CERTIFICATE-----","issuanceLifetime":"120s","clockSkewAllowance":"120s"}}
   proxy: |
-    {"proxyImage":{"imageName":"gcr.io/linkerd-io/proxy","pullPolicy":"IfNotPresent"},"proxyInitImage":{"imageName":"gcr.io/linkerd-io/proxy-init","pullPolicy":"IfNotPresent"},"destinationApiPort":{"port":8086},"controlPort":{"port":4190},"ignoreInboundPorts":[],"ignoreOutboundPorts":[],"inboundPort":{"port":4143},"metricsPort":{"port":4191},"outboundPort":{"port":4140},"resource":{"requestCpu":"400m","requestMemory":"300Mi","limitCpu":"","limitMemory":""},"proxyUid":"2102","logLevel":{"level":"warn,linkerd2_proxy=info"},"disableExternalProfiles":false}
-
+    {"proxyImage":{"imageName":"gcr.io/linkerd-io/proxy","pullPolicy":"IfNotPresent"},"proxyInitImage":{"imageName":"gcr.io/linkerd-io/proxy-init","pullPolicy":"IfNotPresent"},"controlPort":{"port":4190},"ignoreInboundPorts":[],"ignoreOutboundPorts":[],"inboundPort":{"port":4143},"metricsPort":{"port":4191},"outboundPort":{"port":4140},"resource":{"requestCpu":"400m","requestMemory":"300Mi","limitCpu":"","limitMemory":""},"proxyUid":"2102","logLevel":{"level":"warn,linkerd2_proxy=info"},"disableExternalProfiles":false}
 ---
 ###
 ### Service Profile CRD
@@ -812,13 +840,13 @@ spec:
         - name: LINKERD2_PROXY_DESTINATION_SVC_ADDR
           value: linkerd-destination.linkerd.svc.cluster.local:8086
         - name: LINKERD2_PROXY_CONTROL_LISTENER
-          value: tcp://0.0.0.0:4190
+          value: 0.0.0.0:4190
         - name: LINKERD2_PROXY_METRICS_LISTENER
-          value: tcp://0.0.0.0:4191
+          value: 0.0.0.0:4191
         - name: LINKERD2_PROXY_OUTBOUND_LISTENER
-          value: tcp://127.0.0.1:4140
+          value: 127.0.0.1:4140
         - name: LINKERD2_PROXY_INBOUND_LISTENER
-          value: tcp://0.0.0.0:4143
+          value: 0.0.0.0:4143
         - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
           value: .
         - name: LINKERD2_PROXY_INBOUND_ACCEPT_KEEPALIVE
@@ -830,17 +858,7 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: LINKERD2_PROXY_DESTINATION_CONTEXT
-          value: namespace:$(K8S_NS)
-        - name: K8S_SA
-          valueFrom:
-            fieldRef:
-              fieldPath: spec.serviceAccountName
-        - name: L5D_NS
-          value: linkerd
-        - name: L5D_TRUST_DOMAIN
-          value: trust.domain
-        - name: LINKERD2_PROXY_IDENTITY_LOCAL_NAME
-          value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
+          value: ns:$(K8S_NS)
         - name: LINKERD2_PROXY_IDENTITY_DIR
           value: /var/run/linkerd/identity/end-entity
         - name: LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS
@@ -855,8 +873,20 @@ spec:
             AiBQ/AAwF8kG8VOmRSUTPakSSa/N4mqK2HsZuhQXCmiZHwIgZEzI5DCkpU7w3SIv
             OLO4Zsk1XrGZHGsmyiEyvYF9lpY=
              -----END CERTIFICATE-----
+        - name: LINKERD2_PROXY_IDENTITY_TOKEN_FILE
+          value: /var/run/secrets/kubernetes.io/serviceaccount/token
         - name: LINKERD2_PROXY_IDENTITY_SVC_ADDR
           value: linkerd-identity.linkerd.svc.cluster.local:8080
+        - name: K8S_SA
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.serviceAccountName
+        - name: L5D_NS
+          value: linkerd
+        - name: L5D_TRUST_DOMAIN
+          value: trust.domain
+        - name: LINKERD2_PROXY_IDENTITY_LOCAL_NAME
+          value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
         - name: LINKERD2_PROXY_IDENTITY_SVC_NAME
           value: linkerd-identity.$(L5D_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
         - name: LINKERD2_PROXY_DESTINATION_SVC_NAME
@@ -1048,13 +1078,13 @@ spec:
         - name: LINKERD2_PROXY_DESTINATION_SVC_ADDR
           value: linkerd-destination.linkerd.svc.cluster.local:8086
         - name: LINKERD2_PROXY_CONTROL_LISTENER
-          value: tcp://0.0.0.0:4190
+          value: 0.0.0.0:4190
         - name: LINKERD2_PROXY_METRICS_LISTENER
-          value: tcp://0.0.0.0:4191
+          value: 0.0.0.0:4191
         - name: LINKERD2_PROXY_OUTBOUND_LISTENER
-          value: tcp://127.0.0.1:4140
+          value: 127.0.0.1:4140
         - name: LINKERD2_PROXY_INBOUND_LISTENER
-          value: tcp://0.0.0.0:4143
+          value: 0.0.0.0:4143
         - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
           value: .
         - name: LINKERD2_PROXY_INBOUND_ACCEPT_KEEPALIVE
@@ -1066,19 +1096,9 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: LINKERD2_PROXY_DESTINATION_CONTEXT
-          value: namespace:$(K8S_NS)
+          value: ns:$(K8S_NS)
         - name: LINKERD2_PROXY_OUTBOUND_ROUTER_CAPACITY
           value: "10000"
-        - name: K8S_SA
-          valueFrom:
-            fieldRef:
-              fieldPath: spec.serviceAccountName
-        - name: L5D_NS
-          value: linkerd
-        - name: L5D_TRUST_DOMAIN
-          value: trust.domain
-        - name: LINKERD2_PROXY_IDENTITY_LOCAL_NAME
-          value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
         - name: LINKERD2_PROXY_IDENTITY_DIR
           value: /var/run/linkerd/identity/end-entity
         - name: LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS
@@ -1093,8 +1113,20 @@ spec:
             AiBQ/AAwF8kG8VOmRSUTPakSSa/N4mqK2HsZuhQXCmiZHwIgZEzI5DCkpU7w3SIv
             OLO4Zsk1XrGZHGsmyiEyvYF9lpY=
              -----END CERTIFICATE-----
+        - name: LINKERD2_PROXY_IDENTITY_TOKEN_FILE
+          value: /var/run/secrets/kubernetes.io/serviceaccount/token
         - name: LINKERD2_PROXY_IDENTITY_SVC_ADDR
           value: linkerd-identity.linkerd.svc.cluster.local:8080
+        - name: K8S_SA
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.serviceAccountName
+        - name: L5D_NS
+          value: linkerd
+        - name: L5D_TRUST_DOMAIN
+          value: trust.domain
+        - name: LINKERD2_PROXY_IDENTITY_LOCAL_NAME
+          value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
         - name: LINKERD2_PROXY_IDENTITY_SVC_NAME
           value: linkerd-identity.$(L5D_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
         - name: LINKERD2_PROXY_DESTINATION_SVC_NAME
@@ -1353,13 +1385,13 @@ spec:
         - name: LINKERD2_PROXY_DESTINATION_SVC_ADDR
           value: linkerd-destination.linkerd.svc.cluster.local:8086
         - name: LINKERD2_PROXY_CONTROL_LISTENER
-          value: tcp://0.0.0.0:4190
+          value: 0.0.0.0:4190
         - name: LINKERD2_PROXY_METRICS_LISTENER
-          value: tcp://0.0.0.0:4191
+          value: 0.0.0.0:4191
         - name: LINKERD2_PROXY_OUTBOUND_LISTENER
-          value: tcp://127.0.0.1:4140
+          value: 127.0.0.1:4140
         - name: LINKERD2_PROXY_INBOUND_LISTENER
-          value: tcp://0.0.0.0:4143
+          value: 0.0.0.0:4143
         - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
           value: .
         - name: LINKERD2_PROXY_INBOUND_ACCEPT_KEEPALIVE
@@ -1371,17 +1403,7 @@ spec:
             fieldRef:
               fieldPath: metadata.namespace
         - name: LINKERD2_PROXY_DESTINATION_CONTEXT
-          value: namespace:$(K8S_NS)
-        - name: K8S_SA
-          valueFrom:
-            fieldRef:
-              fieldPath: spec.serviceAccountName
-        - name: L5D_NS
-          value: linkerd
-        - name: L5D_TRUST_DOMAIN
-          value: trust.domain
-        - name: LINKERD2_PROXY_IDENTITY_LOCAL_NAME
-          value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
+          value: ns:$(K8S_NS)
         - name: LINKERD2_PROXY_IDENTITY_DIR
           value: /var/run/linkerd/identity/end-entity
         - name: LINKERD2_PROXY_IDENTITY_TRUST_ANCHORS
@@ -1396,8 +1418,20 @@ spec:
             AiBQ/AAwF8kG8VOmRSUTPakSSa/N4mqK2HsZuhQXCmiZHwIgZEzI5DCkpU7w3SIv
             OLO4Zsk1XrGZHGsmyiEyvYF9lpY=
              -----END CERTIFICATE-----
+        - name: LINKERD2_PROXY_IDENTITY_TOKEN_FILE
+          value: /var/run/secrets/kubernetes.io/serviceaccount/token
         - name: LINKERD2_PROXY_IDENTITY_SVC_ADDR
           value: linkerd-identity.linkerd.svc.cluster.local:8080
+        - name: K8S_SA
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.serviceAccountName
+        - name: L5D_NS
+          value: linkerd
+        - name: L5D_TRUST_DOMAIN
+          value: trust.domain
+        - name: LINKERD2_PROXY_IDENTITY_LOCAL_NAME
+          value: $(K8S_SA).$(K8S_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
         - name: LINKERD2_PROXY_IDENTITY_SVC_NAME
           value: linkerd-identity.$(L5D_NS).serviceaccount.identity.$(L5D_NS).$(L5D_TRUST_DOMAIN)
         - name: LINKERD2_PROXY_DESTINATION_SVC_NAME

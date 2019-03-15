@@ -12,6 +12,7 @@ import (
 	"github.com/linkerd/linkerd2/pkg/admin"
 	"github.com/linkerd/linkerd2/pkg/config"
 	"github.com/linkerd/linkerd2/pkg/flags"
+	consts "github.com/linkerd/linkerd2/pkg/k8s"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -28,7 +29,7 @@ func main() {
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
 	k8sAPI, err := k8s.InitializeAPI(
-		*kubeConfigPath, *controllerNamespace,
+		*kubeConfigPath,
 		k8s.Endpoint, k8s.Pod, k8s.RS, k8s.Svc, k8s.SP,
 	)
 	if err != nil {
@@ -43,7 +44,7 @@ func main() {
 	}
 
 	trustDomain := ""
-	global, err := config.Global()
+	global, err := config.Global(consts.MountPathGlobalConfig)
 	if err != nil {
 		log.Warnf("Couldn't load config; continuing without identity: %s", err)
 	} else {

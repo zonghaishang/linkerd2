@@ -1,4 +1,54 @@
-## edge-19-2.5
+## edge-19.3.2
+
+* Controller
+  * **Breaking change** Removed support for running the control plane in
+    single-namespace mode, which was severely limited in the number of features
+    it supported due to not having access to cluster-wide resources
+  * Updated automatic proxy injection and CLI injection to support overriding
+    inject defaults via pod spec annotations
+  * Added a new public API endpoint for fetching control plane configuration
+* CLI
+  * **Breaking change** Removed the `--api-port` flag from the `inject` and
+    `install` commands, since there's no benefit to running the control plane's
+    destination API on a non-default port (thanks, @paranoidaditya)
+  * Introduced the `linkerd metrics` command for fetching proxy metrics
+  * Updated the `linkerd routes` command to display rows for routes that are not
+    receiving any traffic
+  * Updated the `linkerd dashboard` command to serve the dashboard on a fixed
+    port, allowing it to leverage browser local storage for user settings
+* Web UI
+  * **New** Added a Community page to surface news and updates from linkerd.io
+  * Fixed a quoting issue with service profile downloads (thanks, @liquidslr!)
+  * Added a Grafana dashboard and web tables for displaying Job stats
+    (thanks, @Pothulapati!)
+  * Updated sorting of route table to move default routes to the bottom
+  * Added TCP stat tables on the namespace landing page and resource detail page
+
+## edge-19.3.1
+
+* CLI
+  * Introduced a check for NET_ADMIN in `linkerd check`
+  * Fixed permissions check for CRDs
+  * Included kubectl version check as part of `linkerd check` (thanks @yb172!)
+  * Added TCP stats to the stat command, under the `-o wide` and `-o json` flags
+* Controller
+  * Updated the `mutatingwebhookconfiguration` so that it is recreated when the
+    proxy injector is restarted, so that the MWC always picks up the latest
+    config template during version upgrade
+* Proxy
+  * Increased the inbound/router cap on MAX_CONCURRENT_STREAMS
+  * The `l5d-remote-ip` header is now set on inbound requests and outbound
+    responses
+* Web UI
+  * Fixed sidebar not updating when resources were added/deleted (thanks
+    @liquidslr!)
+  * Added filter functionality to the metrics tables
+* Internal
+  * Added more log errors to the integration tests
+  * Removed the GOPATH dependence from the CLI dev environment
+  * Consolidated injection code from CLI and admission controller code paths
+
+## edge-19.2.5
 
 * CLI
   * Updated `linkerd check` to ensure hint URLs are displayed for RPC checks

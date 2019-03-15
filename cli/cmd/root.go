@@ -106,6 +106,7 @@ func init() {
 	RootCmd.AddCommand(newCmdInstallCNIPlugin())
 	RootCmd.AddCommand(newCmdInstallSP())
 	RootCmd.AddCommand(newCmdLogs())
+	RootCmd.AddCommand(newCmdMetrics())
 	RootCmd.AddCommand(newCmdProfile())
 	RootCmd.AddCommand(newCmdRoutes())
 	RootCmd.AddCommand(newCmdStat())
@@ -192,10 +193,10 @@ func newStatOptionsBase() *statOptionsBase {
 
 func (o *statOptionsBase) validateOutputFormat() error {
 	switch o.outputFormat {
-	case tableOutput, jsonOutput:
+	case tableOutput, jsonOutput, wideOutput:
 		return nil
 	default:
-		return fmt.Errorf("--output currently only supports %s and %s", tableOutput, jsonOutput)
+		return fmt.Errorf("--output currently only supports %s, %s and %s", tableOutput, jsonOutput, wideOutput)
 	}
 }
 
@@ -280,7 +281,6 @@ func newConfig() configs {
 	proxyConfig := &config.Proxy{
 		ProxyImage:              &config.Image{ImageName: defaultDockerRegistry + "/proxy", PullPolicy: "IfNotPresent"},
 		ProxyInitImage:          &config.Image{ImageName: defaultDockerRegistry + "/proxy-init", PullPolicy: "IfNotPresent"},
-		DestinationApiPort:      &config.Port{Port: 8086},
 		ControlPort:             &config.Port{Port: 4190},
 		IgnoreInboundPorts:      nil,
 		IgnoreOutboundPorts:     nil,

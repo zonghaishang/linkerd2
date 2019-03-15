@@ -18,37 +18,40 @@ const (
 	 * Labels
 	 */
 
+	// Prefix is the prefix common to all labels and annotations injected by Linkerd
+	Prefix = "linkerd.io"
+
 	// ControllerComponentLabel identifies this object as a component of Linkerd's
 	// control plane (e.g. web, controller).
-	ControllerComponentLabel = "linkerd.io/control-plane-component"
+	ControllerComponentLabel = Prefix + "/control-plane-component"
 
 	// ControllerNSLabel is injected into mesh-enabled apps, identifying the
 	// namespace of the Linkerd control plane.
-	ControllerNSLabel = "linkerd.io/control-plane-ns"
+	ControllerNSLabel = Prefix + "/control-plane-ns"
 
 	// ProxyDeploymentLabel is injected into mesh-enabled apps, identifying the
 	// deployment that this proxy belongs to.
-	ProxyDeploymentLabel = "linkerd.io/proxy-deployment"
+	ProxyDeploymentLabel = Prefix + "/proxy-deployment"
 
 	// ProxyReplicationControllerLabel is injected into mesh-enabled apps,
 	// identifying the ReplicationController that this proxy belongs to.
-	ProxyReplicationControllerLabel = "linkerd.io/proxy-replicationcontroller"
+	ProxyReplicationControllerLabel = Prefix + "/proxy-replicationcontroller"
 
 	// ProxyReplicaSetLabel is injected into mesh-enabled apps, identifying the
 	// ReplicaSet that this proxy belongs to.
-	ProxyReplicaSetLabel = "linkerd.io/proxy-replicaset"
+	ProxyReplicaSetLabel = Prefix + "/proxy-replicaset"
 
 	// ProxyJobLabel is injected into mesh-enabled apps, identifying the Job that
 	// this proxy belongs to.
-	ProxyJobLabel = "linkerd.io/proxy-job"
+	ProxyJobLabel = Prefix + "/proxy-job"
 
 	// ProxyDaemonSetLabel is injected into mesh-enabled apps, identifying the
 	// DaemonSet that this proxy belongs to.
-	ProxyDaemonSetLabel = "linkerd.io/proxy-daemonset"
+	ProxyDaemonSetLabel = Prefix + "/proxy-daemonset"
 
 	// ProxyStatefulSetLabel is injected into mesh-enabled apps, identifying the
 	// StatefulSet that this proxy belongs to.
-	ProxyStatefulSetLabel = "linkerd.io/proxy-statefulset"
+	ProxyStatefulSetLabel = Prefix + "/proxy-statefulset"
 
 	/*
 	 * Annotations
@@ -56,7 +59,7 @@ const (
 
 	// CreatedByAnnotation indicates the source of the injected data plane
 	// (e.g. linkerd/cli v2.0.0).
-	CreatedByAnnotation = "linkerd.io/created-by"
+	CreatedByAnnotation = Prefix + "/created-by"
 
 	// IdentityIssuerExpiryAnnotation indicates the time at which this set of identity
 	// issuer credentials will cease to be valid.
@@ -64,12 +67,12 @@ const (
 
 	// ProxyVersionAnnotation indicates the version of the injected data plane
 	// (e.g. v0.1.3).
-	ProxyVersionAnnotation = "linkerd.io/proxy-version"
+	ProxyVersionAnnotation = Prefix + "/proxy-version"
 
 	// ProxyInjectAnnotation controls whether or not a pod should be injected
 	// when set on a pod spec. When set on a namespace spec, it applies to all
 	// pods in the namespace. Supported values are "enabled" or "disabled"
-	ProxyInjectAnnotation = "linkerd.io/inject"
+	ProxyInjectAnnotation = Prefix + "/inject"
 
 	// ProxyInjectEnabled is assigned to the ProxyInjectAnnotation annotation to
 	// enable injection for a pod or namespace.
@@ -81,7 +84,69 @@ const (
 
 	// IdentityModeAnnotation controls how a pod participates
 	// in service identity.
-	IdentityModeAnnotation = "linkerd.io/identity-mode"
+	IdentityModeAnnotation = Prefix + "/identity-mode"
+
+	/*
+	 * Proxy config annotations
+	 */
+
+	// ProxyConfigAnnotationsPrefix is the prefix of all config-related annotations
+	ProxyConfigAnnotationsPrefix = "config.linkerd.io"
+
+	// ProxyImageAnnotation can be used to override the proxyImage config.
+	ProxyImageAnnotation = ProxyConfigAnnotationsPrefix + "/proxy-image"
+
+	// ProxyImagePullPolicyAnnotation can be used to override the
+	// proxyImagePullPolicy and proxyInitImagePullPolicy configs.
+	ProxyImagePullPolicyAnnotation = ProxyConfigAnnotationsPrefix + "/image-pull-policy"
+
+	// ProxyInitImageAnnotation can be used to override the proxyInitImage
+	// config.
+	ProxyInitImageAnnotation = ProxyConfigAnnotationsPrefix + "/init-image"
+
+	// ProxyControlPortAnnotation can be used to override the controlPort config.
+	ProxyControlPortAnnotation = ProxyConfigAnnotationsPrefix + "/control-port"
+
+	// ProxyIgnoreInboundPortsAnnotation can be used to override the
+	// ignoreInboundPorts config.
+	ProxyIgnoreInboundPortsAnnotation = ProxyConfigAnnotationsPrefix + "/skip-inbound-ports"
+
+	// ProxyIgnoreOutboundPortsAnnotation can be used to override the
+	// ignoreOutboundPorts config.
+	ProxyIgnoreOutboundPortsAnnotation = ProxyConfigAnnotationsPrefix + "/skip-outbound-ports"
+
+	// ProxyInboundPortAnnotation can be used to override the inboundPort config.
+	ProxyInboundPortAnnotation = ProxyConfigAnnotationsPrefix + "/inbound-port"
+
+	// ProxyMetricsPortAnnotation can be used to override the metricsPort config.
+	ProxyMetricsPortAnnotation = ProxyConfigAnnotationsPrefix + "/metrics-port"
+
+	// ProxyOutboundPortAnnotation can be used to override the outboundPort
+	// config.
+	ProxyOutboundPortAnnotation = ProxyConfigAnnotationsPrefix + "/outbound-port"
+
+	// ProxyCPURequestAnnotation can be used to override the requestCPU config.
+	ProxyCPURequestAnnotation = ProxyConfigAnnotationsPrefix + "/proxy-cpu-request"
+
+	// ProxyMemoryRequestAnnotation can be used to override the
+	// requestMemoryConfig.
+	ProxyMemoryRequestAnnotation = ProxyConfigAnnotationsPrefix + "/proxy-memory-request"
+
+	// ProxyCPULimitAnnotation can be used to override the limitCPU config.
+	ProxyCPULimitAnnotation = ProxyConfigAnnotationsPrefix + "/proxy-cpu-limit"
+
+	// ProxyMemoryLimitAnnotation can be used to override the limitMemory config.
+	ProxyMemoryLimitAnnotation = ProxyConfigAnnotationsPrefix + "/proxy-memory-limit"
+
+	// ProxyUIDAnnotation can be used to override the UID config.
+	ProxyUIDAnnotation = ProxyConfigAnnotationsPrefix + "/proxy-uid"
+
+	// ProxyLogLevelAnnotation can be used to override the log level config.
+	ProxyLogLevelAnnotation = ProxyConfigAnnotationsPrefix + "/proxy-log-level"
+
+	// ProxyDisableExternalProfilesAnnotation can be used to override the
+	// disableExternalProfilesAnnotation config.
+	ProxyDisableExternalProfilesAnnotation = ProxyConfigAnnotationsPrefix + "/disable-external-profiles"
 
 	// IdentityModeDefault is assigned to IdentityModeAnnotation to
 	// use the control plane's default identity scheme.
@@ -111,25 +176,35 @@ const (
 	// volume mounted into each proxy to store identity credentials.
 	IdentityEndEntityVolumeName = "linkerd-identity-end-entity"
 
+	// ProxyPortName is the name of the Linkerd Proxy's proxy port
+	ProxyPortName = "linkerd-proxy"
+
+	// ProxyMetricsPortName is the name of the Linkerd Proxy's metrics port
+	ProxyMetricsPortName = "linkerd-metrics"
+
 	// ProxyInjectorWebhookConfig is the name of the mutating webhook
 	// configuration resource of the proxy-injector webhook.
 	ProxyInjectorWebhookConfig = "linkerd-proxy-injector-webhook-config"
 
 	// MountPathBase is the base directory of the mount path
 	MountPathBase = "/var/run/linkerd"
-)
 
-// InjectedLabels contains the list of label keys subjected to be injected by Linkerd into resource definitions
-var InjectedLabels = []string{ControllerNSLabel, ProxyDeploymentLabel, ProxyReplicationControllerLabel,
-	ProxyReplicaSetLabel, ProxyJobLabel, ProxyDaemonSetLabel, ProxyStatefulSetLabel}
-
-var (
 	// MountPathGlobalConfig is the path at which the global config file is mounted
 	// in the control plane.
 	MountPathGlobalConfig = MountPathBase + "/config/global"
 
 	// MountPathProxyConfig is the path at which the global config file is mounted
 	MountPathProxyConfig = MountPathBase + "/config/proxy"
+
+	// MountPathEndEntity is the path at which a tmpfs directory is mounted to
+	// store identity credentials.
+	MountPathEndEntity = MountPathBase + "/identity/end-entity"
+
+	// KubernetesIdentityServiceAcountTokenPath is the path to the kbuernetes service
+	// account token used by proxies to privision identity.
+	//
+	// In the future, this should be changed to a time- and audience-scoped secret.
+	IdentityServiceAccountTokenPath = "/var/run/secrets/kubernetes.io/serviceaccount/token"
 )
 
 // CreatedByAnnotationValue returns the value associated with

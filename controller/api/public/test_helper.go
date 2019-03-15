@@ -11,6 +11,7 @@ import (
 
 	"github.com/linkerd/linkerd2/controller/api/discovery"
 	healthcheckPb "github.com/linkerd/linkerd2/controller/gen/common/healthcheck"
+	configPb "github.com/linkerd/linkerd2/controller/gen/config"
 	pb "github.com/linkerd/linkerd2/controller/gen/public"
 	"github.com/linkerd/linkerd2/controller/k8s"
 	promv1 "github.com/prometheus/client_golang/api/prometheus/v1"
@@ -27,6 +28,7 @@ type MockAPIClient struct {
 	StatSummaryResponseToReturn    *pb.StatSummaryResponse
 	TopRoutesResponseToReturn      *pb.TopRoutesResponse
 	SelfCheckResponseToReturn      *healthcheckPb.SelfCheckResponse
+	ConfigResponseToReturn         *configPb.All
 	APITapClientToReturn           pb.Api_TapClient
 	APITapByResourceClientToReturn pb.Api_TapByResourceClient
 	*discovery.MockDiscoveryClient
@@ -70,6 +72,11 @@ func (c *MockAPIClient) TapByResource(ctx context.Context, in *pb.TapByResourceR
 // SelfCheck provides a mock of a Public API method.
 func (c *MockAPIClient) SelfCheck(ctx context.Context, in *healthcheckPb.SelfCheckRequest, _ ...grpc.CallOption) (*healthcheckPb.SelfCheckResponse, error) {
 	return c.SelfCheckResponseToReturn, c.ErrorToReturn
+}
+
+// Config provides a mock of a Public API method.
+func (c *MockAPIClient) Config(ctx context.Context, in *pb.Empty, _ ...grpc.CallOption) (*configPb.All, error) {
+	return c.ConfigResponseToReturn, c.ErrorToReturn
 }
 
 // MockAPITapByResourceClient satisfies the TapByResourceClient gRPC interface.
@@ -126,11 +133,33 @@ func (m *mockProm) QueryRange(ctx context.Context, query string, r promv1.Range)
 	m.QueriesExecuted = append(m.QueriesExecuted, query)
 	return m.Res, nil
 }
+
+func (m *mockProm) AlertManagers(ctx context.Context) (promv1.AlertManagersResult, error) {
+	return promv1.AlertManagersResult{}, nil
+}
+func (m *mockProm) CleanTombstones(ctx context.Context) error {
+	return nil
+}
+func (m *mockProm) Config(ctx context.Context) (promv1.ConfigResult, error) {
+	return promv1.ConfigResult{}, nil
+}
+func (m *mockProm) DeleteSeries(ctx context.Context, matches []string, startTime time.Time, endTime time.Time) error {
+	return nil
+}
+func (m *mockProm) Flags(ctx context.Context) (promv1.FlagsResult, error) {
+	return promv1.FlagsResult{}, nil
+}
 func (m *mockProm) LabelValues(ctx context.Context, label string) (model.LabelValues, error) {
 	return nil, nil
 }
 func (m *mockProm) Series(ctx context.Context, matches []string, startTime time.Time, endTime time.Time) ([]model.LabelSet, error) {
 	return nil, nil
+}
+func (m *mockProm) Snapshot(ctx context.Context, skipHead bool) (promv1.SnapshotResult, error) {
+	return promv1.SnapshotResult{}, nil
+}
+func (m *mockProm) Targets(ctx context.Context) (promv1.TargetsResult, error) {
+	return promv1.TargetsResult{}, nil
 }
 
 // GenStatSummaryResponse generates a mock Public API StatSummaryResponse
@@ -256,7 +285,7 @@ type expectedStatRPC struct {
 }
 
 func newMockGrpcServer(exp expectedStatRPC) (*mockProm, *grpcServer, error) {
-	k8sAPI, err := k8s.NewFakeAPI("", exp.k8sConfigs...)
+	k8sAPI, err := k8s.NewFakeAPI(exp.k8sConfigs...)
 	if err != nil {
 		return nil, nil, err
 	}

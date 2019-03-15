@@ -11,6 +11,7 @@ import (
 	"github.com/linkerd/linkerd2/controller/api/public"
 	healthcheckPb "github.com/linkerd/linkerd2/controller/gen/common/healthcheck"
 	pb "github.com/linkerd/linkerd2/controller/gen/public"
+	"github.com/linkerd/linkerd2/pkg/k8s"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -288,6 +289,72 @@ func TestHealthChecker(t *testing.T) {
 			t.Fatalf("Expected results %v, but got %v", expectedResults, observedResults)
 		}
 	})
+}
+
+func TestCheckCanCreate(t *testing.T) {
+	exp := fmt.Errorf("not authorized to access deployments.extensions")
+
+	hc := NewHealthChecker(
+		[]CategoryID{},
+		&Options{},
+	)
+	var err error
+	hc.clientset, _, err = k8s.NewFakeClientSets()
+	if err != nil {
+		t.Fatalf("Unexpected error: %s", err)
+	}
+	err = hc.checkCanCreate("", "extensions", "v1beta1", "deployments")
+	if err == nil ||
+		err.Error() != exp.Error() {
+		t.Fatalf("Unexpected error (Expected: %s, Got: %s)", exp, err)
+	}
+}
+
+func TestCheckNetAdmin(t *testing.T) {
+	tests := []struct {
+		k8sConfigs []string
+		err        error
+	}{
+		{
+			[]string{},
+			nil,
+		},
+		{
+			[]string{`apiVersion: policy/v1beta1
+kind: PodSecurityPolicy
+metadata:
+  name: restricted
+spec:
+  requiredDropCapabilities:
+    - ALL`,
+			},
+			fmt.Errorf("found 1 PodSecurityPolicies, but none provide NET_ADMIN"),
+		},
+	}
+
+	for i, test := range tests {
+		test := test // pin
+		t.Run(fmt.Sprintf("%d: returns expected NET_ADMIN result", i), func(t *testing.T) {
+			hc := NewHealthChecker(
+				[]CategoryID{},
+				&Options{},
+			)
+
+			var err error
+			hc.clientset, _, err = k8s.NewFakeClientSets(test.k8sConfigs...)
+			if err != nil {
+				t.Fatalf("Unexpected error: %s", err)
+			}
+			err = hc.checkNetAdmin()
+			if err != nil || test.err != nil {
+				if (err == nil && test.err != nil) ||
+					(err != nil && test.err == nil) ||
+					(err.Error() != test.err.Error()) {
+					t.Fatalf("Unexpected error (Expected: %s, Got: %s)", test.err, err)
+				}
+			}
+		})
+	}
 }
 
 func TestValidateControlPlanePods(t *testing.T) {

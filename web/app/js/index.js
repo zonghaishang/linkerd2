@@ -6,6 +6,7 @@ import { MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles';
 
 import ApiHelpers from './components/util/ApiHelpers.jsx';
 import AppContext from './components/util/AppContext.jsx';
+import Community from './components/Community.jsx';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import Debug from './components/Debug.jsx';
 import Namespace from './components/Namespace.jsx';
@@ -70,6 +71,9 @@ let applicationHtml = (
                 path={`${pathPrefix}/namespaces/:namespace/statefulsets/:statefulset`}
                 render={props => <Navigation {...props} ChildComponent={ResourceDetail} />} />
               <Route
+                path={`${pathPrefix}/namespaces/:namespace/jobs/:job`}
+                render={props => <Navigation {...props} ChildComponent={ResourceDetail} />} />
+              <Route
                 path={`${pathPrefix}/namespaces/:namespace/deployments/:deployment`}
                 render={props => <Navigation {...props} ChildComponent={ResourceDetail} />} />
               <Route
@@ -97,6 +101,9 @@ let applicationHtml = (
                 path={`${pathPrefix}/statefulsets`}
                 render={props => <Navigation {...props} ChildComponent={ResourceList} resource="statefulset" />} />
               <Route
+                path={`${pathPrefix}/jobs`}
+                render={props => <Navigation {...props} ChildComponent={ResourceList} resource="job" />} />
+              <Route
                 path={`${pathPrefix}/replicationcontrollers`}
                 render={props => <Navigation {...props} ChildComponent={ResourceList} resource="replicationcontroller" />} />
               <Route
@@ -108,6 +115,9 @@ let applicationHtml = (
               <Route
                 path={`${pathPrefix}/debug`}
                 render={props => <Navigation {...props} ChildComponent={Debug} />} />
+              <Route
+                path={`${pathPrefix}/community`}
+                render={props => <Navigation {...props} ChildComponent={Community} />} />
               <Route component={NoMatch} />
             </Switch>
           </RouterToUrlQuery>

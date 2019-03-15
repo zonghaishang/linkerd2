@@ -20,6 +20,7 @@ import (
 	"github.com/linkerd/linkerd2/pkg/config"
 	"github.com/linkerd/linkerd2/pkg/flags"
 	"github.com/linkerd/linkerd2/pkg/identity"
+	consts "github.com/linkerd/linkerd2/pkg/k8s"
 	"github.com/linkerd/linkerd2/pkg/tls"
 )
 
@@ -35,7 +36,7 @@ func main() {
 		"path to directoring containing issuer credentials")
 	flags.ConfigureAndParse()
 
-	cfg, err := config.Global()
+	cfg, err := config.Global(consts.MountPathGlobalConfig)
 	if err != nil {
 		log.Fatalf("Failed to load config: %s", err.Error())
 	}

@@ -3,6 +3,10 @@ package injector
 import (
 	"fmt"
 
+	"github.com/linkerd/linkerd2/pkg/config"
+	"github.com/linkerd/linkerd2/pkg/inject"
+	"github.com/linkerd/linkerd2/pkg/k8s"
+	"github.com/linkerd/linkerd2/pkg/version"
 	log "github.com/sirupsen/logrus"
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -10,10 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/yaml"
-
-	"github.com/linkerd/linkerd2/pkg/config"
-	"github.com/linkerd/linkerd2/pkg/inject"
-	"github.com/linkerd/linkerd2/pkg/version"
 )
 
 // Webhook is a Kubernetes mutating admission webhook that mutates pods admission
@@ -88,12 +88,12 @@ func (w *Webhook) decode(data []byte) (*admissionv1beta1.AdmissionReview, error)
 func (w *Webhook) inject(request *admissionv1beta1.AdmissionRequest) (*admissionv1beta1.AdmissionResponse, error) {
 	log.Debugf("request object bytes: %s", request.Object.Raw)
 
-	globalConfig, err := config.Global()
+	globalConfig, err := config.Global(k8s.MountPathGlobalConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	proxyConfig, err := config.Proxy()
+	proxyConfig, err := config.Proxy(k8s.MountPathProxyConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +141,8 @@ func (w *Webhook) inject(request *admissionv1beta1.AdmissionRequest) (*admission
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("patch generated: %s", patchJSON)
+	log.Infof("patch generated for: %s", conf)
+	log.Debugf("patch: %s", patchJSON)
 
 	patchType := admissionv1beta1.PatchTypeJSONPatch
 	admissionResponse.Patch = patchJSON
