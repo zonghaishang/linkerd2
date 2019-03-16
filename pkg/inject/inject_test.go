@@ -24,10 +24,10 @@ type expectedProxyConfigs struct {
 	logLevel                   string
 	resourceRequirements       corev1.ResourceRequirements
 	destinationAddr            string
-	controlListener            string
-	inboundListener            string
-	metricsListener            string
-	outboundListener           string
+	controlListenAddr          string
+	inboundListenAddr          string
+	metricsListenAddr          string
+	outboundListenAddr         string
 	proxyUID                   int64
 	probe                      *corev1.Probe
 	destinationProfileSuffixes string
@@ -114,12 +114,12 @@ func TestConfigAccessors(t *testing.T) {
 						"memory": k8sResource.MustParse("256"),
 					},
 				},
-				destinationAddr:  "linkerd-destination.linkerd.svc.cluster.local:8086",
-				controlListener:  "0.0.0.0:4000",
-				inboundListener:  "0.0.0.0:5000",
-				metricsListener:  "0.0.0.0:5001",
-				outboundListener: "127.0.0.1:5002",
-				proxyUID:         int64(8500),
+				destinationAddr:    "linkerd-destination.linkerd.svc.cluster.local:8086",
+				controlListenAddr:  "0.0.0.0:4000",
+				inboundListenAddr:  "0.0.0.0:5000",
+				metricsListenAddr:  "0.0.0.0:5001",
+				outboundListenAddr: "127.0.0.1:5002",
+				proxyUID:           int64(8500),
 				probe: &corev1.Probe{
 					Handler: corev1.Handler{
 						HTTPGet: &corev1.HTTPGetAction{
@@ -170,12 +170,12 @@ func TestConfigAccessors(t *testing.T) {
 						"memory": k8sResource.MustParse("128"),
 					},
 				},
-				destinationAddr:  "linkerd-destination.linkerd.svc.cluster.local:8086",
-				controlListener:  "0.0.0.0:9000",
-				inboundListener:  "0.0.0.0:6000",
-				metricsListener:  "0.0.0.0:6001",
-				outboundListener: "127.0.0.1:6002",
-				proxyUID:         int64(8888),
+				destinationAddr:    "linkerd-destination.linkerd.svc.cluster.local:8086",
+				controlListenAddr:  "0.0.0.0:9000",
+				inboundListenAddr:  "0.0.0.0:6000",
+				metricsListenAddr:  "0.0.0.0:6001",
+				outboundListenAddr: "127.0.0.1:6002",
+				proxyUID:           int64(8888),
 				probe: &corev1.Probe{
 					Handler: corev1.Handler{
 						HTTPGet: &corev1.HTTPGetAction{
@@ -278,30 +278,30 @@ func TestConfigAccessors(t *testing.T) {
 				}
 			})
 
-			t.Run("proxyControlListener", func(t *testing.T) {
-				expected := testCase.expected.controlListener
-				if actual := resourceConfig.proxyControlListener(); expected != actual {
+			t.Run("proxyControlListenAddr", func(t *testing.T) {
+				expected := testCase.expected.controlListenAddr
+				if actual := resourceConfig.proxyControlListenAddr(); expected != actual {
 					t.Errorf("Expected: %v Actual: %v", expected, actual)
 				}
 			})
 
-			t.Run("proxyInboundListener", func(t *testing.T) {
-				expected := testCase.expected.inboundListener
-				if actual := resourceConfig.proxyInboundListener(); expected != actual {
+			t.Run("proxyInboundListenAddr", func(t *testing.T) {
+				expected := testCase.expected.inboundListenAddr
+				if actual := resourceConfig.proxyInboundListenAddr(); expected != actual {
 					t.Errorf("Expected: %v Actual: %v", expected, actual)
 				}
 			})
 
-			t.Run("proxyMetricsListener", func(t *testing.T) {
-				expected := testCase.expected.metricsListener
-				if actual := resourceConfig.proxyMetricsListener(); expected != actual {
+			t.Run("proxyMetricsListenAddr", func(t *testing.T) {
+				expected := testCase.expected.metricsListenAddr
+				if actual := resourceConfig.proxyMetricsListenAddr(); expected != actual {
 					t.Errorf("Expected: %v Actual: %v", expected, actual)
 				}
 			})
 
-			t.Run("proxyOutboundListener", func(t *testing.T) {
-				expected := testCase.expected.outboundListener
-				if actual := resourceConfig.proxyOutboundListener(); expected != actual {
+			t.Run("proxyOutboundListenAddr", func(t *testing.T) {
+				expected := testCase.expected.outboundListenAddr
+				if actual := resourceConfig.proxyOutboundListenAddr(); expected != actual {
 					t.Errorf("Expected: %v Actual: %v", expected, actual)
 				}
 			})

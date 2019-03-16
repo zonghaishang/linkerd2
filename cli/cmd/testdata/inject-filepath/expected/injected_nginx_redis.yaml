@@ -44,13 +44,13 @@ spec:
           value: warn,linkerd2_proxy=info
         - name: LINKERD2_PROXY_DESTINATION_SVC_ADDR
           value: linkerd-destination.linkerd.svc.cluster.local:8086
-        - name: LINKERD2_PROXY_CONTROL_LISTENER
+        - name: LINKERD2_PROXY_CONTROL_LISTEN_ADDR
           value: 0.0.0.0:4190
-        - name: LINKERD2_PROXY_METRICS_LISTENER
+        - name: LINKERD2_PROXY_METRICS_LISTEN_ADDR
           value: 0.0.0.0:4191
-        - name: LINKERD2_PROXY_OUTBOUND_LISTENER
+        - name: LINKERD2_PROXY_OUTBOUND_LISTEN_ADDR
           value: 127.0.0.1:4140
-        - name: LINKERD2_PROXY_INBOUND_LISTENER
+        - name: LINKERD2_PROXY_INBOUND_LISTEN_ADDR
           value: 0.0.0.0:4143
         - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
           value: .
@@ -158,13 +158,13 @@ spec:
           value: warn,linkerd2_proxy=info
         - name: LINKERD2_PROXY_DESTINATION_SVC_ADDR
           value: linkerd-destination.linkerd.svc.cluster.local:8086
-        - name: LINKERD2_PROXY_CONTROL_LISTENER
+        - name: LINKERD2_PROXY_CONTROL_LISTEN_ADDR
           value: 0.0.0.0:4190
-        - name: LINKERD2_PROXY_METRICS_LISTENER
+        - name: LINKERD2_PROXY_METRICS_LISTEN_ADDR
           value: 0.0.0.0:4191
-        - name: LINKERD2_PROXY_OUTBOUND_LISTENER
+        - name: LINKERD2_PROXY_OUTBOUND_LISTEN_ADDR
           value: 127.0.0.1:4140
-        - name: LINKERD2_PROXY_INBOUND_LISTENER
+        - name: LINKERD2_PROXY_INBOUND_LISTEN_ADDR
           value: 0.0.0.0:4143
         - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
           value: .

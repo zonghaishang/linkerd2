@@ -54,28 +54,6 @@ spec:
     port: 8080
     targetPort: 8080
 ---
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: linkerd-identity-trust-anchors
-  namespace: linkerd
-  labels:
-    linkerd.io/control-plane-component: identity
-  annotations:
-    linkerd.io/created-by: linkerd/cli dev-undefined
-data:
-  trust-anchors.pem: |-
-    -----BEGIN CERTIFICATE-----
-    MIIBYDCCAQegAwIBAgIBATAKBggqhkjOPQQDAjAYMRYwFAYDVQQDEw1jbHVzdGVy
-    LmxvY2FsMB4XDTE5MDMwMzAxNTk1MloXDTI5MDIyODAyMDM1MlowGDEWMBQGA1UE
-    AxMNY2x1c3Rlci5sb2NhbDBZMBMGByqGSM49AgEGCCqGSM49AwEHA0IABAChpAt0
-    xtgO9qbVtEtDK80N6iCL2Htyf2kIv2m5QkJ1y0TFQi5hTVe3wtspJ8YpZF0pl364
-    6TiYeXB8tOOhIACjQjBAMA4GA1UdDwEB/wQEAwIBBjAdBgNVHSUEFjAUBggrBgEF
-    BQcDAQYIKwYBBQUHAwIwDwYDVR0TAQH/BAUwAwEB/zAKBggqhkjOPQQDAgNHADBE
-    AiBQ/AAwF8kG8VOmRSUTPakSSa/N4mqK2HsZuhQXCmiZHwIgZEzI5DCkpU7w3SIv
-    OLO4Zsk1XrGZHGsmyiEyvYF9lpY=
-     -----END CERTIFICATE-----
----
 kind: Secret
 apiVersion: v1
 metadata:
@@ -144,8 +122,6 @@ spec:
         volumeMounts:
         - mountPath: /var/run/linkerd/config
           name: config
-        - mountPath: /var/run/linkerd/identity/trust-anchors
-          name: identity-trust-anchors
         - mountPath: /var/run/linkerd/identity/issuer
           name: identity-issuer
       - args:
@@ -165,13 +141,13 @@ spec:
           value: warn,linkerd2_proxy=info
         - name: LINKERD2_PROXY_DESTINATION_SVC_ADDR
           value: linkerd-destination.linkerd.svc.cluster.local:8086
-        - name: LINKERD2_PROXY_CONTROL_LISTENER
+        - name: LINKERD2_PROXY_CONTROL_LISTEN_ADDR
           value: 0.0.0.0:4190
-        - name: LINKERD2_PROXY_METRICS_LISTENER
+        - name: LINKERD2_PROXY_METRICS_LISTEN_ADDR
           value: 0.0.0.0:4191
-        - name: LINKERD2_PROXY_OUTBOUND_LISTENER
+        - name: LINKERD2_PROXY_OUTBOUND_LISTEN_ADDR
           value: 127.0.0.1:4140
-        - name: LINKERD2_PROXY_INBOUND_LISTENER
+        - name: LINKERD2_PROXY_INBOUND_LISTEN_ADDR
           value: 0.0.0.0:4143
         - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
           value: .
@@ -486,13 +462,13 @@ spec:
           value: warn,linkerd2_proxy=info
         - name: LINKERD2_PROXY_DESTINATION_SVC_ADDR
           value: localhost.:8086
-        - name: LINKERD2_PROXY_CONTROL_LISTENER
+        - name: LINKERD2_PROXY_CONTROL_LISTEN_ADDR
           value: 0.0.0.0:4190
-        - name: LINKERD2_PROXY_METRICS_LISTENER
+        - name: LINKERD2_PROXY_METRICS_LISTEN_ADDR
           value: 0.0.0.0:4191
-        - name: LINKERD2_PROXY_OUTBOUND_LISTENER
+        - name: LINKERD2_PROXY_OUTBOUND_LISTEN_ADDR
           value: 127.0.0.1:4140
-        - name: LINKERD2_PROXY_INBOUND_LISTENER
+        - name: LINKERD2_PROXY_INBOUND_LISTEN_ADDR
           value: 0.0.0.0:4143
         - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
           value: .
@@ -818,13 +794,13 @@ spec:
           value: warn,linkerd2_proxy=info
         - name: LINKERD2_PROXY_DESTINATION_SVC_ADDR
           value: linkerd-destination.linkerd.svc.cluster.local:8086
-        - name: LINKERD2_PROXY_CONTROL_LISTENER
+        - name: LINKERD2_PROXY_CONTROL_LISTEN_ADDR
           value: 0.0.0.0:4190
-        - name: LINKERD2_PROXY_METRICS_LISTENER
+        - name: LINKERD2_PROXY_METRICS_LISTEN_ADDR
           value: 0.0.0.0:4191
-        - name: LINKERD2_PROXY_OUTBOUND_LISTENER
+        - name: LINKERD2_PROXY_OUTBOUND_LISTEN_ADDR
           value: 127.0.0.1:4140
-        - name: LINKERD2_PROXY_INBOUND_LISTENER
+        - name: LINKERD2_PROXY_INBOUND_LISTEN_ADDR
           value: 0.0.0.0:4143
         - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
           value: .
@@ -1050,13 +1026,13 @@ spec:
           value: warn,linkerd2_proxy=info
         - name: LINKERD2_PROXY_DESTINATION_SVC_ADDR
           value: linkerd-destination.linkerd.svc.cluster.local:8086
-        - name: LINKERD2_PROXY_CONTROL_LISTENER
+        - name: LINKERD2_PROXY_CONTROL_LISTEN_ADDR
           value: 0.0.0.0:4190
-        - name: LINKERD2_PROXY_METRICS_LISTENER
+        - name: LINKERD2_PROXY_METRICS_LISTEN_ADDR
           value: 0.0.0.0:4191
-        - name: LINKERD2_PROXY_OUTBOUND_LISTENER
+        - name: LINKERD2_PROXY_OUTBOUND_LISTEN_ADDR
           value: 127.0.0.1:4140
-        - name: LINKERD2_PROXY_INBOUND_LISTENER
+        - name: LINKERD2_PROXY_INBOUND_LISTEN_ADDR
           value: 0.0.0.0:4143
         - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
           value: .
@@ -1351,13 +1327,13 @@ spec:
           value: warn,linkerd2_proxy=info
         - name: LINKERD2_PROXY_DESTINATION_SVC_ADDR
           value: linkerd-destination.linkerd.svc.cluster.local:8086
-        - name: LINKERD2_PROXY_CONTROL_LISTENER
+        - name: LINKERD2_PROXY_CONTROL_LISTEN_ADDR
           value: 0.0.0.0:4190
-        - name: LINKERD2_PROXY_METRICS_LISTENER
+        - name: LINKERD2_PROXY_METRICS_LISTEN_ADDR
           value: 0.0.0.0:4191
-        - name: LINKERD2_PROXY_OUTBOUND_LISTENER
+        - name: LINKERD2_PROXY_OUTBOUND_LISTEN_ADDR
           value: 127.0.0.1:4140
-        - name: LINKERD2_PROXY_INBOUND_LISTENER
+        - name: LINKERD2_PROXY_INBOUND_LISTEN_ADDR
           value: 0.0.0.0:4143
         - name: LINKERD2_PROXY_DESTINATION_PROFILE_SUFFIXES
           value: .
