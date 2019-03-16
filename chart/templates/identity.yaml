@@ -132,8 +132,5 @@ spec:
       - name: identity-issuer
         secret:
           secretName: linkerd-identity-issuer
-      - name: identity-trust-anchors
-        configMap:
-          name: linkerd-identity-trust-anchors
 {{end -}}
 {{end -}}
