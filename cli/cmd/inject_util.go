@@ -109,8 +109,8 @@ func (c *configs) overrideFromOptions(options *injectOptions) {
 	if options.outboundPort != 0 {
 		c.proxy.OutboundPort = &pb.Port{Port: uint32(options.outboundPort)}
 	}
-	if options.proxyMetricsPort != 0 {
-		c.proxy.MetricsPort = &pb.Port{Port: uint32(options.proxyMetricsPort)}
+	if options.proxyAdminPort != 0 {
+		c.proxy.AdminPort = &pb.Port{Port: uint32(options.proxyAdminPort)}
 	}
 
 	if options.proxyUID != 0 {

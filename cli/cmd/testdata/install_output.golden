@@ -248,7 +248,7 @@ spec:
           name: linkerd-metrics
         readinessProbe:
           httpGet:
-            path: /metrics
+            path: /ready
             port: 4191
           initialDelaySeconds: 10
         resources: {}
@@ -545,7 +545,7 @@ spec:
           name: linkerd-metrics
         readinessProbe:
           httpGet:
-            path: /metrics
+            path: /ready
             port: 4191
           initialDelaySeconds: 10
         resources: {}
@@ -743,7 +743,7 @@ spec:
           name: linkerd-metrics
         readinessProbe:
           httpGet:
-            path: /metrics
+            path: /ready
             port: 4191
           initialDelaySeconds: 10
         resources: {}
@@ -1007,7 +1007,7 @@ spec:
           name: linkerd-metrics
         readinessProbe:
           httpGet:
-            path: /metrics
+            path: /ready
             port: 4191
           initialDelaySeconds: 10
         resources: {}
@@ -1226,7 +1226,7 @@ spec:
           name: linkerd-metrics
         readinessProbe:
           httpGet:
-            path: /metrics
+            path: /ready
             port: 4191
           initialDelaySeconds: 10
         resources: {}

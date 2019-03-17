@@ -19,7 +19,7 @@ type expectedProxyConfigs struct {
 	imagePullPolicy            corev1.PullPolicy
 	controlPort                int32
 	inboundPort                int32
-	metricsPort                int32
+	adminPort                  int32
 	outboundPort               int32
 	logLevel                   string
 	resourceRequirements       corev1.ResourceRequirements
@@ -29,7 +29,8 @@ type expectedProxyConfigs struct {
 	metricsListenAddr          string
 	outboundListenAddr         string
 	proxyUID                   int64
-	probe                      *corev1.Probe
+	livenessProbe              *corev1.Probe
+	readinessProbe             *corev1.Probe
 	destinationProfileSuffixes string
 	initImage                  string
 	initImagePullPolicy        corev1.PullPolicy
@@ -49,7 +50,7 @@ func TestConfigAccessors(t *testing.T) {
 		ProxyInitImage:      &config.Image{ImageName: "gcr.io/linkerd-io/proxy-init", PullPolicy: "IfNotPresent"},
 		ControlPort:         &config.Port{Port: 9000},
 		InboundPort:         &config.Port{Port: 6000},
-		MetricsPort:         &config.Port{Port: 6001},
+		AdminPort:           &config.Port{Port: 6001},
 		OutboundPort:        &config.Port{Port: 6002},
 		IgnoreInboundPorts:  []*config.Port{{Port: 53}},
 		IgnoreOutboundPorts: []*config.Port{{Port: 9079}},
@@ -81,7 +82,7 @@ func TestConfigAccessors(t *testing.T) {
 							k8s.ProxyInitImageAnnotation:               "gcr.io/linkerd-io/proxy-init",
 							k8s.ProxyControlPortAnnotation:             "4000",
 							k8s.ProxyInboundPortAnnotation:             "5000",
-							k8s.ProxyMetricsPortAnnotation:             "5001",
+							k8s.ProxyAdminPortAnnotation:               "5001",
 							k8s.ProxyOutboundPortAnnotation:            "5002",
 							k8s.ProxyIgnoreInboundPortsAnnotation:      "4222,6222",
 							k8s.ProxyIgnoreOutboundPortsAnnotation:     "8079,8080",
@@ -101,7 +102,7 @@ func TestConfigAccessors(t *testing.T) {
 				imagePullPolicy: corev1.PullPolicy("Always"),
 				controlPort:     int32(4000),
 				inboundPort:     int32(5000),
-				metricsPort:     int32(5001),
+				adminPort:       int32(5001),
 				outboundPort:    int32(5002),
 				logLevel:        "debug,linkerd2_proxy=debug",
 				resourceRequirements: corev1.ResourceRequirements{
@@ -120,13 +121,20 @@ func TestConfigAccessors(t *testing.T) {
 				metricsListenAddr:  "0.0.0.0:5001",
 				outboundListenAddr: "127.0.0.1:5002",
 				proxyUID:           int64(8500),
-				probe: &corev1.Probe{
+				livenessProbe: &corev1.Probe{
 					Handler: corev1.Handler{
 						HTTPGet: &corev1.HTTPGetAction{
 							Path: "/metrics",
-							Port: intstr.IntOrString{
-								IntVal: int32(5001),
-							},
+							Port: intstr.IntOrString{IntVal: int32(5001)},
+						},
+					},
+					InitialDelaySeconds: 10,
+				},
+				readinessProbe: &corev1.Probe{
+					Handler: corev1.Handler{
+						HTTPGet: &corev1.HTTPGetAction{
+							Path: "/ready",
+							Port: intstr.IntOrString{IntVal: int32(5001)},
 						},
 					},
 					InitialDelaySeconds: 10,
@@ -157,7 +165,7 @@ func TestConfigAccessors(t *testing.T) {
 				imagePullPolicy: corev1.PullPolicy("IfNotPresent"),
 				controlPort:     int32(9000),
 				inboundPort:     int32(6000),
-				metricsPort:     int32(6001),
+				adminPort:       int32(6001),
 				outboundPort:    int32(6002),
 				logLevel:        "info,linkerd2_proxy=debug",
 				resourceRequirements: corev1.ResourceRequirements{
@@ -176,13 +184,20 @@ func TestConfigAccessors(t *testing.T) {
 				metricsListenAddr:  "0.0.0.0:6001",
 				outboundListenAddr: "127.0.0.1:6002",
 				proxyUID:           int64(8888),
-				probe: &corev1.Probe{
+				livenessProbe: &corev1.Probe{
 					Handler: corev1.Handler{
 						HTTPGet: &corev1.HTTPGetAction{
 							Path: "/metrics",
-							Port: intstr.IntOrString{
-								IntVal: int32(6001),
-							},
+							Port: intstr.IntOrString{IntVal: int32(6001)},
+						},
+					},
+					InitialDelaySeconds: 10,
+				},
+				readinessProbe: &corev1.Probe{
+					Handler: corev1.Handler{
+						HTTPGet: &corev1.HTTPGetAction{
+							Path: "/ready",
+							Port: intstr.IntOrString{IntVal: int32(6001)},
 						},
 					},
 					InitialDelaySeconds: 10,
@@ -243,9 +258,9 @@ func TestConfigAccessors(t *testing.T) {
 				}
 			})
 
-			t.Run("proxyMetricsPort", func(t *testing.T) {
-				expected := testCase.expected.metricsPort
-				if actual := resourceConfig.proxyMetricsPort(); expected != actual {
+			t.Run("proxyAdminPort", func(t *testing.T) {
+				expected := testCase.expected.adminPort
+				if actual := resourceConfig.proxyAdminPort(); expected != actual {
 					t.Errorf("Expected: %v Actual: %v", expected, actual)
 				}
 			})
@@ -292,9 +307,9 @@ func TestConfigAccessors(t *testing.T) {
 				}
 			})
 
-			t.Run("proxyMetricsListenAddr", func(t *testing.T) {
+			t.Run("proxyAdminListenAddr", func(t *testing.T) {
 				expected := testCase.expected.metricsListenAddr
-				if actual := resourceConfig.proxyMetricsListenAddr(); expected != actual {
+				if actual := resourceConfig.proxyAdminListenAddr(); expected != actual {
 					t.Errorf("Expected: %v Actual: %v", expected, actual)
 				}
 			})
@@ -313,9 +328,16 @@ func TestConfigAccessors(t *testing.T) {
 				}
 			})
 
-			t.Run("proxyProbe", func(t *testing.T) {
-				expected := testCase.expected.probe
-				if actual := resourceConfig.proxyProbe(); !reflect.DeepEqual(expected, actual) {
+			t.Run("proxyLivenessProbe", func(t *testing.T) {
+				expected := testCase.expected.livenessProbe
+				if actual := resourceConfig.proxyLivenessProbe(); !reflect.DeepEqual(expected, actual) {
+					t.Errorf("Expected: %v Actual: %v", expected, actual)
+				}
+			})
+
+			t.Run("proxyReadinessProbe", func(t *testing.T) {
+				expected := testCase.expected.readinessProbe
+				if actual := resourceConfig.proxyReadinessProbe(); !reflect.DeepEqual(expected, actual) {
 					t.Errorf("Expected: %v Actual: %v", expected, actual)
 				}
 			})

@@ -145,7 +145,7 @@ func newInstallOptions() *installOptions {
 			proxyUID:                2102,
 			proxyLogLevel:           "warn,linkerd2_proxy=info",
 			proxyControlPort:        4190,
-			proxyMetricsPort:        4191,
+			proxyAdminPort:        4191,
 			proxyCPURequest:         "",
 			proxyMemoryRequest:      "",
 			proxyCPULimit:           "",
@@ -533,8 +533,8 @@ func proxyConfig(options *installOptions) *pb.Proxy {
 		InboundPort: &pb.Port{
 			Port: uint32(options.inboundPort),
 		},
-		MetricsPort: &pb.Port{
-			Port: uint32(options.proxyMetricsPort),
+		AdminPort: &pb.Port{
+			Port: uint32(options.proxyAdminPort),
 		},
 		OutboundPort: &pb.Port{
 			Port: uint32(options.outboundPort),

@@ -118,8 +118,8 @@ const (
 	// ProxyInboundPortAnnotation can be used to override the inboundPort config.
 	ProxyInboundPortAnnotation = ProxyConfigAnnotationsPrefix + "/inbound-port"
 
-	// ProxyMetricsPortAnnotation can be used to override the metricsPort config.
-	ProxyMetricsPortAnnotation = ProxyConfigAnnotationsPrefix + "/metrics-port"
+	// ProxyAdminPortAnnotation can be used to override the adminPort config.
+	ProxyAdminPortAnnotation = ProxyConfigAnnotationsPrefix + "/metrics-port"
 
 	// ProxyOutboundPortAnnotation can be used to override the outboundPort
 	// config.
@@ -179,8 +179,8 @@ const (
 	// ProxyPortName is the name of the Linkerd Proxy's proxy port
 	ProxyPortName = "linkerd-proxy"
 
-	// ProxyMetricsPortName is the name of the Linkerd Proxy's metrics port
-	ProxyMetricsPortName = "linkerd-metrics"
+	// ProxyAdminPortName is the name of the Linkerd Proxy's metrics port
+	ProxyAdminPortName = "linkerd-metrics"
 
 	// ProxyInjectorWebhookConfig is the name of the mutating webhook
 	// configuration resource of the proxy-injector webhook.

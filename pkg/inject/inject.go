@@ -407,8 +407,8 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 				ContainerPort: conf.proxyInboundPort(),
 			},
 			{
-				Name:          k8s.ProxyMetricsPortName,
-				ContainerPort: conf.proxyMetricsPort(),
+				Name:          k8s.ProxyAdminPortName,
+				ContainerPort: conf.proxyAdminPort(),
 			},
 		},
 		Resources: conf.proxyResourceRequirements(),
@@ -458,8 +458,8 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 				Value: "ns:$(K8S_NS)",
 			},
 		},
-		LivenessProbe:  conf.proxyProbe(),
-		ReadinessProbe: conf.proxyProbe(),
+		ReadinessProbe: conf.proxyReadinessProbe(),
+		LivenessProbe:  conf.proxyLivenessProbe(),
 	}
 
 	// Special case if the caller specifies that
@@ -627,14 +627,14 @@ func (conf *ResourceConfig) proxyInboundPort() int32 {
 	return int32(conf.proxyConfig.GetInboundPort().GetPort())
 }
 
-func (conf *ResourceConfig) proxyMetricsPort() int32 {
-	if override := conf.getOverride(k8s.ProxyMetricsPortAnnotation); override != "" {
-		metricsPort, err := strconv.ParseInt(override, 10, 32)
+func (conf *ResourceConfig) proxyAdminPort() int32 {
+	if override := conf.getOverride(k8s.ProxyAdminPortAnnotation); override != "" {
+		adminPort, err := strconv.ParseInt(override, 10, 32)
 		if err == nil {
-			return int32(metricsPort)
+			return int32(adminPort)
 		}
 	}
-	return int32(conf.proxyConfig.GetMetricsPort().GetPort())
+	return int32(conf.proxyConfig.GetAdminPort().GetPort())
 }
 
 func (conf *ResourceConfig) proxyOutboundPort() int32 {
@@ -746,7 +746,7 @@ func (conf *ResourceConfig) proxyInboundListenAddr() string {
 }
 
 func (conf *ResourceConfig) proxyAdminListenAddr() string {
-	return fmt.Sprintf("0.0.0.0:%d", conf.proxyMetricsPort())
+	return fmt.Sprintf("0.0.0.0:%d", conf.proxyAdminPort())
 }
 
 func (conf *ResourceConfig) proxyOutboundListenAddr() string {
@@ -764,15 +764,24 @@ func (conf *ResourceConfig) proxyUID() int64 {
 	return conf.proxyConfig.GetProxyUid()
 }
 
-func (conf *ResourceConfig) proxyProbe() *v1.Probe {
-	metricsPort := conf.proxyMetricsPort()
+func (conf *ResourceConfig) proxyReadinessProbe() *v1.Probe {
+	return &v1.Probe{
+		Handler: v1.Handler{
+			HTTPGet: &v1.HTTPGetAction{
+				Path: "/ready",
+				Port: intstr.IntOrString{IntVal: conf.proxyAdminPort()},
+			},
+		},
+		InitialDelaySeconds: 10,
+	}
+}
+
+func (conf *ResourceConfig) proxyLivenessProbe() *v1.Probe {
 	return &v1.Probe{
 		Handler: v1.Handler{
 			HTTPGet: &v1.HTTPGetAction{
 				Path: "/metrics",
-				Port: intstr.IntOrString{
-					IntVal: metricsPort,
-				},
+				Port: intstr.IntOrString{IntVal: conf.proxyAdminPort()},
 			},
 		},
 		InitialDelaySeconds: 10,
@@ -807,7 +816,7 @@ func (conf *ResourceConfig) proxyInitImagePullPolicy() v1.PullPolicy {
 func (conf *ResourceConfig) proxyInitArgs() []string {
 	var (
 		controlPort       = conf.proxyControlPort()
-		metricsPort       = conf.proxyMetricsPort()
+		adminPort         = conf.proxyAdminPort()
 		inboundPort       = conf.proxyInboundPort()
 		outboundPort      = conf.proxyOutboundPort()
 		outboundSkipPorts = conf.proxyOutboundSkipPorts()
@@ -818,7 +827,7 @@ func (conf *ResourceConfig) proxyInitArgs() []string {
 	if len(inboundSkipPorts) > 0 {
 		inboundSkipPorts += ","
 	}
-	inboundSkipPorts += fmt.Sprintf("%d,%d", controlPort, metricsPort)
+	inboundSkipPorts += fmt.Sprintf("%d,%d", controlPort, adminPort)
 
 	initArgs := []string{
 		"--incoming-proxy-port", fmt.Sprintf("%d", inboundPort),
