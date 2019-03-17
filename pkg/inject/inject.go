@@ -51,7 +51,7 @@ linkerd2-proxy
 	envPodNamespace             = "LINKERD2_PROXY_POD_NAMESPACE"
 	envLog                      = "LINKERD2_PROXY_LOG"
 	envControlListenAddr        = "LINKERD2_PROXY_CONTROL_LISTEN_ADDR"
-	envMetricsListenAddr        = "LINKERD2_PROXY_METRICS_LISTEN_ADDR"
+	envAdminListenAddr          = "LINKERD2_PROXY_ADMIN_LISTEN_ADDR"
 	envOutboundListenAddr       = "LINKERD2_PROXY_OUTBOUND_LISTEN_ADDR"
 	envInboundListenAddr        = "LINKERD2_PROXY_INBOUND_LISTEN_ADDR"
 	envInboundAcceptKeepAlive   = "LINKERD2_PROXY_INBOUND_ACCEPT_KEEPALIVE"
@@ -426,8 +426,8 @@ func (conf *ResourceConfig) injectPodSpec(patch *Patch) {
 				Value: conf.proxyControlListenAddr(),
 			},
 			{
-				Name:  envMetricsListenAddr,
-				Value: conf.proxyMetricsListenAddr(),
+				Name:  envAdminListenAddr,
+				Value: conf.proxyAdminListenAddr(),
 			},
 			{
 				Name:  envOutboundListenAddr,
@@ -745,7 +745,7 @@ func (conf *ResourceConfig) proxyInboundListenAddr() string {
 	return fmt.Sprintf("0.0.0.0:%d", conf.proxyInboundPort())
 }
 
-func (conf *ResourceConfig) proxyMetricsListenAddr() string {
+func (conf *ResourceConfig) proxyAdminListenAddr() string {
 	return fmt.Sprintf("0.0.0.0:%d", conf.proxyMetricsPort())
 }
 
