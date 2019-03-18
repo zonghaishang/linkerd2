@@ -772,7 +772,8 @@ func (conf *ResourceConfig) proxyReadinessProbe() *v1.Probe {
 				Port: intstr.IntOrString{IntVal: conf.proxyAdminPort()},
 			},
 		},
-		InitialDelaySeconds: 10,
+		// Check for readiness quickly so that identity can become available quickly.
+		InitialDelaySeconds: 1,
 	}
 }
 
