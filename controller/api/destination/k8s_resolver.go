@@ -82,6 +82,7 @@ func (k *k8sResolver) streamProfiles(host string, clientNs string, listener prof
 		err := k.profileWatcher.subscribeToProfile(clientProfileID, primaryListener)
 		if err != nil {
 			log.Error(err)
+			log.Debugf("Terminating profile watch on %s", host)
 			return err
 		}
 		subscriptions[clientProfileID] = primaryListener
@@ -97,6 +98,7 @@ func (k *k8sResolver) streamProfiles(host string, clientNs string, listener prof
 		err := k.profileWatcher.subscribeToProfile(serverProfileID, secondaryListener)
 		if err != nil {
 			log.Error(err)
+			log.Debugf("Terminating profile watch on %s", host)
 			return err
 		}
 		subscriptions[serverProfileID] = secondaryListener
@@ -104,6 +106,7 @@ func (k *k8sResolver) streamProfiles(host string, clientNs string, listener prof
 
 	select {
 	case <-listener.ClientClose():
+		log.Debugf("Client close profile watch on %s", host)
 		for id, listener := range subscriptions {
 			err = k.profileWatcher.unsubscribeToProfile(id, listener)
 			if err != nil {
@@ -112,6 +115,7 @@ func (k *k8sResolver) streamProfiles(host string, clientNs string, listener prof
 		}
 		return nil
 	case <-listener.ServerClose():
+		log.Debugf("Server close profile watch on %s", host)
 		return nil
 	}
 }

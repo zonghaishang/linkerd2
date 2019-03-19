@@ -91,6 +91,7 @@ func (s *server) GetProfile(dest *pb.GetDestination, stream pb.Destination_GetPr
 	s.log.Debugf("GetProfile(%+v)", dest)
 	host, _, err := getHostAndPort(dest)
 	if err != nil {
+		log.Debugf("Unable to start watch on %s", dest.GetPath())
 		return err
 	}
 
