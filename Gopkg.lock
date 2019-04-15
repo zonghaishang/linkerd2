@@ -1218,6 +1218,22 @@
   version = "v0.1.0"
 
 [[projects]]
+  digest = "1:7efd478acf75b0367dabdabac8d2b16d5276237d0487ac5016bea6ef1ed2fe09"
+  name = "k8s.io/kube-aggregator"
+  packages = [
+    "pkg/apis/apiregistration",
+    "pkg/apis/apiregistration/v1",
+    "pkg/apis/apiregistration/v1beta1",
+    "pkg/client/clientset_generated/clientset",
+    "pkg/client/clientset_generated/clientset/scheme",
+    "pkg/client/clientset_generated/clientset/typed/apiregistration/v1",
+    "pkg/client/clientset_generated/clientset/typed/apiregistration/v1beta1",
+  ]
+  pruneopts = ""
+  revision = "1e8cd453c47488cff773c5ebcd70ca0b0ce054d9"
+  version = "kubernetes-1.13.1"
+
+[[projects]]
   branch = "master"
   digest = "1:526095379da1098c3f191a0008cc59c9bf9927492e63da7689e5de424219c162"
   name = "k8s.io/kube-openapi"
@@ -1341,6 +1357,8 @@
     "k8s.io/helm/pkg/renderutil",
     "k8s.io/helm/pkg/timeconv",
     "k8s.io/klog",
+    "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1",
+    "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset",
     "sigs.k8s.io/yaml",
   ]
   solver-name = "gps-cdcl"

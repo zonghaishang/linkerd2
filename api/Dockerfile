@@ -4,10 +4,11 @@ WORKDIR /go/src/github.com/linkerd/linkerd2
 COPY controller/gen controller/gen
 COPY pkg pkg
 COPY controller controller
+COPY api api
 
 # use `install` so that we produce multiple binaries
 RUN CGO_ENABLED=0 GOOS=linux go install ./pkg/...
-RUN CGO_ENABLED=0 GOOS=linux go install ./controller/cmd/...
+RUN CGO_ENABLED=0 GOOS=linux go install ./api/...
 
 ## package runtime
 FROM scratch
