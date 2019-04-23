@@ -15,18 +15,15 @@ var containsAlphaRegexp = regexp.MustCompile("[a-zA-Z]")
 
 // implements the streamingDestinationResolver interface
 type k8sResolver struct {
-	k8sDNSZoneLabels []string
 	endpointsWatcher *endpointsWatcher
 	profileWatcher   *profileWatcher
 }
 
 func newK8sResolver(
-	k8sDNSZoneLabels []string,
 	ew *endpointsWatcher,
 	pw *profileWatcher,
 ) *k8sResolver {
 	return &k8sResolver{
-		k8sDNSZoneLabels: k8sDNSZoneLabels,
 		endpointsWatcher: ew,
 		profileWatcher:   pw,
 	}
@@ -41,7 +38,8 @@ func (s serviceID) String() string {
 	return fmt.Sprintf("%s.%s", s.name, s.namespace)
 }
 
-func (k *k8sResolver) canResolve(host string, port int) (bool, error) {
+func (k *k8sResolver) canResolve(name authority) (bool, error) {
+	host := strings.SplitAfter(name, ":")[0]
 	id, err := k.localKubernetesServiceIDFromDNSName(host)
 	if err != nil {
 		return false, err
@@ -50,7 +48,7 @@ func (k *k8sResolver) canResolve(host string, port int) (bool, error) {
 	return id != nil, nil
 }
 
-func (k *k8sResolver) streamResolution(host string, port int, listener endpointUpdateListener) error {
+func (k *k8sResolver) streamEndpoints(host string, port int, listener endpointUpdateListener) error {
 	id, err := k.localKubernetesServiceIDFromDNSName(host)
 	if err != nil {
 		log.Error(err)
@@ -116,15 +114,6 @@ func (k *k8sResolver) streamProfiles(host string, clientNs string, listener prof
 	}
 }
 
-func (k *k8sResolver) getState() servicePorts {
-	return k.endpointsWatcher.getState()
-}
-
-func (k *k8sResolver) stop() {
-	k.endpointsWatcher.stop()
-	k.profileWatcher.stop()
-}
-
 func (k *k8sResolver) resolveKubernetesService(id *serviceID, port int, listener endpointUpdateListener) error {
 	k.endpointsWatcher.subscribe(id, uint32(port), listener)
 
@@ -134,6 +123,10 @@ func (k *k8sResolver) resolveKubernetesService(id *serviceID, port int, listener
 	case <-listener.ServerClose():
 		return nil
 	}
+}
+
+func parseK8sService(name authority) (serviceID, port, error) {
+	prefix := strings.TrimSuffix(name, ".")
 }
 
 // localKubernetesServiceIDFromDNSName returns the name of the service in

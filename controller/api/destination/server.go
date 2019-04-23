@@ -6,6 +6,11 @@ import (
 	"strconv"
 	"strings"
 
+	"google.golang.org/grpc/codes"
+
+	"google.golang.org/grpc/status"
+	corev1 "k8s.io/api/core/v1"
+
 	pb "github.com/linkerd/linkerd2-proxy-api/go/destination"
 	"github.com/linkerd/linkerd2/controller/api/util"
 	discoveryPb "github.com/linkerd/linkerd2/controller/gen/controller/discovery"
@@ -16,14 +21,19 @@ import (
 	"google.golang.org/grpc"
 )
 
-type server struct {
-	k8sAPI          *k8s.API
-	resolver        streamingDestinationResolver
-	enableH2Upgrade bool
-	controllerNS,
-	identityTrustDomain string
-	log *log.Entry
-}
+type (
+	server struct {
+		endpoints endpointsResolver
+		profiles  profilesResolver
+
+		log *log.Entry
+	}
+
+	translator struct {
+		enableH2Upgrade                   bool
+		controllerNS, identityTrustDomain string
+	}
+)
 
 // NewServer returns a new instance of the destination server.
 //
@@ -38,53 +48,41 @@ type server struct {
 // Addresses for the given destination are fetched from the Kubernetes Endpoints
 // API.
 func NewServer(
-	addr, k8sDNSZone string,
-	controllerNS, identityTrustDomain string,
+	addr controllerNS, identityTrustDomain string,
 	enableH2Upgrade bool,
 	k8sAPI *k8s.API,
-	done chan struct{},
+	shutdown chan struct{},
 ) (*grpc.Server, error) {
-	resolver, err := buildResolver(k8sDNSZone, k8sAPI)
-	if err != nil {
-		return nil, err
-	}
-
-	srv := server{
-		k8sAPI:              k8sAPI,
-		resolver:            resolver,
-		enableH2Upgrade:     enableH2Upgrade,
-		controllerNS:        controllerNS,
-		identityTrustDomain: identityTrustDomain,
-		log: log.WithFields(log.Fields{
-			"addr":      addr,
-			"component": "server",
-		}),
-	}
-
-	s := prometheus.NewGrpcServer()
-
-	// this server satisfies 2 gRPC interfaces:
-	// 1) linkerd2-proxy-api/destination.Destination (proxy-facing)
-	// 2) controller/discovery.Discovery (controller-facing)
-	pb.RegisterDestinationServer(s, &srv)
-	discoveryPb.RegisterDiscoveryServer(s, &srv)
-
+	endpoints := newEndpointsWatcher(k8sAPI, endpointLabeler)
+	profiles := newProfileWatcher(k8sAPI)
+	log := log.WithFields(log.Fields{
+		"addr":      addr,
+		"component": "server",
+	})
+	srv := server{endpoints, profiles, log}
 	go func() {
-		<-done
-		resolver.stop()
+		<-shutdown
+		endpoints.stop()
+		profiles.stop()
 	}()
 
+	s := prometheus.NewGrpcServer()
+	// linkerd2-proxy-api/destination.Destination (proxy-facing)
+	pb.RegisterDestinationServer(s, &srv)
+	// controller/discovery.Discovery (controller-facing)
+	discoveryPb.RegisterDiscoveryServer(s, &srv)
 	return s, nil
 }
 
 func (s *server) Get(dest *pb.GetDestination, stream pb.Destination_GetServer) error {
-	s.log.Debugf("Get(%+v)", dest)
-	host, port, err := getHostAndPort(dest)
+	s.log.Debugf("get %s", dest.GetPath())
+
+	err := s.resolver.resolveEndpoints(dest.GetPath(), newEndpointListener(stream))
 	if err != nil {
-		return err
+		return status.Errorf(codes.InvalidArgument, "invalid destination: %s", err.Error())
 	}
 
-	return s.streamResolution(host, port, stream)
+	return nil
 }
 
 func (s *server) GetProfile(dest *pb.GetDestination, stream pb.Destination_GetProfileServer) error {
@@ -96,35 +94,17 @@ func (s *server) GetProfile(dest *pb.GetDestination, stream pb.Destination_GetPr
 
 	listener := newProfileListener(stream)
 
-	proxyNS := ""
-	parts := strings.Split(dest.GetContextToken(), ":")
-	// ns:<namespace>
-	if len(parts) == 2 && parts[0] == "ns" {
-		proxyNS = parts[1]
-	} else {
-		// TODO remove this after the 2.3 release...
-		parts = strings.Split(dest.GetContextToken(), ".")
-		// <deployment>.deployment.<namespace>.linkerd-managed.linkerd.svc.cluster.local
-		if len(parts) >= 3 {
-			log.Debug("Serving profile request for legacy proxy")
-			proxyNS = parts[2]
-		}
-	}
-	if proxyNS != "" {
-		log.Debugf("Looking up profile given context: ns:%s", proxyNS)
-	}
-
-	err = s.resolver.streamProfiles(host, proxyNS, listener)
+	err = s.resolver.streamProfiles(host, dest.GetContextToken(), listener)
 	if err != nil {
 		s.log.Errorf("Error streaming profile for %s: %v", dest.Path, err)
 	}
 	return err
 }
 
-func (s *server) Endpoints(ctx context.Context, params *discoveryPb.EndpointsParams) (*discoveryPb.EndpointsResponse, error) {
-	s.log.Debugf("Endpoints(%+v)", params)
+func (e *endpointsWatcher) Endpoints(ctx context.Context, params *discoveryPb.EndpointsParams) (*discoveryPb.EndpointsResponse, error) {
+	s.log.Debugf("serving endpoints request")
 
-	servicePorts := s.resolver.getState()
+	servicePorts := e.getState()
 
 	rsp := discoveryPb.EndpointsResponse{
 		ServicePorts: make(map[string]*discoveryPb.ServicePort),
@@ -163,16 +143,7 @@ func (s *server) Endpoints(ctx context.Context, params *discoveryPb.EndpointsPar
 }
 
 func (s *server) streamResolution(host string, port int, stream pb.Destination_GetServer) error {
-	listener := newEndpointListener(stream, s.k8sAPI.GetOwnerKindAndName, s.enableH2Upgrade, s.controllerNS, s.identityTrustDomain)
 
-	resolverCanResolve, err := s.resolver.canResolve(host, port)
-	if err != nil {
-		return fmt.Errorf("resolver [%+v] found error resolving host [%s] port [%d]: %v", s.resolver, host, port, err)
-	}
-	if !resolverCanResolve {
-		return fmt.Errorf("cannot find resolver for host [%s] port [%d]", host, port)
-	}
-	return s.resolver.streamResolution(host, port, listener)
 }
 
 func getHostAndPort(dest *pb.GetDestination) (string, int, error) {
@@ -201,22 +172,54 @@ func getHostAndPort(dest *pb.GetDestination) (string, int, error) {
 	return host, port, nil
 }
 
-func buildResolver(
-	k8sDNSZone string,
-	k8sAPI *k8s.API,
-) (streamingDestinationResolver, error) {
-	k8sDNSZoneLabels := []string{}
-	if k8sDNSZone != "" {
-		var err error
-		k8sDNSZoneLabels, err = splitDNSName(k8sDNSZone)
-		if err != nil {
-			return nil, err
+func (t *translator) mkWeightedAddr() *pb.WeightedAddr {
+	labels, hint, tlsIdentity := l.getAddrMetadata(address.pod)
+
+	return &pb.WeightedAddr{
+		Addr:         address.address,
+		Weight:       addr.DefaultWeight,
+		MetricLabels: labels,
+		TlsIdentity:  tlsIdentity,
+		ProtocolHint: hint,
+	}
+}
+
+func (l *endpointListener) getAddrMetadata(pod *corev1.Pod) (map[string]string, *pb.ProtocolHint, *pb.TlsIdentity) {
+	controllerNS := pod.Labels[pkgK8s.ControllerNSLabel]
+	sa, ns := pkgK8s.GetServiceAccountAndNS(pod)
+	ok, on := l.ownerKindAndName(pod)
+	labels := pkgK8s.GetPodLabels(ok, on, pod)
+
+	// If the pod is controlled by any Linkerd control plane, then it can be hinted
+	// that this destination knows H2 (and handles our orig-proto translation).
+	var hint *pb.ProtocolHint
+	if l.enableH2Upgrade && controllerNS != "" {
+		hint = &pb.ProtocolHint{
+			Protocol: &pb.ProtocolHint_H2_{
+				H2: &pb.ProtocolHint_H2{},
+			},
 		}
 	}
 
-	k8sResolver := newK8sResolver(k8sDNSZoneLabels, newEndpointsWatcher(k8sAPI), newProfileWatcher(k8sAPI))
+	// If the pod is controlled by the same Linkerd control plane, then it can
+	// participate in identity with peers.
+	//
+	// TODO this should be relaxed to match a trust domain annotation so that
+	// multiple meshes can participate in identity if they share trust roots.
+	var identity *pb.TlsIdentity
+	if l.identityTrustDomain != "" &&
+		controllerNS == l.controllerNS &&
+		pod.Annotations[pkgK8s.IdentityModeAnnotation] == pkgK8s.IdentityModeDefault {
 
-	log.Infof("Built k8s name resolver")
+		id := fmt.Sprintf("%s.%s.serviceaccount.identity.%s.%s", sa, ns, controllerNS, l.identityTrustDomain)
+		identity = &pb.TlsIdentity{
+			Strategy: &pb.TlsIdentity_DnsLikeIdentity_{
+				DnsLikeIdentity: &pb.TlsIdentity_DnsLikeIdentity{
+					Name: id,
+				},
+			},
+		}
+	}
 
-	return k8sResolver, nil
+	return labels, hint, identity
 }

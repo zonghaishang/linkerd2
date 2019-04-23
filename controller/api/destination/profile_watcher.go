@@ -2,6 +2,7 @@ package destination
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	sp "github.com/linkerd/linkerd2/controller/gen/apis/serviceprofile/v1alpha1"
@@ -46,6 +47,72 @@ func newProfileWatcher(k8sAPI *k8s.API) *profileWatcher {
 	)
 
 	return watcher
+}
+
+func (p *profileWatcher) resolveProfiles(
+	name authority,
+	context string,
+	listener profileUpdateListener
+) error {
+	subscriptions := map[profileID]profileUpdateListener{}
+
+	primaryListener, secondaryListener := newFallbackProfileListener(listener)
+
+	if ns := nsFromToken(context); ns != "" {
+		clientProfileID := profileID{
+			namespace: ns,
+			name:      host,
+		}
+
+		err := k.profileWatcher.subscribeToProfile(clientProfileID, primaryListener)
+		if err != nil {
+			log.Error(err)
+			return err
+		}
+		subscriptions[clientProfileID] = primaryListener
+	}
+
+	serviceID, err := k.localKubernetesServiceIDFromDNSName(host)
+	if err == nil && serviceID != nil {
+		serverProfileID := profileID{
+			namespace: serviceID.namespace,
+			name:      host,
+		}
+
+		err := k.profileWatcher.subscribeToProfile(serverProfileID, secondaryListener)
+		if err != nil {
+			log.Error(err)
+			return err
+		}
+		subscriptions[serverProfileID] = secondaryListener
+	}
+
+	select {
+	case <-listener.ClientClose():
+		for id, listener := range subscriptions {
+			err = k.profileWatcher.unsubscribeToProfile(id, listener)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	case <-listener.ServerClose():
+		return nil
+	}
+}
+
+func nsFromToken(ctx string) string {
+	// ns:<namespace>
+	parts := strings.Split(ctx, ":")
+	if len(parts) == 2 && parts[0] == "ns" {
+		return parts[1]
+	}
+
+	return ""
+
+	// if proxyNS != "" {
+	// 	log.Debugf("Looking up profile given context: ns:%s", proxyNS)
+	// }
 }
 
 // Close all open streams on shutdown
