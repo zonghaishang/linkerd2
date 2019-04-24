@@ -50,19 +50,10 @@ var (
 		},
 	}
 
-	add = []*updateAddress{
-		{address: addedAddress1, pod: pod1},
-		{address: addedAddress2, pod: pod2},
-	}
+	add = []*pb.WeightedAddr{}
 
-	remove = []*updateAddress{
-		{address: removedAddress1},
-	}
+	remove = []*net.TcpAddress{}
 )
-
-func defaultOwnerKindAndName(pod *corev1.Pod) (string, string) {
-	return "", ""
-}
 
 func TestEndpointListener(t *testing.T) {
 	t.Run("Sends one update for add and another for remove", func(t *testing.T) {

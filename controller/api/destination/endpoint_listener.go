@@ -2,44 +2,10 @@ package destination
 
 import (
 	pb "github.com/linkerd/linkerd2-proxy-api/go/destination"
-	"github.com/linkerd/linkerd2/pkg/addr"
 	log "github.com/sirupsen/logrus"
 )
 
-func diffUpdateAddresses(oldAddrs, newAddrs []*updateAddress) ([]*updateAddress, []*updateAddress) {
-	addSet := make(map[string]*updateAddress)
-	removeSet := make(map[string]*updateAddress)
-
-	for _, a := range newAddrs {
-		key := addr.ProxyAddressToString(a.address)
-		addSet[key] = a
-	}
-
-	for _, a := range oldAddrs {
-		key := addr.ProxyAddressToString(a.address)
-		delete(addSet, key)
-		removeSet[key] = a
-	}
-
-	for _, a := range newAddrs {
-		key := addr.ProxyAddressToString(a.address)
-		delete(removeSet, key)
-	}
-
-	add := make([]*updateAddress, 0)
-	for _, a := range addSet {
-		add = append(add, a)
-	}
-
-	remove := make([]*updateAddress, 0)
-	for _, a := range removeSet {
-		remove = append(remove, a)
-	}
-
-	return add, remove
-}
-
-// implements the endpointUpdateListener interface
+// endpointListner statisfies endpointUpdateListener
 type endpointListener struct {
 	stream pb.Destination_GetServer
 	stopCh chan struct{}
@@ -67,7 +33,7 @@ func (l *endpointListener) Stop() {
 	close(l.stopCh)
 }
 
-func (l *endpointListener) Add(set []*pb.WeightedAddrSet) {
+func (l *endpointListener) Add(set *pb.WeightedAddrSet) {
 	if err := l.stream.Send(&pb.Update{Update: &pb.Update_Add{Add: set}}); err != nil {
 		l.log.Errorf("Failed to send address update: %s", err)
 	}

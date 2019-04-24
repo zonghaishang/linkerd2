@@ -24,7 +24,7 @@ import (
 type (
 	server struct {
 		endpoints endpointsResolver
-		profiles  profilesResolver
+		profiles  profileResolver
 
 		log *log.Entry
 	}

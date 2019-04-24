@@ -2,221 +2,74 @@ package destination
 
 import (
 	"errors"
-	"fmt"
-	"reflect"
 	"regexp"
-	"strings"
-
-	log "github.com/sirupsen/logrus"
+	"strconv"
+	"testing"
 )
 
-var dnsCharactersRegexp = regexp.MustCompile("^[a-zA-Z0-9_-]{0,63}$")
-var containsAlphaRegexp = regexp.MustCompile("[a-zA-Z]")
-
-// implements the streamingDestinationResolver interface
-type k8sResolver struct {
-	endpointsWatcher *endpointsWatcher
-	profileWatcher   *profileWatcher
-}
-
-func newK8sResolver(
-	ew *endpointsWatcher,
-	pw *profileWatcher,
-) *k8sResolver {
-	return &k8sResolver{
-		endpointsWatcher: ew,
-		profileWatcher:   pw,
-	}
-}
+var k8sSvcNameRE = regexp.MustCompile("^(?i)([^.]+)\\.([^.]+)\\.svc\\.cluster\\.local\\.?(?::(\\d+))?$")
 
 type serviceID struct {
 	namespace string
 	name      string
 }
 
-func (s serviceID) String() string {
-	return fmt.Sprintf("%s.%s", s.name, s.namespace)
-}
+func parseK8sServiceFromAuthority(name authority) (serviceID, port, error) {
+	parts := k8sSvcNameRE.FindStringSubmatch(name)
 
-func (k *k8sResolver) canResolve(name authority) (bool, error) {
-	host := strings.SplitAfter(name, ":")[0]
-	id, err := k.localKubernetesServiceIDFromDNSName(host)
-	if err != nil {
-		return false, err
+	if len(parts) != 3 && len(parts) != 4 {
+		return serviceID{}, 0, errors.New("invalid kubernetes service name")
 	}
 
-	return id != nil, nil
-}
-
-func (k *k8sResolver) streamEndpoints(host string, port int, listener endpointUpdateListener) error {
-	id, err := k.localKubernetesServiceIDFromDNSName(host)
-	if err != nil {
-		log.Error(err)
-		return err
-	}
-
-	if id == nil {
-		err = fmt.Errorf("cannot resolve service that isn't a local Kubernetes service: %s", host)
-		log.Error(err)
-		return err
-	}
-
-	listener.SetServiceID(id)
-
-	return k.resolveKubernetesService(id, port, listener)
-}
-
-func (k *k8sResolver) streamProfiles(host string, clientNs string, listener profileUpdateListener) error {
-	subscriptions := map[profileID]profileUpdateListener{}
-
-	primaryListener, secondaryListener := newFallbackProfileListener(listener)
-
-	if clientNs != "" {
-		clientProfileID := profileID{
-			namespace: clientNs,
-			name:      host,
-		}
-
-		err := k.profileWatcher.subscribeToProfile(clientProfileID, primaryListener)
+	port := port(80)
+	if len(parts) == 4 {
+		p, err := strconv.Atoi(parts[3])
 		if err != nil {
-			log.Error(err)
-			return err
+			panic("k8s service name regex only matches numeric ports")
 		}
-		subscriptions[clientProfileID] = primaryListener
+		port = port(p)
 	}
 
-	serviceID, err := k.localKubernetesServiceIDFromDNSName(host)
-	if err == nil && serviceID != nil {
-		serverProfileID := profileID{
-			namespace: serviceID.namespace,
-			name:      host,
-		}
-
-		err := k.profileWatcher.subscribeToProfile(serverProfileID, secondaryListener)
-		if err != nil {
-			log.Error(err)
-			return err
-		}
-		subscriptions[serverProfileID] = secondaryListener
+	id := serviceId{
+		name:      parts[1],
+		namespace: parts[2],
 	}
-
-	select {
-	case <-listener.ClientClose():
-		for id, listener := range subscriptions {
-			err = k.profileWatcher.unsubscribeToProfile(id, listener)
-			if err != nil {
-				return err
-			}
-		}
-		return nil
-	case <-listener.ServerClose():
-		return nil
-	}
+	return id, port, nil
 }
 
-func (k *k8sResolver) resolveKubernetesService(id *serviceID, port int, listener endpointUpdateListener) error {
-	k.endpointsWatcher.subscribe(id, uint32(port), listener)
-
-	select {
-	case <-listener.ClientClose():
-		return k.endpointsWatcher.unsubscribe(id, uint32(port), listener)
-	case <-listener.ServerClose():
-		return nil
-	}
-}
-
-func parseK8sService(name authority) (serviceID, port, error) {
-	prefix := strings.TrimSuffix(name, ".")
-}
-
-// localKubernetesServiceIDFromDNSName returns the name of the service in
-// "namespace-name/service-name" form if `host` is a DNS name in a form used
-// for local Kubernetes services. It returns nil if `host` isn't in such a
-// form.
-func (k *k8sResolver) localKubernetesServiceIDFromDNSName(host string) (*serviceID, error) {
-	hostLabels, err := splitDNSName(host)
-	if err != nil {
-		return nil, err
+func testParseK8sServiceFromAuthority(t *testing.T) {
+	id, port, err := parseK8sServiceFromAuthority("foo.bar.svc.cluster.local")
+	if err != nil || id.name != "foo" || id.namespace != "bar" || port != 80 {
+		t.Error("could not parse foo.bar.svc.cluster.local")
 	}
 
-	// Verify that `host` ends with ".svc.$zone", ".svc.cluster.local," or ".svc".
-	matched := false
-	if len(k.k8sDNSZoneLabels) > 0 {
-		hostLabels, matched = maybeStripSuffixLabels(hostLabels, k.k8sDNSZoneLabels)
-	}
-	// Accept "cluster.local" as an alias for "$zone". The Kubernetes DNS
-	// specification
-	// (https://github.com/kubernetes/dns/blob/master/docs/specification.md)
-	// doesn't require Kubernetes to do this, but some hosting providers like
-	// GKE do it, and so we need to support it for transparency.
-	if !matched {
-		hostLabels, _ = maybeStripSuffixLabels(hostLabels, []string{"cluster", "local"})
-	}
-	// TODO:
-	// ```
-	// 	if !matched {
-	//		return nil, nil
-	//  }
-	// ```
-	//
-	// This is technically wrong since the protocol definition for the
-	// Destination service indicates that `host` is a FQDN and so we should
-	// never append a ".$zone" suffix to it, but we need to do this as a
-	// workaround until the proxies are configured to know "$zone."
-	hostLabels, matched = maybeStripSuffixLabels(hostLabels, []string{"svc"})
-	if !matched {
-		return nil, nil
+	id, port, err = parseK8sServiceFromAuthority("foo.bar.svc.cluster.local.")
+	if err != nil || id.name != "foo" || id.namespace != "bar" || port != 80 {
+		t.Error("could not parse foo.bar.svc.cluster.local.")
 	}
 
-	// Extract the service name and namespace. TODO: Federated services have
-	// *three* components before "svc"; see
-	// https://github.com/linkerd/linkerd2/issues/156.
-	if len(hostLabels) != 2 {
-		return nil, fmt.Errorf("not a service: %s", host)
+	id, port, err = parseK8sServiceFromAuthority("foo.bar.svc.cluster.local:8080")
+	if err != nil || id.name != "foo" || id.namespace != "bar" || port != 8080 {
+		t.Error("could not parse foo.bar.svc.cluster.local:8080")
 	}
 
-	return &serviceID{
-		namespace: hostLabels[1],
-		name:      hostLabels[0],
-	}, nil
-}
-
-func splitDNSName(dnsName string) ([]string, error) {
-	// If the name is fully qualified, strip off the final dot.
-	if strings.HasSuffix(dnsName, ".") {
-		dnsName = dnsName[:len(dnsName)-1]
+	id, port, err = parseK8sServiceFromAuthority("foo.bar.svc.cluster.local.:8080")
+	if err != nil || id.name != "foo" || id.namespace != "bar" || port != 8080 {
+		t.Error("could not parse foo.bar.svc.cluster.local.:8080")
 	}
 
-	labels := strings.Split(dnsName, ".")
+	id, port, err = parseK8sServiceFromAuthority("bar.svc.cluster.local")
+	if err == nil {
+		t.Error("should not have parsed bar.svc.cluster.local")
+	}
 
-	// Rejects any empty labels, which is especially important to do for
-	// the beginning and the end because we do matching based on labels'
-	// relative positions. For example, we need to reject ".example.com"
-	// instead of splitting it into ["", "example", "com"].
-	for _, l := range labels {
-		if l == "" {
-			return []string{}, errors.New("Empty label in DNS name: " + dnsName)
-		}
-		if !dnsCharactersRegexp.MatchString(l) {
-			return []string{}, errors.New("DNS name is too long or contains invalid characters: " + dnsName)
-		}
-		if strings.HasPrefix(l, "-") || strings.HasSuffix(l, "-") {
-			return []string{}, errors.New("DNS name cannot start or end with a dash: " + dnsName)
-		}
-		if !containsAlphaRegexp.MatchString(l) {
-			return []string{}, errors.New("DNS name cannot only contain digits and hyphens: " + dnsName)
-		}
+	id, port, err = parseK8sServiceFromAuthority("bar.svc.cluster.local:8080")
+	if err == nil {
+		t.Error("should not have parsed bar.svc.cluster.local:8080")
 	}
-	return labels, nil
-}
 
-func maybeStripSuffixLabels(input []string, suffix []string) ([]string, bool) {
-	n := len(input) - len(suffix)
-	if n < 0 {
-		return input, false
+	id, port, err = parseK8sServiceFromAuthority("linkerd.io")
+	if err == nil {
+		t.Error("should not have parsed linkerd.io")
 	}
-	if !reflect.DeepEqual(input[n:], suffix) {
-		return input, false
-	}
-	return input[:n], true
 }

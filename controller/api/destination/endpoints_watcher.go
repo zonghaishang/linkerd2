@@ -31,16 +31,9 @@ type (
 	// endpointsWatcher will publish the address set and all future changes for
 	// that service:port.
 	endpointsWatcher struct {
-		services  corelisters.ServiceLister
-		endpoints corelisters.EndpointsLister
-		pods      corelisters.PodLister
-
-		cache struct {
-			service   *corev1.Service
-			endpoints *corev1.Endpoints
-			pods      *corev1.Pod
-		}
-
+		services   corelisters.ServiceLister
+		endpoints  corelisters.EndpointsLister
+		pods       corelisters.PodLister
 		translator endpointTranslator
 
 		publishers   map[serviceID]*servicePublisher
@@ -74,12 +67,12 @@ type (
 	}
 )
 
-func newEndpointsWatcher(k8sAPI *k8s.API, labeler endpointLabeler) *endpointsWatcher {
+func newEndpointsWatcher(k8sAPI *k8s.API, translator endpointTranslator) *endpointsWatcher {
 	ew := &endpointsWatcher{
-		serviceLister:   k8sAPI.Svc().Lister(),
-		endpointLister:  k8sAPI.Endpoint().Lister(),
-		podLister:       k8sAPI.Pod().Lister(),
-		endpointLabeler: labeler,
+		serviceLister:  k8sAPI.Svc().Lister(),
+		endpointLister: k8sAPI.Endpoint().Lister(),
+		podLister:      k8sAPI.Pod().Lister(),
+		translator:     translator,
 		log: log.WithFields(log.Fields{
 			"component": "endpoints-watcher",
 		}),

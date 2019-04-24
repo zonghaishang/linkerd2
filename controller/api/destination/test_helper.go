@@ -4,11 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	proxyNet "github.com/linkerd/linkerd2-proxy-api/go/net"
+	pb "github.com/linkerd/linkerd2-proxy-api/go/destination"
+	net "github.com/linkerd/linkerd2-proxy-api/go/net"
 	sp "github.com/linkerd/linkerd2/controller/gen/apis/serviceprofile/v1alpha1"
-	"github.com/linkerd/linkerd2/pkg/addr"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type collectListener struct {
@@ -31,8 +29,8 @@ func (c *collectListener) Stop() {
 // implements the endpointUpdateListener interface
 type collectUpdateListener struct {
 	collectListener
-	added             []*updateAddress
-	removed           []*updateAddress
+	added             []*pb.WeightedAddr
+	removed           []*net.TcpAddress
 	noEndpointsCalled bool
 	noEndpointsExists bool
 }
@@ -110,17 +108,4 @@ func equalServicePorts(servicePorts1, servicePorts2 servicePorts) error {
 	}
 
 	return nil
-}
-
-func makeUpdateAddress(ipStr string, portNum uint32, name string) *updateAddress {
-	ip, _ := addr.ParseProxyIPV4(ipStr)
-	return &updateAddress{
-		address: &proxyNet.TcpAddress{Ip: ip, Port: portNum},
-		pod: &corev1.Pod{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: "ns",
-				Name:      name,
-			},
-		},
-	}
 }

@@ -13,22 +13,24 @@ import (
 	"k8s.io/client-go/tools/cache"
 )
 
-type profileID struct {
-	namespace string
-	name      string
-}
+type (
+	profileID struct {
+		namespace string
+		name      string
+	}
+
+	// profileWatcher watches all service profiles in the Kubernetes cluster.
+	// Listeners can subscribe to a particular profile and profileWatcher will
+	// publish the service profile and all future changes for that profile.
+	profileWatcher struct {
+		profileLister splisters.ServiceProfileLister
+		profiles      map[profileID]*profileEntry
+		profilesLock  sync.RWMutex
+	}
+)
 
 func (p profileID) String() string {
 	return fmt.Sprintf("%s/%s", p.namespace, p.name)
-}
-
-// profileWatcher watches all service profiles in the Kubernetes cluster.
-// Listeners can subscribe to a particular profile and profileWatcher will
-// publish the service profile and all future changes for that profile.
-type profileWatcher struct {
-	profileLister splisters.ServiceProfileLister
-	profiles      map[profileID]*profileEntry
-	profilesLock  sync.RWMutex
 }
 
 func newProfileWatcher(k8sAPI *k8s.API) *profileWatcher {
@@ -52,7 +54,7 @@ func newProfileWatcher(k8sAPI *k8s.API) *profileWatcher {
 func (p *profileWatcher) resolveProfiles(
 	name authority,
 	context string,
-	listener profileUpdateListener
+	listener profileUpdateListener,
 ) error {
 	subscriptions := map[profileID]profileUpdateListener{}
 
@@ -72,14 +74,13 @@ func (p *profileWatcher) resolveProfiles(
 		subscriptions[clientProfileID] = primaryListener
 	}
 
-	serviceID, err := k.localKubernetesServiceIDFromDNSName(host)
 	if err == nil && serviceID != nil {
 		serverProfileID := profileID{
 			namespace: serviceID.namespace,
 			name:      host,
 		}
 
-		err := k.profileWatcher.subscribeToProfile(serverProfileID, secondaryListener)
+		err := p.subscribeToProfile(serverProfileID, secondaryListener)
 		if err != nil {
 			log.Error(err)
 			return err
@@ -90,15 +91,15 @@ func (p *profileWatcher) resolveProfiles(
 	select {
 	case <-listener.ClientClose():
 		for id, listener := range subscriptions {
-			err = k.profileWatcher.unsubscribeToProfile(id, listener)
+			err = p.unsubscribeToProfile(id, listener)
 			if err != nil {
 				return err
 			}
 		}
 		return nil
-	case <-listener.ServerClose():
-		return nil
 	}
+
+	return nil
 }
 
 func nsFromToken(ctx string) string {
