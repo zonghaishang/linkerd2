@@ -33,7 +33,7 @@ type (
 	endpointsWatcher struct {
 		services   corelisters.ServiceLister
 		endpoints  corelisters.EndpointsLister
-		pods       corelisters.PodLister
+		pods       corelisters.PodListr
 		translator endpointTranslator
 
 		publishers   map[serviceID]*servicePublisher
