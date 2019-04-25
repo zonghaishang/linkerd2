@@ -2,9 +2,12 @@ package tap
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"time"
 
 	httpPb "github.com/linkerd/linkerd2-proxy-api/go/http_types"
@@ -16,12 +19,14 @@ import (
 	"github.com/linkerd/linkerd2/pkg/addr"
 	pkgK8s "github.com/linkerd/linkerd2/pkg/k8s"
 	"github.com/linkerd/linkerd2/pkg/prometheus"
+	pkgTls "github.com/linkerd/linkerd2/pkg/tls"
 	"github.com/linkerd/linkerd2/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
 )
 
@@ -33,6 +38,7 @@ type (
 		tapPort             uint
 		k8sAPI              *k8s.API
 		controllerNamespace string
+		HTTPServe           *http.Server
 	}
 )
 
@@ -426,18 +432,53 @@ func (s *server) translateEvent(orig *proxy.TapEvent) *public.TapEvent {
 	return ev
 }
 
+func newHTTPServer(k8sAPI *k8s.API, controllerNamespace string) *http.Server {
+	var (
+		aggregationLayerConfigMapName = "extension-apiserver-authentication"
+	)
+
+	cm, err := k8sAPI.Client.CoreV1().
+		ConfigMaps("kube-system").
+		Get(aggregationLayerConfigMapName, metav1.GetOptions{})
+
+	if err != nil {
+		log.Fatalf("Failed to load [%s] config: %s", aggregationLayerConfigMapName, err)
+	}
+
+	rootCA, err := pkgTls.GenerateRootCAWithDefaults("linkerd-tap.linkerd.svc")
+	if err != nil {
+		log.Fatalf("Failed to create Root CA: %s", err.Error())
+	}
+
+	clientCaPem, ok := cm.Data["requestheader-client-ca-file"]
+	if !ok {
+		log.Fatalf("No client CA cert available for apiextension-server")
+	}
+
+	tlsCfg, err := tlsConfig(rootCA, "linkerd-tap", controllerNamespace, clientCaPem)
+	if err != nil {
+
+	}
+
+	srv := &http.Server{
+		Addr:      ":8081",
+		TLSConfig: tlsCfg,
+	}
+	return srv
+}
+
 // NewServer creates a new gRPC Tap server
 func NewServer(
 	addr string,
 	tapPort uint,
 	controllerNamespace string,
 	k8sAPI *k8s.API,
-) (*grpc.Server, net.Listener, error) {
+) (*grpc.Server, *http.Server, net.Listener, error) {
 	k8sAPI.Pod().Informer().AddIndexers(cache.Indexers{podIPIndex: indexPodByIP})
 
 	lis, err := net.Listen("tcp", addr)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 
 	s := prometheus.NewGrpcServer()
@@ -448,7 +489,35 @@ func NewServer(
 	}
 	pb.RegisterTapServer(s, &srv)
 
-	return s, lis, nil
+	return s, newHTTPServer(k8sAPI, controllerNamespace), lis, nil
+}
+
+func tlsConfig(rootCA *pkgTls.CA, name, controllerNamespace, clientCAPem string) (*tls.Config, error) {
+	// must use the service short name in this TLS identity as the k8s api server
+	// looks for the webhook at <svc_name>.<namespace>.svc, without the cluster
+	// domain.
+	dnsName := fmt.Sprintf("%s.%s.svc", name, controllerNamespace)
+
+	cred, err := rootCA.GenerateEndEntityCred(dnsName)
+	if err != nil {
+		return nil, err
+	}
+
+	certPEM := cred.EncodePEM()
+	keyPEM := cred.EncodePrivateKeyPEM()
+	cert, err := tls.X509KeyPair([]byte(certPEM), []byte(keyPEM))
+	if err != nil {
+		return nil, err
+	}
+
+	clientCertPool := x509.NewCertPool()
+	clientCertPool.AppendCertsFromPEM([]byte(clientCAPem))
+
+	return &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    clientCertPool,
+	}, nil
 }
 
 func indexPodByIP(obj interface{}) ([]string, error) {

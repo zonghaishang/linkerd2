@@ -14,7 +14,7 @@ import (
 )
 
 func main() {
-	addr := flag.String("addr", "127.0.0.1:8088", "address to serve on")
+	addr := flag.String("addr", ":8088", "address to serve on")
 	metricsAddr := flag.String("metrics-addr", ":9998", "address to serve scrapable metrics on")
 	kubeConfigPath := flag.String("kubeconfig", "", "path to kube config")
 	controllerNamespace := flag.String("controller-namespace", "linkerd", "namespace in which Linkerd is installed")
@@ -40,7 +40,7 @@ func main() {
 		log.Fatalf("Failed to initialize K8s API: %s", err)
 	}
 
-	server, lis, err := tap.NewServer(*addr, *tapPort, *controllerNamespace, k8sAPI)
+	server, httpServer, lis, err := tap.NewServer(*addr, *tapPort, *controllerNamespace, k8sAPI)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -50,6 +50,11 @@ func main() {
 	go func() {
 		log.Println("starting gRPC server on", *addr)
 		server.Serve(lis)
+	}()
+
+	go func() {
+		log.Println("starting HTTPS server on :8081")
+		httpServer.ListenAndServeTLS("", "")
 	}()
 
 	go admin.StartServer(*metricsAddr)

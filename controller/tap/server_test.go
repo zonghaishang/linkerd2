@@ -189,7 +189,7 @@ status:
 				t.Fatalf("NewFakeAPI returned an error: %s", err)
 			}
 
-			server, listener, err := NewServer("localhost:0", 0, "controller-ns", k8sAPI)
+			server, _, listener, err := NewServer("localhost:0", 0, "controller-ns", k8sAPI)
 			if err != nil {
 				t.Fatalf("NewServer error: %s", err)
 			}
