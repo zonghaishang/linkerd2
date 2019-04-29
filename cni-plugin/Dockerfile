@@ -1,11 +1,11 @@
 ## compile cni-plugin utility
-FROM gcr.io/linkerd-io/go-deps:f364cab7 as golang
-WORKDIR /go/src/github.com/linkerd/linkerd2
+FROM gcr.io/linkerd-io/go-deps:d0e919be as golang
+WORKDIR /linkerd-build
 COPY proxy-init proxy-init
 COPY pkg pkg
 COPY controller controller
 COPY cni-plugin cni-plugin
-RUN CGO_ENABLED=0 GOOS=linux go build -o /go/bin/linkerd-cni -v ./cni-plugin/
+RUN CGO_ENABLED=0 GOOS=linux go build -o /go/bin/linkerd-cni -v -mod=readonly ./cni-plugin/
 
 FROM gcr.io/linkerd-io/base:2019-02-19.01
 WORKDIR /linkerd
