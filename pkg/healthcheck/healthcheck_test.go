@@ -402,7 +402,7 @@ metadata:
 			},
 			[]string{
 				"linkerd-config control plane Namespace exists",
-				"linkerd-config control plane ClusterRoles exist: missing ClusterRoles: linkerd-test-ns-controller, linkerd-test-ns-identity, linkerd-test-ns-prometheus, linkerd-test-ns-proxy-injector, linkerd-test-ns-sp-validator",
+				"linkerd-config control plane ClusterRoles exist: missing ClusterRoles: linkerd-test-ns-controller, linkerd-test-ns-identity, linkerd-test-ns-prometheus, linkerd-test-ns-proxy-injector, linkerd-test-ns-sp-validator, linkerd-test-ns-tap",
 			},
 		},
 		{
@@ -441,12 +441,18 @@ kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: linkerd-test-ns-sp-validator
+`,
+				`
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: linkerd-test-ns-tap
 `,
 			},
 			[]string{
 				"linkerd-config control plane Namespace exists",
 				"linkerd-config control plane ClusterRoles exist",
-				"linkerd-config control plane ClusterRoleBindings exist: missing ClusterRoleBindings: linkerd-test-ns-controller, linkerd-test-ns-identity, linkerd-test-ns-prometheus, linkerd-test-ns-proxy-injector, linkerd-test-ns-sp-validator",
+				"linkerd-config control plane ClusterRoleBindings exist: missing ClusterRoleBindings: linkerd-test-ns-controller, linkerd-test-ns-identity, linkerd-test-ns-prometheus, linkerd-test-ns-proxy-injector, linkerd-test-ns-sp-validator, linkerd-test-ns-tap",
 			},
 		},
 		{
@@ -487,6 +493,12 @@ metadata:
   name: linkerd-test-ns-sp-validator
 `,
 				`
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: linkerd-test-ns-tap
+`,
+				`
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -515,6 +527,12 @@ kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: linkerd-test-ns-sp-validator
+`,
+				`
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: linkerd-test-ns-tap
 `,
 				`
 kind: ServiceAccount
@@ -563,6 +581,13 @@ kind: ServiceAccount
 apiVersion: v1
 metadata:
   name: linkerd-web
+  namespace: test-ns
+`,
+				`
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: linkerd-tap
   namespace: test-ns
 `,
 			},
@@ -612,6 +637,12 @@ metadata:
   name: linkerd-test-ns-sp-validator
 `,
 				`
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: linkerd-test-ns-tap
+`,
+				`
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -640,6 +671,12 @@ kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: linkerd-test-ns-sp-validator
+`,
+				`
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: linkerd-test-ns-tap
 `,
 				`
 kind: ServiceAccount
@@ -691,6 +728,13 @@ metadata:
   namespace: test-ns
 `,
 				`
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: linkerd-tap
+  namespace: test-ns
+`,
+				`
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
@@ -727,7 +771,7 @@ metadata:
 			obs := newObserver()
 			hc.RunChecks(obs.resultFn)
 			if !reflect.DeepEqual(obs.results, tc.results) {
-				t.Fatalf("Expected results %v, but got %v", tc.results, obs.results)
+				t.Fatalf("Expected results\n%s,\nbut got:\n%s", strings.Join(tc.results, "\n"), strings.Join(obs.results, "\n"))
 			}
 		})
 	}
@@ -832,6 +876,7 @@ func TestValidateControlPlanePods(t *testing.T) {
 			pod("linkerd-identity-6849948664-27982", corev1.PodRunning, true),
 			pod("linkerd-prometheus-74d6879cd6-bbdk6", corev1.PodRunning, true),
 			pod("linkerd-sp-validator-24d2879ce6-cddk9", corev1.PodRunning, true),
+			pod("linkerd-tap-6c878df6c8-2hmtd", corev1.PodRunning, true),
 			pod("linkerd-web-98c9ddbcd-7b5lh", corev1.PodRunning, true),
 		}
 
@@ -848,6 +893,7 @@ func TestValidateControlPlanePods(t *testing.T) {
 			pod("linkerd-identity-6849948664-27982", corev1.PodRunning, true),
 			pod("linkerd-prometheus-74d6879cd6-bbdk6", corev1.PodRunning, true),
 			pod("linkerd-sp-validator-24d2879ce6-cddk9", corev1.PodRunning, true),
+			pod("linkerd-tap-6c878df6c8-2hmtd", corev1.PodRunning, true),
 			pod("linkerd-web-98c9ddbcd-7b5lh", corev1.PodRunning, true),
 			pod("hello-43c25d", corev1.PodRunning, true),
 		}

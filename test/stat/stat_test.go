@@ -79,6 +79,7 @@ func TestCliStatForLinkerdNamespace(t *testing.T) {
 				"linkerd-proxy-injector": "1/1",
 				"linkerd-sp-validator":   "1/1",
 				"linkerd-web":            "1/1",
+				"linkerd-tap":            "1/1",
 			},
 		},
 		{

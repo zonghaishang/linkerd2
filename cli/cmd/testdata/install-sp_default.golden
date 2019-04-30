@@ -125,7 +125,7 @@ spec:
 apiVersion: linkerd.io/v1alpha1
 kind: ServiceProfile
 metadata:
-  name: linkerd-tap-api.linkerd.svc.cluster.local
+  name: linkerd-tap.linkerd.svc.cluster.local
   namespace: linkerd
 spec:
   routes:

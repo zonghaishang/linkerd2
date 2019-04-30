@@ -40,7 +40,7 @@ func main() {
 		log.Fatalf("Failed to initialize K8s API: %s", err)
 	}
 
-	server, httpServer, lis, err := tap.NewServer(*addr, *tapPort, *controllerNamespace, k8sAPI)
+	server, lis, err := tap.NewServer(*addr, *tapPort, *controllerNamespace, k8sAPI)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -50,11 +50,6 @@ func main() {
 	go func() {
 		log.Println("starting gRPC server on", *addr)
 		server.Serve(lis)
-	}()
-
-	go func() {
-		log.Println("starting HTTPS server on :8081")
-		httpServer.ListenAndServeTLS("", "")
 	}()
 
 	go admin.StartServer(*metricsAddr)
