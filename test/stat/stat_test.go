@@ -63,18 +63,6 @@ func TestCliStatForLinkerdNamespace(t *testing.T) {
 	}
 	controllerPod := pods[0]
 
-	// We retrieve the linkerd tap pod because it now has its own service and therefore its own stats
-	pods, err = TestHelper.GetPodNamesForDeployment(TestHelper.GetLinkerdNamespace(), "linkerd-tap")
-	if err != nil {
-		t.Fatalf("Failed to get pods for tap: %s", err)
-	}
-
-	if len(pods) != 1 {
-		t.Fatalf("Expected 1 pod for tap, got %d", len(pods))
-	}
-
-	tapPod := pods[0]
-
 	prometheusAuthority := "linkerd-prometheus." + TestHelper.GetLinkerdNamespace() + ".svc.cluster.local:9090"
 
 	for _, tt := range []struct {
@@ -95,10 +83,9 @@ func TestCliStatForLinkerdNamespace(t *testing.T) {
 			},
 		},
 		{
-			args: []string{"stat", "po", "-n", TestHelper.GetLinkerdNamespace(), "--from", "deploy/linkerd-controller"},
+			args: []string{"stat", "po", "-n", TestHelper.GetLinkerdNamespace(), prometheusPod, "--from", "po/" + controllerPod},
 			expectedRows: map[string]string{
 				prometheusPod: "1/1",
-				tapPod:        "1/1",
 			},
 		},
 		{
@@ -108,10 +95,9 @@ func TestCliStatForLinkerdNamespace(t *testing.T) {
 			},
 		},
 		{
-			args: []string{"stat", "svc", "-n", TestHelper.GetLinkerdNamespace(), "--from", "deploy/linkerd-controller"},
+			args: []string{"stat", "svc", "-n", TestHelper.GetLinkerdNamespace(), "linkerd-prometheus", "--from", "deploy/linkerd-controller"},
 			expectedRows: map[string]string{
 				"linkerd-prometheus": "1/1",
-				"linkerd-tap":        "1/1",
 			},
 		},
 		{
