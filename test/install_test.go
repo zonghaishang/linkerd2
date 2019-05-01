@@ -18,9 +18,9 @@ type deploySpec struct {
 	containers []string
 }
 
-// ////////////////////
-// /   TEST SETUP   ///
-// ////////////////////
+//////////////////////
+///   TEST SETUP   ///
+//////////////////////
 
 var TestHelper *testutil.TestHelper
 
