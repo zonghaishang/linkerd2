@@ -44,7 +44,7 @@ func TestRoutes(t *testing.T) {
 		{"linkerd-identity", 2},
 		{"linkerd-prometheus", 5},
 		{"linkerd-web", 2},
-		{"linkerd-tap", 1},
+		{"linkerd-tap", 3},
 
 		{"POST /api/v1/ListPods", 1},
 		{"POST /api/v1/", 8},
