@@ -69,8 +69,4 @@ spec:
         {{ end -}}
         securityContext:
           runAsUser: {{.ControllerUID}}
-      volumes:
-      - name: config
-        configMap:
-          name: linkerd-config
 {{end -}}
