@@ -81,8 +81,7 @@ func NewPortForward(
 	localPort, remotePort int,
 	emitLogs bool,
 ) (*PortForward, error) {
-	timeoutSeconds := int64(30)
-	podList, err := k8sAPI.CoreV1().Pods(namespace).List(metav1.ListOptions{TimeoutSeconds: &timeoutSeconds})
+	podList, err := k8sAPI.CoreV1().Pods(namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}
