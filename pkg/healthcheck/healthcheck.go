@@ -441,6 +441,7 @@ func (hc *HealthChecker) allCategories() []category {
 						} else {
 							hc.apiClient, err = public.NewExternalClient(hc.ControlPlaneNamespace, hc.kubeAPI)
 						}
+						hc.apiClient.Close()
 						return
 					},
 				},
