@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/linkerd/linkerd2/controller/k8s"
 	"github.com/linkerd/linkerd2/controller/tap"
@@ -40,16 +42,33 @@ func main() {
 		log.Fatalf("Failed to initialize K8s API: %s", err)
 	}
 
-	server, lis, err := tap.NewServer(*addr, *tapPort, *controllerNamespace, k8sAPI)
+	tapClient, cc, err := tap.NewClient("127.0.0.1:8089")
 	if err != nil {
 		log.Fatal(err.Error())
+	}
+
+	defer cc.Close()
+
+	server, lis, err := tap.NewHTTPSServer(*addr, tapClient, k8sAPI, *controllerNamespace, kubeConfigPath)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	grpcServer, grpcLis, err := tap.NewServer("127.0.0.1:8089", *tapPort, *controllerNamespace, k8sAPI)
+	if err != nil {
+		log.Fatalf(err.Error())
 	}
 
 	k8sAPI.Sync() // blocks until caches are synced
 
 	go func() {
-		log.Println("starting gRPC server on", *addr)
-		server.Serve(lis)
+		log.Println("starting gRPC server on", "127.0.0.1:8089")
+		grpcServer.Serve(grpcLis)
+	}()
+
+	go func() {
+		log.Println("starting HTTPS server on", *addr)
+		server.ServeTLS(lis, "", "")
 	}()
 
 	go admin.StartServer(*metricsAddr)
@@ -57,5 +76,9 @@ func main() {
 	<-stop
 
 	log.Println("shutting down gRPC server on", *addr)
-	server.GracefulStop()
+	grpcServer.GracefulStop()
+
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(1*time.Second))
+	server.Shutdown(ctx)
+	cancel()
 }

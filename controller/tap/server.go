@@ -2,9 +2,13 @@ package tap
 
 import (
 	"context"
+	"crypto/tls"
+	"crypto/x509"
+	"errors"
 	"fmt"
 	"io"
 	"net"
+	"net/http"
 	"time"
 
 	httpPb "github.com/linkerd/linkerd2-proxy-api/go/http_types"
@@ -16,13 +20,17 @@ import (
 	"github.com/linkerd/linkerd2/pkg/addr"
 	pkgK8s "github.com/linkerd/linkerd2/pkg/k8s"
 	"github.com/linkerd/linkerd2/pkg/prometheus"
+	pkgTls "github.com/linkerd/linkerd2/pkg/tls"
 	"github.com/linkerd/linkerd2/pkg/util"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/cache"
+	v1 "k8s.io/kube-aggregator/pkg/apis/apiregistration/v1"
+	aggClientSet "k8s.io/kube-aggregator/pkg/client/clientset_generated/clientset"
 )
 
 const podIPIndex = "ip"
@@ -33,6 +41,10 @@ type (
 		tapPort             uint
 		k8sAPI              *k8s.API
 		controllerNamespace string
+	}
+
+	grpcOverHTTPSServer struct {
+		tapClient pb.TapClient
 	}
 )
 
@@ -449,6 +461,145 @@ func NewServer(
 	pb.RegisterTapServer(s, &srv)
 
 	return s, lis, nil
+}
+
+func NewHTTPSServer(
+	addr string,
+	client pb.TapClient,
+	k8sAPI *k8s.API,
+	controllerNamespace string,
+	kubeConfig string,
+) (*http.Server, net.Listener, error) {
+	aggregationLayerConfigMapName := "extension-apiserver-authentication"
+	lis, err := net.Listen("tcp", addr)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	srv := &grpcOverHTTPSServer{client}
+
+	cm, err := k8sAPI.Client.CoreV1().
+		ConfigMaps("kube-system").
+		Get(aggregationLayerConfigMapName, metav1.GetOptions{})
+
+	if err != nil {
+		return nil, nil, errors.New(fmt.Sprintf("Failed to load [%s] config: %s", aggregationLayerConfigMapName, err))
+	}
+
+	rootCA, err := pkgTls.GenerateRootCAWithDefaults("linkerd-tap.linkerd.svc")
+	if err != nil {
+		return nil, nil, errors.New(fmt.Sprintf("Failed to create Root CA: %s", err.Error()))
+	}
+
+	clientCaPem, ok := cm.Data["requestheader-client-ca-file"]
+	if !ok {
+		return nil, nil, errors.New(fmt.Sprintf("No client CA cert available for apiextension-server"))
+	}
+
+	tlsCfg, err := tlsConfig(rootCA, "linkerd-tap", controllerNamespace, clientCaPem)
+	if err != nil {
+		return nil, nil, errors.New(fmt.Sprintf("Failed to create TLS config: %s", err.Error()))
+	}
+
+	config, err := pkgK8s.GetConfig(kubeConfig, "")
+	if err != nil {
+		return nil, nil, err
+	}
+
+	registrator, err := aggClientSet.NewForConfig(config)
+	registration, err := registrator.ApiregistrationV1().APIServices().Get("v1alpha1.tap.linkerd.io", metav1.GetOptions{})
+	if err != nil {
+		log.Errorf("Unable to get registration: %s", err)
+	}
+
+	trustAnchor := []byte(rootCA.Cred.EncodeCertificatePEM())
+
+	apiServiceSpec := v1.APIServiceSpec{
+		Service: &v1.ServiceReference{
+			Name:      "linkerd-tap",
+			Namespace: "linkerd",
+		},
+		Group:                "tap.linkerd.io",
+		GroupPriorityMinimum: 1000,
+		Version:              "v1alpha1",
+		VersionPriority:      100,
+		CABundle:             trustAnchor,
+	}
+
+	if registration != nil {
+		log.Error("Updating registration...")
+		registration.Spec = apiServiceSpec
+
+		registration, err := registrator.ApiregistrationV1().APIServices().Update(registration)
+		if err != nil {
+			log.Errorf("Failed to update registration: %s", err)
+		} else {
+			log.Errorf("Updated registration: %+v", registration)
+		}
+	} else {
+		registration = &v1.APIService{
+			Spec: apiServiceSpec,
+		}
+
+		registration, err = registrator.ApiregistrationV1().APIServices().Create(registration)
+		if err != nil {
+			log.Errorf("Failed to create registration: %s", err)
+		} else {
+			log.Errorf("Created registration: %+v", registration)
+		}
+	}
+
+	s := &http.Server{
+		Addr:      addr,
+		Handler:   srv,
+		TLSConfig: tlsCfg,
+	}
+	return s, lis, nil
+}
+
+func registerApiExtension() {
+
+}
+
+func (s *grpcOverHTTPSServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	if len(req.TLS.PeerCertificates) == 0 {
+		w.WriteHeader(http.StatusForbidden)
+	}
+
+	user := req.Header.Get("X-Remote-User")
+	group := req.Header.Get("X-Remote-Group")
+
+	log.Errorf("Received authorized request from [%s] in group [%s]", user, group)
+	fmt.Println("Ok")
+
+}
+
+func tlsConfig(rootCA *pkgTls.CA, name, controllerNamespace, clientCAPem string) (*tls.Config, error) {
+	// must use the service short name in this TLS identity as the k8s api server
+	// looks for the webhook at <svc_name>.<namespace>.svc, without the cluster
+	// domain.
+	dnsName := fmt.Sprintf("%s.%s.svc", name, controllerNamespace)
+
+	cred, err := rootCA.GenerateEndEntityCred(dnsName)
+	if err != nil {
+		return nil, err
+	}
+
+	certPEM := cred.EncodePEM()
+	keyPEM := cred.EncodePrivateKeyPEM()
+	cert, err := tls.X509KeyPair([]byte(certPEM), []byte(keyPEM))
+	if err != nil {
+		return nil, err
+	}
+
+	clientCertPool := x509.NewCertPool()
+	clientCertPool.AppendCertsFromPEM([]byte(clientCAPem))
+
+	return &tls.Config{
+		Certificates: []tls.Certificate{cert},
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    clientCertPool,
+	}, nil
 }
 
 func indexPodByIP(obj interface{}) ([]string, error) {
