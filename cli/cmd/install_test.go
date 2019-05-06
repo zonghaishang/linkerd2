@@ -121,6 +121,12 @@ func testInstallOptions() *installOptions {
 	o.identityOptions.crtPEMFile = filepath.Join("testdata", "crt.pem")
 	o.identityOptions.keyPEMFile = filepath.Join("testdata", "key.pem")
 	o.identityOptions.trustPEMFile = filepath.Join("testdata", "trust-anchors.pem")
+	o.generateCATrust = func() (*caTrustValues, error) {
+		return &caTrustValues{
+			KeyPEM:  "test private key PEM",
+			CertPEM: "test root PEM",
+		}, nil
+	}
 	return o
 }
 

@@ -1,9 +1,4 @@
 {{with .Values -}}
----
-###
-### Control Plane CA
-###
----
 kind: Secret
 apiVersion: v1
 metadata:
@@ -15,6 +10,6 @@ metadata:
     {{ .CreatedByAnnotation }}: {{ .CliVersion }}
 type: Opaque
 data:
-  root.pem: {{ b64enc .CATrust.RootPEM }}
+  cert.pem: {{ b64enc .CATrust.CertPEM }}
   key.pem: {{ b64enc .CATrust.KeyPEM }}
 {{end -}}
